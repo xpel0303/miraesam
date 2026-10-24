@@ -14,8 +14,8 @@
         <input type="text" id="name" name="name" value="{{ academy.name }}" required>
       </div>
       <div class="field">
-        <label for="brand_color">대표색 <span class="hint">메뉴 표시선, PDF 제목 밑줄에 쓰입니다</span></label>
-        <input type="color" id="brand_color" name="brand_color" value="{{ academy.brand_color }}">
+        <label for="brand_color">대표색 <span class="hint">버튼·메뉴·PDF 제목 밑줄 색. 기본은 살구색</span></label>
+        <input type="color" id="brand_color" name="brand_color" value="{{ "#F2846B" if academy.brand_color|lower == "#3a3a3a" else academy.brand_color }}">
       </div>
     </div>
     <div class="field">

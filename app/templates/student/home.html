@@ -1,7 +1,8 @@
 {% extends "student/_base.html" %}
+{% import "_art.html" as art %}
 {% block body %}
-<h1>{{ student.name }}</h1>
-<p class="muted">{{ [student.school.name if student.school else None, student.grade, student.class_group.name if student.class_group else None]|select|join(" / ") }}</p>
+<div class="s-hello">{{ art.mascot(64, "wave") }}<div><h1 style="margin:0">{{ student.name }}, 안녕!</h1>
+<p class="muted" style="margin:0">{{ [student.school.name if student.school else None, student.grade, student.class_group.name if student.class_group else None]|select|join(" / ") }}</p></div></div>
 
 {% if hws %}
 <div class="student-card" style="margin-top:20px">

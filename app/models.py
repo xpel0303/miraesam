@@ -39,7 +39,7 @@ class Academy(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     logo: Mapped[str | None] = mapped_column(Text, nullable=True)  # data URL
-    brand_color: Mapped[str] = mapped_column(String(9), default="#3a3a3a")
+    brand_color: Mapped[str] = mapped_column(String(9), default="#F2846B")
     invite_code: Mapped[str] = mapped_column(String(12), unique=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 

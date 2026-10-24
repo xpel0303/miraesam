@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="mascot" width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+  <ellipse cx="60" cy="110" rx="30" ry="5" fill="#000" opacity=".07"/>
+  <!-- 발 -->
+  <ellipse cx="48" cy="103" rx="8" ry="4" fill="#FF9F68" stroke="#5A4A3F" stroke-width="2.5"/>
+  <ellipse cx="72" cy="103" rx="8" ry="4" fill="#FF9F68" stroke="#5A4A3F" stroke-width="2.5"/>
+  <!-- 몸 -->
+  <path d="M60 28c23 0 40 19 40 42 0 20-16 33-40 33S20 90 20 70c0-23 17-42 40-42z" fill="#FFD86B" stroke="#5A4A3F" stroke-width="3"/>
+  <path d="M34 82c6 10 15 14 26 14s20-4 26-14" fill="none" stroke="#F5C04A" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  <!-- 새싹 -->
+  <path d="M60 29c-1-8 3-14 11-15-1 8-5 13-11 15z" fill="#8FD3C1" stroke="#5A4A3F" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M60 29c-2-6-7-9-13-8 2 6 7 9 13 8z" fill="#B6E6D8" stroke="#5A4A3F" stroke-width="2.5" stroke-linejoin="round"/>
+  
+  <path d="M42 62q5 4 10 0M68 62q5 4 10 0" fill="none" stroke="#5A4A3F" stroke-width="3" stroke-linecap="round"/>
+  <text x="86" y="40" font-family="Jua, sans-serif" font-size="14" fill="#B9A9E8">z</text><text x="95" y="30" font-family="Jua, sans-serif" font-size="10" fill="#B9A9E8">z</text>
+  
+  <!-- 볼 -->
+  <ellipse cx="38" cy="72" rx="6.5" ry="4" fill="#FFB5C2" opacity=".85"/>
+  <ellipse cx="82" cy="72" rx="6.5" ry="4" fill="#FFB5C2" opacity=".85"/>
+  <!-- 부리 -->
+  <path d="M54 68.5h12l-6 7z" fill="#FF9F68" stroke="#5A4A3F" stroke-width="2.2" stroke-linejoin="round"/>
+  
+  <path d="M90 76c6 0 9 3 9 6-4 3-9 2-12-1z" fill="#FFD86B" stroke="#5A4A3F" stroke-width="2.5" stroke-linejoin="round"/>
+  
+  <path d="M30 76c-6 0-9 3-9 6 4 3 9 2 12-1z" fill="#FFD86B" stroke="#5A4A3F" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>

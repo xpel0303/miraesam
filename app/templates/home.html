@@ -1,8 +1,13 @@
 {% extends "base.html" %}
+{% import "_art.html" as art %}
 {% block main %}
-<div class="greeting">
-  <h1>{{ teacher.name }} 선생님, 안녕하세요</h1>
-  <p class="lead">아래 진척표에서 채워진 칸이 지금 쓸 수 있는 기능이고, 점선 칸은 순서대로 만들어 갈 기능입니다.</p>
+<div class="hello">
+  {{ art.doodles() }}
+  {{ art.mascot(92, "wave") }}
+  <div>
+    <h1>{{ teacher.name }} 선생님, 안녕하세요! {{ art.sparkle(20) }}</h1>
+    <p>오늘은 어떤 자료를 만들어 볼까요? 아래 칸을 누르면 바로 시작해요.</p>
+  </div>
 </div>
 
 {% if needs_key %}
@@ -17,21 +22,19 @@
 
 <section class="panel" aria-labelledby="ledger-title">
   <div class="panel-head">
-    <h2 id="ledger-title">기능 진척표</h2>
-    <span class="small muted">칸을 누르면 해당 기능으로 갑니다</span>
+    <h2 id="ledger-title">무엇을 할까요?</h2>
+    <span class="small muted">점선 칸은 곧 생길 기능이에요</span>
   </div>
   <table class="ledger">
-    {% for st in stages %}
+    {% for group, feats in NAV_GROUPS() %}
     <tr>
-      <th scope="row">{{ st.label }}<small>{{ st.done }} / {{ st.features|length }} 완성</small></th>
+      <th scope="row">{{ group }}<small>{{ feats|selectattr("ready")|list|length }}개 사용 가능</small></th>
       <td>
         <div class="cells">
-          {% for f in st.features %}
-            <a class="cell {% if f.ready %}ready{% endif %}" href="{{ f.url }}" title="{{ f.summary }}">{{ f.name }}</a>
+          {% for f in feats %}
+            <a class="cell {% if f.ready %}ready{% endif %}" href="{{ f.url }}" title="{{ f.summary }}">{{ art.icon(f.key) }}{{ f.name }}</a>
           {% endfor %}
-          {% if st.n == 0 %}
-            <a class="cell ready" href="/settings" title="학원 정보, 선생님 계정, Gemini 키">계정·설정</a>
-          {% endif %}
+          {% if group == "학원 관리" %}<a class="cell ready" href="/settings" title="학원 정보, 선생님 계정, Gemini 키">{{ art.icon("settings") }}계정·설정</a>{% endif %}
         </div>
       </td>
     </tr>

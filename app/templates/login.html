@@ -1,7 +1,9 @@
 {% extends "auth_base.html" %}
 {% block title %}로그인 · {{ APP_NAME }}{% endblock %}
+{% import "_art.html" as art %}
 {% block box %}
 <div class="panel">
+  <div class="auth-hero">{{ art.mascot(96, "wave") }}</div>
   <p class="auth-title">{{ APP_NAME }}</p>
   <p class="muted small">수업 자료부터 시험 분석까지 한곳에서</p>
   {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}

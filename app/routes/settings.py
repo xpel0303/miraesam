@@ -73,7 +73,7 @@ def test_gemini(request: Request, teacher: Teacher = Depends(current_teacher), d
 async def save_academy(
     request: Request,
     name: str = Form(...),
-    brand_color: str = Form("#3a3a3a"),
+    brand_color: str = Form("#F2846B"),
     remove_logo: str = Form(""),
     logo: UploadFile | None = File(None),
     teacher: Teacher = Depends(owner_only),

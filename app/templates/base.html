@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
 <link rel="stylesheet" href="/static/app.css">
+<link rel="icon" href="/static/mascot-pencil.svg" type="image/svg+xml">
 {% set academy = teacher.academy if teacher is defined and teacher else None %}
-{% if academy %}<style>:root { --brand: {{ academy.brand_color }}; }</style>{% endif %}
+{% if academy and academy.brand_color and academy.brand_color|lower not in ("#3a3a3a", "") %}<style>:root { --brand: {{ academy.brand_color }}; --brand-soft: color-mix(in srgb, {{ academy.brand_color }} 18%, #fff); }</style>{% endif %}
 </head>
 <body>
+{% import "_art.html" as art %}
 {% macro brandmark(academy) %}
   <a class="brand" href="/">
-    {% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% else %}<span class="mark" aria-hidden="true">{{ (academy.name if academy else APP_NAME)[:1] }}</span>{% endif %}
+    {% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% else %}{{ art.mascot(40) }}{% endif %}
     <span><strong>{{ academy.name if academy else APP_NAME }}</strong><span>{{ APP_NAME }}</span></span>
   </a>
 {% endmacro %}
@@ -23,19 +25,19 @@
   <aside class="side">
     {{ brandmark(academy) }}
     <nav class="nav" aria-label="전체 메뉴">
-      <a href="/" {% if active == "home" %}aria-current="page"{% endif %}>홈</a>
+      <a href="/" {% if active == "home" %}aria-current="page"{% endif %}>{{ art.icon("home") }}<span>홈</span></a>
       {% for group, items in NAV_GROUPS() %}
         <div class="nav-group">
           <div>{{ group }}</div>
           {% for f in items %}
             <a href="{{ f.url }}" {% if active == f.key %}aria-current="page"{% endif %}>
-              <span>{{ f.name }}</span>{% if not f.ready %}<span class="soon">준비 중</span>{% endif %}
+              {{ art.icon(f.key) }}<span>{{ f.name }}</span>{% if not f.ready %}<span class="soon">준비 중</span>{% endif %}
             </a>
           {% endfor %}
         </div>
       {% endfor %}
       <div class="nav-group">
-        <a href="/settings" {% if active == "settings" %}aria-current="page"{% endif %}>설정</a>
+        <a href="/settings" {% if active == "settings" %}aria-current="page"{% endif %}>{{ art.icon("settings") }}<span>설정</span></a>
       </div>
     </nav>
     {% if teacher %}
