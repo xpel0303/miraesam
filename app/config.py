@@ -4,8 +4,8 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
-APP_NAME = os.getenv("APP_NAME", "미래샘")
-APP_SUB = os.getenv("APP_SUB", "영어연구소")
+APP_NAME = os.getenv("SITE_NAME", "미래샘")  # 예전 APP_NAME(수업 도구함) 환경변수는 무시
+APP_SUB = os.getenv("SITE_SUB", "영어연구소")
 
 # 세션 쿠키 서명 + Gemini 키 암호화에 쓰는 비밀값. 배포 시 반드시 바꿀 것.
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")

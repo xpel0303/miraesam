@@ -12,5 +12,5 @@ services:
       # 비워 두면 서버 안 파일(sqlite)에 저장되어, 재시작 때마다 자료가 모두 지워집니다.
       - key: DATABASE_URL
         sync: false
-      - key: APP_NAME
+      - key: SITE_NAME
         value: 미래샘
