@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}숙제 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>숙제</h1><a class="btn" href="/homework/new">새 숙제</a></div>
+<p class="lead">단어 퀴즈, OX 퀴즈, 시험지 답 입력, 할 일 체크를 숙제로 내요. 학생은 접속 코드 링크로 들어와 풀고, 누가 했는지 한 표로 봅니다.</p>
+{% if hws %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>숙제</th><th>반</th><th>할 일</th><th>완료</th><th>마감</th><th></th></tr></thead>
+  <tbody>{% for h in hws %}{% set r = rate.get(h.id) %}
+    <tr><td class="wrap"><a href="/homework/{{ h.id }}"><b>{{ h.title }}</b></a>{% if not h.active %} <span class="tag">닫음</span>{% endif %}</td>
+      <td class="small wrap">{{ h.classes|map(attribute="name")|join(", ") }}</td>
+      <td>{{ h.tasks|length }}개</td>
+      <td>{% if r %}<div class="hbar sm"><i style="width:{{ (100 * r[0] / r[1])|round }}%"></i></div> {{ (100 * r[0] / r[1])|round|int }}%{% else %}<span class="muted small">학생 없음</span>{% endif %}</td>
+      <td class="small {{ 'muted' if not h.due or h.due >= today else '' }}">{{ h.due }}{% if h.due and h.due < today %} <span class="tag">지남</span>{% endif %}</td>
+      <td class="muted small">{{ h.created_at|kst("%m/%d") }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 낸 숙제가 없어요.</p><a class="btn" href="/homework/new">첫 숙제 내기</a></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "pdf/_base.html" %}
+{#  내용이해 워크북 문제지 / 답지 (answer=True)  #}
+{% block style %}
+  .page { break-before: page; }
+  .page.first { break-before: avoid; }
+  .banner { background: var(--brand); color: #fff; border-radius: 8pt; padding: 7pt 14pt; margin-bottom: 9pt;
+    font-weight: 800; font-size: 14pt; }
+  .banner small { font-weight: 400; font-size: 9.5pt; margin-left: 8pt; opacity: 0.85; }
+  .pill { display: inline-block; background: var(--brand); color: #fff; font-weight: 700; border-radius: 9pt;
+    padding: 0 9pt; margin-right: 6pt; font-size: 9pt; }
+  .sec { margin: 12pt 0 5pt; font-size: 10pt; font-weight: 700; break-after: avoid; }
+  .gtag { font-size: 8.5pt; color: var(--ink-2); font-weight: 400; margin-left: 4pt; }
+  .pbox { border: 0.8pt solid var(--line); border-radius: 6pt; margin: 6pt 0 4pt; }
+  .pbox table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .pbox td { border: 0; vertical-align: top; padding: 9pt 11pt 11pt; font-size: 10pt; }
+  .pbox td.en { text-align: justify; }
+  .pbox td.ko { border-left: 0.8pt dashed var(--line); font-size: 8.8pt; color: var(--ink-2); }
+  .pbox p { margin: 0 0 3pt; }
+  .q, .ak .a, .cq, .vq { padding-left: 20pt; text-indent: -20pt; }
+  .bank, .line { text-indent: 0; }
+  .q { margin: 3.5pt 0; break-inside: avoid; }
+  .n { color: var(--brand); font-weight: 800; display: inline-block; width: 20pt; text-indent: 0; }
+  .ox { white-space: nowrap; color: var(--ink-2); }
+  .cq { margin: 7pt 0 10pt; break-inside: avoid; }
+  .bank { margin: 2pt 0 3pt 0; font-weight: 700; }
+  .line { margin-left: 0; border-bottom: 0.7pt dashed var(--ink-3); height: 18pt; }
+  .vq { margin: 6pt 0; break-inside: avoid; }
+  .blank { display: inline-block; width: 140pt; border-bottom: 0.7pt solid var(--ink-2); margin-left: 5pt; }
+  .ak h4 { margin: 11pt 0 4pt; font-size: 10pt; break-after: avoid; }
+  .ak .a { margin: 2.5pt 0; break-inside: avoid; font-size: 9.3pt; }
+  .why { color: var(--ink-2); }
+  .O, .X { font-weight: 800; display: inline-block; width: 11pt; }
+  .O { color: var(--brand); }
+  .X { color: #8a3b3b; }
+  .ans { font-weight: 700; }
+  .src { font-size: 8pt; color: var(--ink-3); }
+{% endblock %}
+
+{% block body %}
+{% set start = opts.start_number|int %}
+{% for p in passages %}
+  {% set base_n = start + loop.index0 * per %}
+  <div class="page {% if loop.first %}first{% endif %}">
+    <div class="banner">{{ p.title or ("지문 " ~ loop.index) }}<small>{{ wb.title }}{% if answer %} · 정답 및 해설{% endif %}</small></div>
+
+    {% if not answer %}
+      <div class="sec"><span class="pill">{{ base_n }}~{{ base_n + per - 1 }}</span>다음 글을 읽고 물음에 답하시오.</div>
+      {% set ko = (p.passage_ko or "")|trim %}
+      <div class="pbox"><table><tr>
+        {% if ko and opts.show_translation %}
+          {% set a_, b_ = opts.split[0]|float, opts.split[1]|float %}
+          {% set wa = (100 * a_ / (a_ + b_))|round(1) %}
+          <td class="en" style="width:{{ wa }}%">{% for line in p.passage.strip().split("\n") if line.strip() %}<p>{{ line }}</p>{% endfor %}</td>
+          <td class="ko" style="width:{{ 100 - wa }}%">{% for line in ko.split("\n") if line.strip() %}<p>{{ line }}</p>{% endfor %}</td>
+        {% else %}
+          <td class="en">{% for line in p.passage.strip().split("\n") if line.strip() %}<p>{{ line }}</p>{% endfor %}</td>
+        {% endif %}
+      </tr></table></div>
+    {% else %}
+      <div class="ak">
+    {% endif %}
+
+    {% set ns = namespace(n=base_n) %}
+    {% for key, cnt, instr in sections %}
+      {% set items = p[key] %}
+      {% set a, b = ns.n, ns.n + cnt - 1 %}
+      {% if not answer %}
+        <div class="sec"><span class="pill">{{ a }}~{{ b }}</span>{{ instr }}
+          {% if key == "compose" and p.target_grammar and opts.show_grammar %}<span class="gtag">[목표어법: {{ p.target_grammar }}]</span>{% endif %}</div>
+        {% for x in items %}
+          {% set num = a + loop.index0 %}
+          {% if key.startswith("ox_") %}
+            <div class="q"><span class="n">{{ "%02d"|format(num) }}</span>{{ x.q }} <span class="ox">(O / X)</span></div>
+          {% elif key == "compose" %}
+            <div class="cq"><span class="n">{{ "%02d"|format(num) }}</span>{{ x.ko }}
+              <div class="bank">({{ x.given|join(" / ") }})</div><div class="line"></div><div class="line"></div></div>
+          {% else %}
+            <div class="vq"><span class="n">{{ "%02d"|format(num) }}</span>{{ x.word }}:<span class="blank"></span></div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <h4><span class="pill">{{ a }}~{{ b }}</span>{{ labels[key] }}{% if key == "compose" and p.target_grammar %} · {{ p.target_grammar }}{% endif %}</h4>
+        {% for x in items %}
+          {% set num = a + loop.index0 %}
+          {% if key.startswith("ox_") %}
+            <div class="a"><span class="n">{{ "%02d"|format(num) }}</span><span class="{{ x.a }}">{{ x.a }}</span> <span class="why">{{ x.why }}</span></div>
+          {% elif key == "compose" %}
+            <div class="a"><span class="n">{{ "%02d"|format(num) }}</span><span class="ans">{{ x.answer }}</span>
+              {% if x.point %}<span class="why"> → {{ x.point }}</span>{% endif %}
+              {% if x.source %}<span class="src"> [{{ x.source }} 문장]</span>{% endif %}</div>
+          {% else %}
+            <div class="a"><span class="n">{{ "%02d"|format(num) }}</span>{{ x.word }} : <span class="ans">{{ x.meaning }}</span></div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% set ns.n = ns.n + cnt %}
+    {% endfor %}
+
+    {% if answer %}</div>{% endif %}
+  </div>
+{% endfor %}
+{% endblock %}

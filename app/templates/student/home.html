@@ -1,0 +1,43 @@
+{% extends "student/_base.html" %}
+{% block body %}
+<h1>{{ student.name }}</h1>
+<p class="muted">{{ [student.school.name if student.school else None, student.grade, student.class_group.name if student.class_group else None]|select|join(" / ") }}</p>
+
+{% if hws %}
+<div class="student-card" style="margin-top:20px">
+  <h2>숙제</h2>
+  <ul class="s-list">
+  {% for h in hws %}{% set n = hw_prog[h.id] %}
+    <li><a href="/s/{{ code }}/hw/{{ h.id }}"><b>{{ h.title }}</b>
+      <span class="hw-status {{ 'done' if n == h.tasks|length else '' }}">{% if n == h.tasks|length %}다 했어요{% else %}{{ n }} / {{ h.tasks|length }}{% if h.due %} · {{ "마감 지남" if h.due < today else "~" ~ h.due[5:].replace("-", "/") }}{% endif %}{% endif %}</span></a></li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if exams %}
+<div class="student-card" style="margin-top:20px">
+  <h2>시험 답 내기</h2>
+  <ul class="s-list">
+  {% for e in exams %}
+    <li><a href="/s/{{ code }}/exam/{{ e.id }}{% if e.id in done %}/result{% endif %}"><b>{{ e.title }}</b><span class="muted small">{{ "냈어요 · 결과 보기" if e.id in done else e["items"]|length ~ "문항" }}</span></a></li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="student-card" style="margin-top:20px">
+  <h2>내 단어장</h2>
+  {% if lists %}
+    <ul class="s-list">
+    {% for wl in lists %}
+      {% set b = best.get(wl.id) %}
+      <li><a href="/s/{{ code }}/vocab/{{ wl.id }}"><b>{{ wl.title }}</b><span class="muted small">단어 {{ wl.words|length }}개{% if b %} · 최고 {{ b.correct }}/{{ b.total }}{% endif %}</span></a></li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted" style="margin:0">아직 받은 단어장이 없어요. 선생님이 내주면 여기에 보입니다.</p>
+  {% endif %}
+</div>
+<p class="small muted" style="margin-top:16px">이 주소를 즐겨찾기 해 두면 다음에도 바로 들어올 수 있어요.</p>
+{% endblock %}

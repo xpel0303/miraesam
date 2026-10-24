@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}새 변형문제 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>새 변형문제</h1>
+<p class="lead">지문마다 고른 유형을 하나씩 만들어요. 지문 {{ spec.MAX_PASSAGES }}개에 6유형이면 36문항입니다.</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+
+<form method="post" action="/variant">
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 3월 모의고사 변형 1회"></div>
+      <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>유형</label>
+      <div class="actions">
+        {% for k, v in spec.TYPES.items() %}<label style="font-weight:400;margin:0 12px 4px 0"><input type="checkbox" name="types" value="{{ k }}" {% if k in form.types %}checked{% endif %}> {{ v }}</label>{% endfor %}
+      </div>
+      <span class="hint">순서 배열·문장 삽입은 AI 없이 원문을 그대로 잘라서 만들어요. 순서는 4문장, 삽입은 6문장, 무관한 문장은 5문장 이상 필요해요.</span>
+    </div>
+  </section>
+
+  <div id="passages">
+    {% for r in form.passages %}
+    <section class="panel passage-card">
+      <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
+      <div class="field"><label>제목 <span class="hint">선택 (예: 3월 모고 22번)</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+      <div class="field"><label>영어 지문</label><textarea name="p_text" rows="7">{{ r.text or '' }}</textarea></div>
+    </section>
+    {% endfor %}
+  </div>
+  <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
+  <button class="btn" type="submit">변형문제 만들기</button>
+</form>
+<script>
+  const MAX = {{ spec.MAX_PASSAGES }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
+  function renumber() {
+    const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => { c.querySelector("[data-num]").textContent = i + 1; c.querySelector("[data-remove]").hidden = cards.length === 1; });
+    addBtn.disabled = cards.length >= MAX;
+    document.getElementById("count-note").textContent = `${cards.length} / ${MAX}개`;
+  }
+  addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
+  box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
+  renumber();
+</script>
+{% endblock %}

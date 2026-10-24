@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{{ p.title }} · {{ APP_NAME }}{% endblock %}
+{% macro u(text) %}{{ (text or "")|e|replace("[u]", "<u>")|replace("[/u]", "</u>")|replace("\n", "<br>")|safe }}{% endmacro %}
+{% macro lab(q) %}{{ q.label }}{% if q.label.isdigit() %}번{% endif %}{% endmacro %}
+{% block main %}
+<p class="small"><a href="/exam">기출 분석</a></p>
+<h1>{{ p.title }}</h1>
+<p class="lead">{% if p.pages %}{{ p.pages|length }}쪽{% endif %}{% if qs %} · {{ qs|length }}문항 · {{ fmt(st.total) }}점{% endif %}{% if p.meta.read_date %} · {{ p.meta.read_date }}{% endif %}
+  {% if p.meta.upload_names %}<br><span class="small muted">{{ p.meta.upload_names|join(", ") }}</span>{% endif %}</p>
+
+{% if busy %}<div class="job" data-job-id="{{ job.id }}" data-reload></div>
+{% elif p.status == "failed" %}<div class="flash error" role="alert">{{ p.error }}
+  <form method="post" action="/exam/{{ p.id }}/reread" style="margin-top:8px"><button class="btn small" type="submit">이어서 다시 읽기</button></form></div>{% endif %}
+{% for w in p.warnings %}<div class="flash small">{{ w }}</div>{% endfor %}
+
+{% if qs and not busy %}
+<section class="panel" id="out">
+  <div class="actions">
+    <form method="post" action="/exam/{{ p.id }}/pdf"><button class="btn" type="submit">분석지 PDF 만들기</button></form>
+    {% if p.file_id %}<a class="btn ghost" href="/files/{{ p.file_id }}" target="_blank" rel="noopener">지난 분석지 열기</a>{% endif %}
+    <form method="post" action="/exam/{{ p.id }}/to_report"><button class="btn ghost" type="submit">{{ "리포트 시험 열기" if report else "학생·반 리포트로 보내기" }}</button></form>
+  </div>
+  <p class="small muted" style="margin:8px 0 0">리포트로 보내면 문항 번호·배점·유형이 그대로 들어가요. 정답 한 줄만 넣으면 우리 학원 학생들 답으로 채점·리포트를 만들 수 있어요.</p>
+  {% if pdf_job %}<div class="job" data-job-id="{{ pdf_job }}"></div>{% endif %}
+</section>
+
+<div class="tiles">
+  <div><span>문항</span><b>{{ st.n }}</b></div>
+  <div><span>객관식</span><b>{{ st.mc }}<small> · {{ fmt(st.mc_points) }}점</small></b></div>
+  <div><span>서술형</span><b>{{ st.sa }}<small> · {{ fmt(st.sa_points) }}점</small></b></div>
+  <div><span>지문</span><b>{{ st.passages }}<small>개</small></b></div>
+  <div><span>평균 지문 길이</span><b>{{ st.avg_words }}<small>단어</small></b></div>
+</div>
+<div class="row" style="grid-template-columns: 1fr 1fr; align-items:start">
+  <section class="panel">
+    <h2>유형별</h2>
+    {% set peak = st.types|map(attribute="points")|max %}
+    {% for t in st.types %}
+      <div class="hrow"><span>{{ t.type }} <small class="muted">{{ t.count }}</small></span><div class="hbar"><i style="width:{{ 100 * t.points / peak if peak else 0 }}%"></i></div><b>{{ fmt(t.points) }}점</b></div>
+    {% endfor %}
+  </section>
+  <section class="panel">
+    <h2>출제 특징</h2>
+    <ul class="small" style="margin:0;padding-left:18px">{% for n in notes %}<li style="margin-bottom:4px">{{ n }}</li>{% endfor %}</ul>
+    {% if others %}<h3 style="margin-top:14px">같은 학교 다른 시험</h3>
+      <p class="small" style="margin:0">{% for o in others %}<a href="/exam/{{ o.id }}">{{ o.title }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+  </section>
+</div>
+{% endif %}
+
+{% if qs %}
+<section class="panel">
+  <div class="panel-head"><h2>문항 {{ qs|length }}개</h2><span class="small muted">눌러서 펼치면 고칠 수 있어요. 쪽 번호를 누르면 시험지 이미지와 비교할 수 있어요.</span></div>
+  {% for q in qs %}
+  <details class="eq" id="q{{ q.n }}">
+    <summary>
+      <span class="eq-n">{{ lab(q) }}</span>
+      <span class="tag">{{ q.type }}</span>
+      <span class="eq-stem">{{ q.stem }}</span>
+      <span class="eq-pts">{{ fmt(q.points) }}점</span>
+    </summary>
+    <div class="eq-body">
+      <p class="small muted" style="margin:0 0 6px">{% if q.point %}출제 포인트: <b style="color:var(--ink)">{{ q.point }}</b> · {% endif %}
+        {% for pgn in q.pages %}<a href="/files/{{ p.pages[pgn - 1].file_id }}" target="_blank" rel="noopener">{{ pgn }}쪽</a> {% endfor %}
+        {% if q.group %}· 묶음 [{{ q.group }}]{% endif %}{% if q.shared_with %} · 지문은 {{ q.shared_with }}{{ "번" if q.shared_with.isdigit() else "" }}과 같음{% endif %}</p>
+      {% if q.passage %}<div class="box-preview small">{{ u(q.passage) }}</div>{% endif %}
+      {% if q.box %}<div class="box-preview small" style="margin-top:6px;background:var(--surface)">{{ u(q.box) }}</div>{% endif %}
+      {% if q.choices %}<ol class="small eq-ch">{% for c in q.choices %}<li>{{ u(c) }}</li>{% endfor %}</ol>{% endif %}
+      {% if q.conditions %}<p class="small" style="white-space:pre-line;margin:6px 0 0"><b>조건</b><br>{{ q.conditions }}</p>{% endif %}
+      {% if not busy %}
+      <details style="margin-top:10px"><summary class="small"><b>이 문항 고치기</b></summary>
+      <form method="post" action="/exam/{{ p.id }}/q/{{ q.n }}" style="margin-top:10px">
+        <div class="row" style="grid-template-columns: 110px 110px 90px 1fr 1fr">
+          <div class="field"><label>번호</label><input type="text" name="label" value="{{ q.label }}"></div>
+          <div class="field"><label>형식</label><select name="kind"><option value="mc" {% if q.kind == "mc" %}selected{% endif %}>객관식</option><option value="sa" {% if q.kind == "sa" %}selected{% endif %}>서술형</option></select></div>
+          <div class="field"><label>배점</label><input type="text" name="points" value="{{ fmt(q.points) if q.points is not none else '' }}" inputmode="decimal"></div>
+          <div class="field"><label>유형 <span class="hint" style="display:inline">비우면 발문으로 자동</span></label><input type="text" name="type" value="{{ q.type }}" list="type-list"></div>
+          <div class="field"><label>묶음</label><input type="text" name="group" value="{{ q.group }}" placeholder="예: 1-2"></div>
+        </div>
+        <div class="field"><label>발문</label><input type="text" name="stem" value="{{ q.stem }}"></div>
+        <div class="field"><label>출제 포인트</label><input type="text" name="point" value="{{ q.point }}"></div>
+        <div class="field"><label>지문 <span class="hint" style="display:inline">밑줄은 [u]…[/u]</span></label><textarea name="passage" rows="6">{{ q.passage }}</textarea></div>
+        <div class="field"><label>보기·주어진 문장</label><textarea name="box" rows="2" style="min-height:0">{{ q.box }}</textarea></div>
+        <div class="field"><label>선지 <span class="hint" style="display:inline">한 줄에 하나</span></label><textarea name="choices" rows="5" style="min-height:0">{{ q.choices|join("\n") }}</textarea></div>
+        <div class="field"><label>서술형 조건</label><textarea name="conditions" rows="2" style="min-height:0">{{ q.conditions }}</textarea></div>
+        <div class="actions"><button class="btn small" type="submit">저장</button>
+          <button class="btn danger small" type="submit" name="delete" value="1" onclick="return confirm('이 문항을 뺄까요?')">이 문항 빼기</button></div>
+      </form>
+      </details>
+      {% endif %}
+    </div>
+  </details>
+  {% endfor %}
+  <datalist id="type-list">{% for t in types %}<option value="{{ t }}">{% endfor %}</datalist>
+  {% if not busy %}
+  <details style="margin-top:14px" id="add"><summary class="small"><b>빠진 문항 넣기</b></summary>
+    <form method="post" action="/exam/{{ p.id }}/q" style="margin-top:10px">
+      <div class="row" style="grid-template-columns: 110px 110px 90px 1fr">
+        <div class="field"><label>번호</label><input type="text" name="label" required></div>
+        <div class="field"><label>형식</label><select name="kind"><option value="mc">객관식</option><option value="sa">서술형</option></select></div>
+        <div class="field"><label>배점</label><input type="text" name="points" inputmode="decimal"></div>
+        <div class="field"><label>유형</label><input type="text" name="type" list="type-list"></div>
+      </div>
+      <div class="field"><label>발문</label><input type="text" name="stem"></div>
+      <div class="field"><label>지문</label><textarea name="passage" rows="4"></textarea></div>
+      <div class="field"><label>선지 (한 줄에 하나)</label><textarea name="choices" rows="5" style="min-height:0"></textarea></div>
+      <button class="btn small" type="submit">넣기</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if p.pages %}
+<section class="panel" id="pages">
+  <h2>쪽 이미지</h2>
+  <p class="small muted">방향이 틀린 쪽은 '돌리기'를 누르고, 잘못 읽힌 쪽은 체크한 뒤 '다시 읽기'를 누르세요. (그 쪽 문항만 새로 읽고, 다른 쪽에서 고친 내용은 그대로예요. 다시 읽은 쪽의 고친 내용은 사라져요.)</p>
+  <form method="post" action="/exam/{{ p.id }}/reread" id="rr"></form>
+  <div class="pages">
+    {% for pgr in p.pages %}
+      <figure>
+        <a href="/files/{{ pgr.file_id }}?v={{ pgr.rot }}" target="_blank" rel="noopener"><img src="/files/{{ pgr.file_id }}?v={{ pgr.rot }}" alt="{{ loop.index }}쪽" loading="lazy"></a>
+        <figcaption>
+          <label class="small" style="font-weight:400;margin:0"><input type="checkbox" name="page" value="{{ loop.index }}" form="rr" {% if busy %}disabled{% endif %}> {{ loop.index }}쪽{% if pgr.blank %} <span class="muted">(빈 쪽)</span>{% endif %}</label>
+          {% if not busy %}<form method="post" action="/exam/{{ p.id }}/rotate/{{ loop.index }}"><button class="linklike small" type="submit">돌리기</button></form>{% endif %}
+        </figcaption>
+      </figure>
+    {% endfor %}
+  </div>
+  {% if not busy %}<div class="actions" style="margin-top:10px"><button class="btn ghost small" type="submit" form="rr">고른 쪽(과 돌린 쪽) 다시 읽기</button>
+    <button class="btn ghost small" type="submit" form="rr" name="all" value="1" onclick="return confirm('모든 쪽을 처음부터 다시 읽을까요? 고친 내용이 모두 사라집니다.')">전부 다시 읽기</button></div>{% endif %}
+</section>
+{% endif %}
+
+{% if not busy %}
+<section class="panel">
+  <details><summary><b>시험 정보 고치기</b></summary>
+  <form method="post" action="/exam/{{ p.id }}/info" style="margin-top:12px">
+    <div class="field"><label>이름 <span class="hint" style="display:inline">비우면 학교·학년·학기로 자동</span></label><input type="text" name="title" value="{{ p.title }}"></div>
+    <div class="row">
+      <div class="field"><label>학교</label><select name="school_id"><option value="">없음</option>{% for s in schools %}<option value="{{ s.id }}" {% if p.school_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label>학년</label><select name="grade"><option value="">-</option>{% for g in grades %}<option {% if p.grade == g %}selected{% endif %}>{{ g }}</option>{% endfor %}</select></div>
+      <div class="field"><label>연도</label><input type="text" name="year" value="{{ p.year or '' }}"></div>
+      <div class="field"><label>학기</label><select name="semester"><option value="">-</option>{% for x in [1, 2] %}<option value="{{ x }}" {% if p.semester == x %}selected{% endif %}>{{ x }}학기</option>{% endfor %}</select></div>
+      <div class="field"><label>차수</label><select name="term"><option value="">-</option>{% for x in [1, 2] %}<option value="{{ x }}" {% if p.term == x %}selected{% endif %}>{{ x }}차</option>{% endfor %}</select></div>
+    </div>
+    <button class="btn small" type="submit">저장</button>
+  </form>
+  </details>
+</section>
+<form method="post" action="/exam/{{ p.id }}/delete" onsubmit="return confirm('이 시험지와 분석을 지울까요?')"><button class="btn danger small" type="submit">지우기</button></form>
+{% endif %}
+<script>
+  document.addEventListener("job:done", (e) => { if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600); });
+  const watch = document.querySelector("[data-reload]");
+  if (watch) new MutationObserver(() => { if (watch.classList.contains("failed")) setTimeout(() => location.reload(), 1500); }).observe(watch, { attributes: true, attributeFilter: ["class"] });
+  if (location.hash.startsWith("#q")) { const d = document.querySelector(location.hash); if (d) d.open = true; }
+</script>
+{% endblock %}

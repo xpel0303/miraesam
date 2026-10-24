@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}새 어법 문제 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>새 어법 문제</h1>
+<p class="lead">목표어법만 써도, 지문만 넣어도 만들 수 있어요. 둘 다 있으면 지문의 주제·어휘로 목표어법 문제를 냅니다.</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+
+<form method="post" action="/grammar">
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label for="target">목표어법</label><input type="text" id="target" name="target" value="{{ form.target or '' }}" placeholder="예: 관계대명사 what / 분사구문"></div>
+      <div class="field"><label for="title">제목 <span class="hint">비우면 "목표어법 + 어법 문제"</span></label><input type="text" id="title" name="title" value="{{ form.title or '' }}"></div>
+      <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>문장형 문제 <span class="small muted" style="font-weight:400">유형마다 0~{{ spec.MAX_PER_TYPE }}개</span></h2>
+    <div class="row">
+      {% for t in spec.SENTENCE_TYPES %}
+        <div class="field"><label for="c_{{ t }}">{{ spec.TYPES[t] }}</label><input type="text" id="c_{{ t }}" name="c_{{ t }}" inputmode="numeric" value="{{ form.counts[t] }}"></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>지문형 문제 <span class="small muted" style="font-weight:400">지문은 {{ spec.MAX_PASSAGES }}개까지, 지문마다 만들어요</span></h2>
+    <label style="font-weight:400"><input type="checkbox" name="under5" value="1" {% if form.under5 %}checked{% endif %}> 밑줄 5지선다 (어법상 틀린 것은?)</label>
+    <label style="font-weight:400"><input type="checkbox" name="count" value="1" {% if form.count %}checked{% endif %}> 어법 개수 (틀린 것의 개수는?)</label>
+    <div id="passages" style="margin-top:12px">
+      {% for p in form.passages %}
+        <div class="field passage-card"><label>지문 <span data-num>{{ loop.index }}</span> <button class="linklike small" type="button" data-remove>빼기</button></label><textarea name="passage" rows="6" placeholder="영어 지문 (없으면 비워 두세요)">{{ p }}</textarea></div>
+      {% endfor %}
+    </div>
+    <button class="btn ghost small" type="button" id="add-passage">지문 추가</button>
+  </section>
+
+  <section class="panel">
+    <label style="font-weight:400;margin:0"><input type="checkbox" name="show_grammar" value="1" {% if form.show_grammar %}checked{% endif %}> 시험지 머리에 목표어법 표시하기</label>
+  </section>
+  <button class="btn" type="submit">어법 문제 만들기</button>
+</form>
+<script>
+  const MAX = {{ spec.MAX_PASSAGES }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
+  function renumber() {
+    const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => { c.querySelector("[data-num]").textContent = i + 1; c.querySelector("[data-remove]").hidden = cards.length === 1; });
+    addBtn.disabled = cards.length >= MAX;
+  }
+  addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelector("textarea").value = ""; box.appendChild(c); renumber(); });
+  box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
+  renumber();
+</script>
+{% endblock %}

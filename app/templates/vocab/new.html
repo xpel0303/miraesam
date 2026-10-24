@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}새 단어장 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>새 단어장</h1>
+<p class="lead">단어는 한 단어장에 {{ max }}개까지 넣을 수 있어요.</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+
+<form method="post" action="/vocab">
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label for="title">단어장 이름</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 3월 모의고사 18~25번 단어"></div>
+      <div class="field"><label for="level">대상</label>
+        <select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="seg" role="radiogroup" aria-label="만드는 방법" style="max-width:420px">
+      <label><input type="radio" name="kind" value="passage" {% if form.kind != "list" %}checked{% endif %}>지문에서 뽑기</label>
+      <label><input type="radio" name="kind" value="list" {% if form.kind == "list" %}checked{% endif %}>단어 목록 붙여 넣기</label>
+    </div>
+
+    <div data-kind="passage">
+      <div class="field"><label for="passage">영어 지문</label><textarea id="passage" name="passage" rows="9" placeholder="지문을 붙여 넣으면 시험에 나올 만한 단어를 골라 뜻·유의어·반의어·예문까지 채워요">{{ form.passage or '' }}</textarea></div>
+      <div class="field" style="max-width:200px"><label for="count">뽑을 단어 수</label><input type="text" id="count" name="count" inputmode="numeric" value="{{ form.count or 20 }}"><span class="hint">5~60개</span></div>
+    </div>
+
+    <div data-kind="list">
+      <div class="field"><label for="listtext">한 줄에 하나 <span class="hint">"단어" 또는 "단어 | 뜻". 엑셀 두 칸을 그대로 붙여도 됩니다. 적어 둔 뜻은 그대로 쓰고, 빈칸만 AI가 채워요.</span></label>
+        <textarea id="listtext" name="listtext" rows="10" placeholder="affect | ~에 영향을 주다&#10;resilient&#10;look forward to">{{ form.listtext or '' }}</textarea></div>
+      <label style="font-weight:400"><input type="checkbox" name="fill_ai" value="1" {% if form.fill_ai is not defined or form.fill_ai %}checked{% endif %}> 비어 있는 뜻·품사·유의어·반의어·예문을 AI로 채우기</label>
+    </div>
+  </section>
+  <button class="btn" type="submit">단어장 만들기</button>
+</form>
+<script>
+  const sync = () => {
+    const k = document.querySelector('input[name=kind]:checked').value;
+    document.querySelectorAll('[data-kind]').forEach(el => el.hidden = el.dataset.kind !== k);
+  };
+  document.querySelectorAll('input[name=kind]').forEach(r => r.addEventListener('change', sync));
+  sync();
+</script>
+{% endblock %}

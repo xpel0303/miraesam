@@ -1,0 +1,113 @@
+{% extends "pdf/_base.html" %}
+{# 학생 리포트: 한 명당 한 쪽. 나 vs 반, 틀린 문항, 요약, 선생님 코멘트 #}
+{% macro ans(a) %}{% if a %}{% for c in a.split("/") %}{{ circ[c] }}{% endfor %}{% else %}-{% endif %}{% endmacro %}
+{% block style %}
+  .page { break-before: page; }
+  .page.first { break-before: avoid; }
+  .top { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 1.6pt solid var(--brand); padding-bottom: 6pt; margin-bottom: 10pt; }
+  .top .ex { font-size: 9pt; color: var(--ink-2); }
+  .top .nm { font-size: 20pt; font-weight: 800; letter-spacing: -0.4pt; }
+  .top .nm small { font-size: 9.5pt; font-weight: 400; color: var(--ink-2); margin-left: 6pt; }
+  .top .right { text-align: right; font-size: 8.5pt; color: var(--ink-3); }
+  .tiles { display: flex; border: 0.8pt solid var(--line); border-radius: 4pt; margin-bottom: 10pt; }
+  .tiles div { flex: 1; padding: 6pt 9pt; border-right: 0.6pt solid var(--line-2); }
+  .tiles div:last-child { border-right: 0; }
+  .tiles span { display: block; font-size: 7.6pt; color: var(--ink-2); }
+  .tiles b { font-size: 15pt; font-weight: 800; }
+  .tiles b small { font-size: 8pt; font-weight: 400; color: var(--ink-3); }
+  .tiles .me b { color: var(--brand); }
+  .track { position: relative; height: 26pt; margin: 2pt 6pt 12pt; }
+  .track .line { position: absolute; left: 0; right: 0; top: 12pt; height: 3pt; background: var(--line-2); border-radius: 2pt; }
+  .track .range { position: absolute; top: 12pt; height: 3pt; background: #c9c9c6; }
+  .track .mk { position: absolute; top: 0; transform: translateX(-50%); text-align: center; font-size: 7pt; color: var(--ink-2); white-space: nowrap; }
+  .track .mk i { display: block; width: 2pt; height: 13pt; margin: 0 auto; background: var(--ink-3); }
+  .track .mk.me { color: var(--brand); font-weight: 800; }
+  .track .mk.me i { background: var(--brand); width: 3pt; height: 15pt; }
+  .track .end { position: absolute; top: 17pt; font-size: 6.8pt; color: var(--ink-3); }
+  .cols { display: flex; gap: 12pt; }
+  .cols > div { flex: 1; min-width: 0; }
+  .hrow { display: flex; align-items: center; gap: 6pt; font-size: 8.4pt; margin: 3.5pt 0; }
+  .hrow .t { width: 62pt; flex: none; }
+  .hrow .bars { flex: 1; }
+  .hrow .v { width: 66pt; white-space: nowrap; text-align: right; flex: none; font-size: 7.8pt; }
+  .bar { height: 6pt; background: var(--line-2); border-radius: 1pt; }
+  .bar i { display: block; height: 100%; background: var(--brand); border-radius: 1pt; }
+  .bar.cl { height: 3pt; margin-top: 1.5pt; }
+  .bar.cl i { background: #a9a9a6; }
+  .legend { font-size: 7.2pt; color: var(--ink-3); margin: -2pt 0 4pt; }
+  .legend i { display: inline-block; width: 10pt; height: 5pt; background: var(--brand); vertical-align: middle; margin-right: 2pt; }
+  .legend i.cl { height: 3pt; background: #a9a9a6; margin-left: 6pt; }
+  ul.auto { margin: 2pt 0; padding-left: 12pt; font-size: 8.8pt; }
+  ul.auto li { margin: 2pt 0; }
+  table.w { font-size: 8.2pt; }
+  table.w td, table.w th { padding: 2.6pt 5pt; }
+  table.w tr.easy td { background: #f6f3ea; }
+  table.w td.c { text-align: center; }
+  .comment { border: 0.8pt solid var(--ink-2); border-radius: 4pt; padding: 7pt 10pt; margin-top: 10pt; font-size: 9.2pt; white-space: pre-wrap; min-height: 40pt; }
+  .comment b { display: block; font-size: 8pt; color: var(--brand); margin-bottom: 3pt; }
+  .note { font-size: 7.2pt; color: var(--ink-3); margin-top: 4pt; }
+{% endblock %}
+{% block body %}
+{% for v in views %}{% set me = v.me %}
+<div class="page {% if loop.first %}first{% endif %}">
+  <div class="top">
+    <div>
+      <div class="ex">{{ exam.title }}{% if exam.date %} · {{ exam.date }}{% endif %}</div>
+      <div class="nm">{{ me.name }}<small>{{ [v.school or exam.school or None, v.grade or None, me.class_name or None]|select|join(" / ") }}</small></div>
+    </div>
+    <div class="right">성적 리포트 · {{ today }}{% if exam.classes %}<br>비교 대상: {{ exam.classes }} {{ S.n }}명{% endif %}</div>
+  </div>
+
+  <div class="tiles">
+    <div class="me"><span>내 점수</span><b>{{ fmt(me.score) }}<small> / {{ fmt(me.max) }}</small></b></div>
+    <div><span>평균</span><b>{{ fmt(S.avg) }}</b></div>
+    <div><span>최고</span><b>{{ fmt(S.max) }}</b></div>
+    {% if show_rank %}<div><span>등수</span><b>{{ me.rank }}<small> / {{ S.n }}명</small></b></div>{% else %}<div><span>응시</span><b>{{ S.n }}<small>명</small></b></div>{% endif %}
+    <div><span>객관식</span><b>{{ me.mc_correct }}<small> / {{ me.mc_total }}</small></b></div>
+    {% if me.sa_max %}<div><span>서술형</span><b>{{ fmt(me.sa_score) }}<small> / {{ fmt(me.sa_max) }}</small></b></div>{% endif %}
+  </div>
+
+  {% if S.full %}{% set W = S.full %}
+  <div class="track">
+    <div class="line"></div>
+    <div class="range" style="left:{{ 100 * S.min / W }}%;width:{{ 100 * (S.max - S.min) / W }}%"></div>
+    <div class="mk" style="left:{{ 100 * S.avg / W }}%"><i></i>평균 {{ fmt(S.avg) }}</div>
+    <div class="mk me" style="left:{{ 100 * me.score / W }}%"><i></i>나 {{ fmt(me.score) }}</div>
+    <span class="end" style="left:0">0</span><span class="end" style="right:0">{{ fmt(W) }}</span>
+  </div>
+  {% endif %}
+
+  <div class="cols">
+    <div>
+      <h2 style="margin-top:0">유형별 득점률</h2>
+      <div class="legend"><i></i>나 <i class="cl"></i>반 평균</div>
+      {% for t in v.types %}
+        <div class="hrow"><span class="t">{{ t.type }}</span>
+          <div class="bars"><div class="bar"><i style="width:{{ t.rate or 0 }}%"></i></div><div class="bar cl"><i style="width:{{ t['class'] or 0 }}%"></i></div></div>
+          <span class="v"><b>{{ t.rate if t.rate is not none else "-" }}%</b> <span class="muted">/ {{ t['class'] if t['class'] is not none else "-" }}%</span></span></div>
+      {% endfor %}
+    </div>
+    <div>
+      <h2 style="margin-top:0">한눈에 보기</h2>
+      <ul class="auto">{% for l in v.auto %}<li>{{ l }}</li>{% endfor %}</ul>
+    </div>
+  </div>
+
+  {% if v.wrong %}
+  <h2>틀린 문항 <span style="font-weight:400;font-size:8.4pt;color:var(--ink-2)">잃은 점수 {{ fmt(v.lost) }}점{% if v.easy_lost %} · 그중 아까운 점수 {{ fmt(v.easy_lost) }}점{% endif %}</span></h2>
+  <table class="w">
+    <thead><tr><th style="width:32pt">번호</th><th style="width:70pt">유형</th><th>출처</th><th style="width:34pt">정답</th><th style="width:34pt">내 답</th><th style="width:44pt">반 정답률</th><th style="width:40pt">점수</th></tr></thead>
+    <tbody>{% for w in v.wrong %}
+      <tr class="{{ 'easy' if w.easy else '' }}"><td class="c"><b>{{ w.n }}</b></td><td>{{ w.type }}</td><td>{{ w.source }}</td>
+        {% if w.kind == "mc" %}<td class="c">{{ ans(w.answer) }}</td><td class="c">{{ ans(w.got) }}</td>{% else %}<td class="c" colspan="2">서술형</td>{% endif %}
+        <td class="c">{{ w.class_rate if w.class_rate is not none else "-" }}%</td>
+        <td class="c">{{ fmt(w.earned) }} / {{ fmt(w.points) }}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  <p class="note">색칠한 줄은 반 정답률 {{ easy }}% 이상인데 틀린 문항입니다.</p>
+  {% endif %}
+
+  {% if me.comment %}<div class="comment"><b>선생님 코멘트</b>{{ me.comment }}</div>{% endif %}
+</div>
+{% endfor %}
+{% endblock %}

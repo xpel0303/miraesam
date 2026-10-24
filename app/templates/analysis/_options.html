@@ -1,0 +1,10 @@
+{# 양식 설정 (새로 만들기 / 결과 화면 공용). o = options #}
+<div class="field">
+  <label>PDF 모양</label>
+  {% for k, label in layouts.items() %}
+    <label style="font-weight:400"><input type="radio" name="layout" value="{{ k }}" {% if (o.layout or "split") == k %}checked{% endif %}> {{ label }}</label>
+  {% endfor %}
+</div>
+<label style="font-weight:400"><input type="checkbox" name="show_background" value="1" {% if o.show_background %}checked{% endif %}> 관련 배경지식</label>
+<label style="font-weight:400"><input type="checkbox" name="show_sketch" value="1" {% if o.show_sketch %}checked{% endif %}> 흐름 한눈에 보기 (상자 그림)</label>
+<label style="font-weight:400"><input type="checkbox" name="show_vocab" value="1" {% if o.show_vocab %}checked{% endif %}> 중요 어휘표 (단어·의미·유의어·반의어)</label>

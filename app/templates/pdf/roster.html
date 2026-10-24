@@ -1,0 +1,28 @@
+{% extends "pdf/_base.html" %}
+{% block style %}
+  .code { font-weight: 800; letter-spacing: 1pt; }
+  .count { float: right; font-size: 9pt; color: var(--ink-2); font-weight: 400; }
+{% endblock %}
+{% block body %}
+  <h1>{{ doc_title }}</h1>
+  <div class="sub">{{ printed_at }} 출력 · 학생 {{ total }}명</div>
+
+  {% for group_name, rows in groups %}
+    <h2>{{ group_name }} <span class="count">{{ rows|length }}명</span></h2>
+    <table>
+      <thead><tr><th style="width:8%">번호</th><th style="width:20%">이름</th><th style="width:26%">학교</th><th style="width:12%">학년</th><th style="width:16%">접속 코드</th><th>메모</th></tr></thead>
+      <tbody>
+      {% for s in rows %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.school.name if s.school else "" }}</td>
+          <td>{{ s.grade or "" }}</td>
+          <td class="code">{{ s.access_code }}</td>
+          <td class="muted">{{ s.memo or "" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% endfor %}
+{% endblock %}

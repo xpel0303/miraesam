@@ -1,0 +1,89 @@
+{% extends "pdf/_base.html" %}
+{# 어법 문제: 2단 시험지 + 정답·해설 (맨 뒤 페이지) #}
+{% block style %}
+  .head { border-bottom: 1.4pt solid var(--brand); padding-bottom: 5pt; margin-bottom: 8pt; }
+  .head h1 { margin: 0; }
+  .tag { display: inline-block; font-size: 8pt; border: 0.7pt solid var(--brand); color: var(--brand); border-radius: 8pt; padding: 0 7pt; margin-top: 3pt; }
+  .info { display: table; width: 100%; font-size: 8.8pt; margin-top: 5pt; }
+  .info span { display: table-cell; border-bottom: 0.6pt solid var(--ink-3); padding: 2pt 0; }
+  .info span + span { padding-left: 10pt; }
+  .cols { columns: 2; column-gap: 16pt; column-rule: 0.5pt solid var(--line); }
+  .q { break-inside: avoid; margin: 0 0 11pt; font-size: 9.4pt; line-height: 1.55; }
+  .q .stem { font-weight: 700; }
+  .q .n { color: var(--brand); font-weight: 800; margin-right: 3pt; }
+  .box { border: 0.7pt solid var(--line); border-radius: 3pt; padding: 5pt 7pt; margin: 4pt 0; }
+  .ch { margin: 2pt 0 0; }
+  .ch div { padding-left: 13pt; text-indent: -13pt; }
+  .opt { font-weight: 700; }
+  .bank { font-weight: 700; margin: 3pt 0; }
+  .ln { border-bottom: 0.6pt solid var(--ink-3); height: 15pt; }
+  .cond { font-size: 8.3pt; color: var(--ink-2); }
+  .ps { text-align: justify; }
+  .u { text-decoration: underline; text-decoration-thickness: 0.8pt; text-underline-offset: 1.5pt; }
+  .mk { font-size: 8pt; font-weight: 700; margin-right: 1pt; }
+  .ans { break-before: page; }
+  .ans .row { break-inside: avoid; margin: 0 0 6pt; font-size: 8.8pt; line-height: 1.5; }
+  .ans .a { font-weight: 800; }
+  .ans .why { color: var(--ink-2); }
+  .ans .mk-row { padding-left: 12pt; color: var(--ink-2); }
+  .ans .mk-row b { color: var(--ink); }
+{% endblock %}
+
+{% block body %}
+<div class="head">
+  <h1>{{ gs.title }}</h1>
+  {% if gs.target and show_grammar %}<span class="tag">{{ gs.target }}</span>{% endif %}
+  <div class="info"><span>반:</span><span>이름:</span><span>점수:</span></div>
+</div>
+
+<div class="cols">
+{% for q in qs %}
+  {% set n = loop.index %}
+  <div class="q">
+  {% if q.type == "paren" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.paren }}</div>
+    <div class="box">{{ q.before }}(<span class="opt">{{ q.options[0] }}</span> / <span class="opt">{{ q.options[1] }}</span>){{ q.after }}</div>
+  {% elif q.type == "blank" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.blank }}</div>
+    <div class="box">{{ q.sentence }}</div>
+    <div class="ch">{% for c in q.choices %}<div>{{ circled[loop.index0] }} {{ c }}</div>{% endfor %}</div>
+  {% elif q.type == "pick" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.pick_right if q.ask == "right" else stems.pick_wrong }}</div>
+    <div class="ch">{% for c in q.choices %}<div>{{ circled[loop.index0] }} {{ c }}</div>{% endfor %}</div>
+  {% elif q.type == "arrange" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.arrange }}</div>
+    <div>{{ q.ko }}</div>
+    <div class="bank">({{ q.given|join(" / ") }})</div>
+    {% if q.condition %}<div class="cond">조건: {{ q.condition }}</div>{% endif %}
+    <div class="ln"></div>
+  {% elif q.type == "transform" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.transform }}</div>
+    <div class="box">{{ q.original }}</div>
+    <div class="cond">→ {{ q.instruction }}</div>
+    <div class="ln"></div><div class="ln"></div>
+  {% else %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems[q.type] }}</div>
+    <div class="box ps">{% for pc in q.pieces %}{% if pc.mark is none %}{{ pc.text }}{% else %}<span class="mk">{{ (circled if q.type == "under5" else letters)[pc.mark] }}</span><span class="u">{{ pc.text }}</span>{% endif %}{% endfor %}</div>
+    {% if q.type == "count" %}<div class="ch">{% for k in range(5) %}<div>{{ circled[k] }} {{ k + 1 }}개</div>{% endfor %}</div>{% endif %}
+  {% endif %}
+  </div>
+{% endfor %}
+</div>
+
+<div class="ans">
+  <h1>정답 및 해설</h1>
+  <div class="sub">{{ gs.title }}{% if gs.target %} · {{ gs.target }}{% endif %}</div>
+  <div class="cols" style="margin-top:8pt">
+  {% for q in qs %}
+    <div class="row">
+      <span class="n" style="color:var(--brand);font-weight:800">{{ loop.index }}.</span> <span class="a">{{ q.answer_text }}</span>
+      <span class="small muted">[{{ types[q.type] }}]</span>
+      {% if q.explain %}<div class="why">{{ q.explain }}</div>{% endif %}
+      {% if q.type in ("under5", "count") %}
+        {% for m in q.marks %}{% if m.wrong %}<div class="mk-row">{{ (circled if q.type == "under5" else letters)[loop.index0] }} {{ m.text }} → <b>{{ m.fix }}</b>{% if m.why %} · {{ m.why }}{% endif %}</div>{% endif %}{% endfor %}
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}

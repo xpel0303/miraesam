@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="greeting">
+  <h1>{{ teacher.name }} 선생님, 안녕하세요</h1>
+  <p class="lead">아래 진척표에서 채워진 칸이 지금 쓸 수 있는 기능이고, 점선 칸은 순서대로 만들어 갈 기능입니다.</p>
+</div>
+
+{% if needs_key %}
+<div class="flash error">Gemini API 키가 아직 없어요. 자료를 만드는 기능은 키가 있어야 동작합니다. <a href="/settings#gemini">설정에서 키 넣기</a></div>
+{% endif %}
+
+<div class="stats">
+  <a href="/roster"><b>{{ counts.students }}</b><span>재원 학생</span></a>
+  <a href="/roster?tab=classes"><b>{{ counts.classes }}</b><span>운영 중인 반</span></a>
+  <a href="/roster?tab=schools"><b>{{ counts.schools }}</b><span>등록한 학교</span></a>
+</div>
+
+<section class="panel" aria-labelledby="ledger-title">
+  <div class="panel-head">
+    <h2 id="ledger-title">기능 진척표</h2>
+    <span class="small muted">칸을 누르면 해당 기능으로 갑니다</span>
+  </div>
+  <table class="ledger">
+    {% for st in stages %}
+    <tr>
+      <th scope="row">{{ st.label }}<small>{{ st.done }} / {{ st.features|length }} 완성</small></th>
+      <td>
+        <div class="cells">
+          {% for f in st.features %}
+            <a class="cell {% if f.ready %}ready{% endif %}" href="{{ f.url }}" title="{{ f.summary }}">{{ f.name }}</a>
+          {% endfor %}
+          {% if st.n == 0 %}
+            <a class="cell ready" href="/settings" title="학원 정보, 선생님 계정, Gemini 키">계정·설정</a>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+{% if recent_jobs %}
+<section class="panel">
+  <h2>최근 작업</h2>
+  <div class="table-wrap">
+    <table class="list">
+      <thead><tr><th>작업</th><th>상태</th><th>시각</th><th></th></tr></thead>
+      <tbody>
+      {% for j in recent_jobs %}
+        <tr>
+          <td>{{ j.title }}</td>
+          <td>{% if j.status == "done" %}완료{% elif j.status == "failed" %}<span style="color:var(--err)">실패</span>{% elif j.status == "running" %}진행 중{% else %}대기 중{% endif %}</td>
+          <td class="muted small">{{ j.created_at|kst }}</td>
+          <td>{% if j.result and j.result.file_id %}<a href="/files/{{ j.result.file_id }}" target="_blank" rel="noopener">열기</a>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

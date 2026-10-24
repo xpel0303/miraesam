@@ -1,0 +1,30 @@
+{% extends "student/_base.html" %}
+{% block title %}결과 · {{ wl.title }}{% endblock %}
+{% block body %}
+<p class="small muted" style="margin:0">{{ wl.title }} · {{ modes[mode] }}</p>
+<p class="score"><b>{{ r.correct }}</b> / {{ r.total }}</p>
+<p class="muted">{% if r.correct == r.total %}전부 맞았어요.{% elif r.wrong|length <= 3 %}거의 다 왔어요. 틀린 단어만 다시 보면 돼요.{% else %}틀린 {{ r.wrong|length }}개를 다시 보고 한 번 더 풀어 봐요.{% endif %}</p>
+
+{% if hw %}<p class="small" style="margin:0">{% if hw_done %}<b>숙제 통과!</b>{% else %}숙제 통과 점수는 {{ hw_pass }}점이에요. 다시 풀어서 넘어 봐요.{% endif %}</p>{% endif %}
+<div class="actions" style="margin:16px 0">
+  {% if hw %}
+  <a class="btn {{ 'ghost' if hw_done else '' }}" href="/s/{{ code }}/hw/{{ hw.id }}/{{ hw_task }}">다시 풀기</a>
+  <a class="btn {{ '' if hw_done else 'ghost' }}" href="/s/{{ code }}/hw/{{ hw.id }}">숙제 목록으로</a>
+  {% else %}
+  <a class="btn" href="/s/{{ code }}/vocab/{{ wl.id }}/quiz?mode={{ mode }}&count={{ count }}">다시 풀기</a>
+  <a class="btn ghost" href="/s/{{ code }}/vocab/{{ wl.id }}">단어장으로</a>
+  {% endif %}
+</div>
+
+{% if r.wrong and (not hw or hw.options.reveal) %}
+<div class="student-card">
+  <h2>틀린 단어</h2>
+  {% for row in rows if not row.ok %}
+    <div class="wrong">
+      <p style="margin:0"><b>{{ row.prompt }}</b></p>
+      <p class="small" style="margin:2px 0 0">정답: <b>{{ row.answer }}</b>{% if row.given %} <span class="muted">· 내 답: {{ row.given }}</span>{% else %} <span class="muted">· 안 씀</span>{% endif %}</p>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

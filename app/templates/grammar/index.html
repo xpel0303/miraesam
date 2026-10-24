@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}어법 문제 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px">
+  <h1>어법 문제</h1>
+  <a class="btn" href="/grammar/new">새 어법 문제 만들기</a>
+</div>
+<p class="lead">목표어법으로 괄호·빈칸·문장 고르기·배열·전환 문제를, 지문을 넣으면 밑줄 5지선다와 어법 개수 문제를 만들어요. 2단 시험지에 정답·해설은 맨 뒤 페이지.</p>
+{% if sets %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>제목</th><th>목표어법</th><th>문항</th><th>만든 사람</th><th>만든 날</th><th></th></tr></thead>
+  <tbody>{% for g in sets %}
+    <tr>
+      <td class="wrap"><a href="/grammar/{{ g.id }}"><b>{{ g.title }}</b></a>{% if g.status in ("waiting", "making") %} <span class="tag">만드는 중</span>{% elif g.status == "failed" %} <span class="tag" style="color:var(--err)">실패</span>{% endif %}</td>
+      <td class="small wrap">{{ g.target }}</td><td>{{ g.questions|length }}개</td>
+      <td>{{ g.teacher.name if g.teacher else "" }}</td><td class="muted small">{{ g.created_at|kst("%Y-%m-%d") }}</td>
+      <td>{% if g.file_id %}<a href="/files/{{ g.file_id }}" target="_blank" rel="noopener">PDF</a>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 만든 어법 문제가 없어요.</p><a class="btn" href="/grammar/new">첫 어법 문제 만들기</a></div>
+{% endif %}
+{% endblock %}

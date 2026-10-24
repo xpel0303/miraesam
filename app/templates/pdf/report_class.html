@@ -1,0 +1,102 @@
+{% extends "pdf/_base.html" %}
+{# 반 리포트: 1쪽 요약(분포·유형·많이 틀린 문항) → 성적표 → 문항 분석 #}
+{% macro ans(a) %}{% if a %}{% for c in a.split("/") %}{{ circ[c] }}{% endfor %}{% endif %}{% endmacro %}
+{% block style %}
+  .sub { margin-bottom: 10pt; }
+  .tiles { display: flex; border: 0.8pt solid var(--line); border-radius: 4pt; margin: 8pt 0 6pt; }
+  .tiles div { flex: 1; padding: 6pt 9pt; border-right: 0.6pt solid var(--line-2); }
+  .tiles div:last-child { border-right: 0; }
+  .tiles span { display: block; font-size: 7.6pt; color: var(--ink-2); }
+  .tiles b { font-size: 15pt; font-weight: 800; }
+  .cols { display: flex; gap: 14pt; }
+  .cols > div { flex: 1; min-width: 0; }
+  .vb { display: flex; align-items: flex-end; gap: 3pt; height: 110pt; border-bottom: 0.8pt solid var(--ink-3); }
+  .vb div { flex: 1; text-align: center; font-size: 7.5pt; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
+  .vb i { display: block; background: var(--brand); border-radius: 1.5pt 1.5pt 0 0; }
+  .vl { display: flex; gap: 3pt; font-size: 6.8pt; color: var(--ink-3); }
+  .vl span { flex: 1; text-align: center; }
+  .hrow { display: flex; align-items: center; gap: 6pt; font-size: 8.4pt; margin: 3.5pt 0; }
+  .hrow .t { width: 66pt; flex: none; }
+  .hrow .bar { flex: 1; height: 6pt; background: var(--line-2); border-radius: 1pt; }
+  .hrow .bar i { display: block; height: 100%; background: var(--brand); }
+  .hrow .v { width: 30pt; text-align: right; font-weight: 700; }
+  table.it { font-size: 7.8pt; }
+  table.it td, table.it th { padding: 2.4pt 4pt; text-align: center; }
+  table.it td.l, table.it th.l { text-align: left; }
+  table.it td.ans { font-weight: 800; text-decoration: underline; }
+  table.it tr.low td { background: #f6f3ea; }
+  .rbar { display: inline-block; width: 34pt; height: 4pt; background: var(--line-2); vertical-align: middle; margin-right: 3pt; }
+  .rbar i { display: block; height: 100%; background: var(--brand); }
+  table.sc { font-size: 8.2pt; }
+  table.sc td, table.sc th { padding: 2.6pt 5pt; }
+  table.sc td.c, table.sc th.c { text-align: center; }
+  .note { font-size: 7.2pt; color: var(--ink-3); margin-top: 4pt; }
+  .newpage { break-before: page; }
+{% endblock %}
+{% block body %}
+<h1>{{ exam.title }} 결과</h1>
+<div class="sub">{{ [exam.school or None, exam.classes or None, exam.date or None]|select|join(" · ") }} · {{ items|length }}문항 · 만점 {{ fmt(S.full) }}점</div>
+
+<div class="tiles">
+  <div><span>응시</span><b>{{ S.n }}명</b></div>
+  <div><span>평균</span><b>{{ fmt(S.avg) }}</b></div>
+  <div><span>중앙값</span><b>{{ fmt(S.median) }}</b></div>
+  <div><span>최고</span><b>{{ fmt(S.max) }}</b></div>
+  <div><span>최저</span><b>{{ fmt(S.min) }}</b></div>
+  <div><span>표준편차</span><b>{{ fmt(S.sd) if S.sd is not none else "-" }}</b></div>
+</div>
+{% if S.pending %}<p class="note">서술형 미채점 {{ S.pending }}칸은 0점으로 계산했습니다.</p>{% endif %}
+
+<div class="cols">
+  <div>
+    <h2>점수 분포 <span style="font-weight:400;font-size:8pt;color:var(--ink-2)">만점 대비 %, 명</span></h2>
+    {% set peak = S.bins|map(attribute="count")|max %}
+    <div class="vb">{% for b in S.bins %}<div>{% if b.count %}<b>{{ b.count }}</b>{% endif %}<i style="height:{{ (88 * b.count / peak) if peak else 0 }}%"></i></div>{% endfor %}</div>
+    <div class="vl">{% for b in S.bins %}<span>{{ b.label.split("~")[0] }}</span>{% endfor %}</div>
+  </div>
+  <div>
+    <h2>유형별 득점률</h2>
+    {% for t in S.types %}<div class="hrow"><span class="t">{{ t.type }} <span class="muted">{{ t["items"]|length }}</span></span><div class="bar"><i style="width:{{ t.rate or 0 }}%"></i></div><span class="v">{{ t.rate if t.rate is not none else "-" }}%</span></div>{% endfor %}
+  </div>
+</div>
+
+<h2>많이 틀린 문항</h2>
+<table class="it">
+  <thead><tr><th>번호</th><th class="l">유형</th><th class="l">출처</th><th>정답</th><th>정답률</th><th class="l">많이 고른 오답</th></tr></thead>
+  <tbody>{% for it in worst %}
+    <tr><td><b>{{ it.n }}</b></td><td class="l">{{ it.type }}</td><td class="l">{{ it.source }}</td>
+      <td>{% if it.kind == "mc" %}{{ ans(it.answer) }}{% else %}서술형{% endif %}</td>
+      <td><span class="rbar"><i style="width:{{ it.rate }}%"></i></span>{{ it.rate }}%</td>
+      <td class="l">{% if it.lure %}{{ circ[it.lure] }} ({{ it.dist[it.lure] }}명){% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table>
+
+{% if show_names %}
+<div class="newpage"></div>
+<h2 style="margin-top:0">성적표</h2>
+<table class="sc">
+  <thead><tr><th class="c" style="width:28pt">등수</th><th>이름</th><th>반</th><th class="c">총점</th><th class="c">객관식</th>{% if S.people[0].sa_max %}<th class="c">서술형</th>{% endif %}<th>틀린 문항</th></tr></thead>
+  <tbody>{% for p in S.people %}
+    <tr><td class="c">{{ p.rank }}</td><td><b>{{ mask(p.name) }}</b></td><td>{{ p.class_name }}</td><td class="c"><b>{{ fmt(p.score) }}</b></td>
+      <td class="c">{{ p.mc_correct }}/{{ p.mc_total }}</td>{% if p.sa_max %}<td class="c">{{ fmt(p.sa_score) }}/{{ fmt(p.sa_max) }}</td>{% endif %}
+      <td style="font-size:7.6pt">{{ p.rows|rejectattr("ok")|selectattr("graded")|map(attribute="n")|join(", ") }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+{% endif %}
+
+<div class="newpage"></div>
+<h2 style="margin-top:0">문항 분석</h2>
+<table class="it">
+  <thead><tr><th>번호</th><th class="l">유형</th><th class="l">출처</th><th>배점</th><th>정답</th><th>정답률</th>{% for c in ["1","2","3","4","5"] %}<th>{{ circ[c] }}</th>{% endfor %}<th>안 씀</th><th>변별도</th></tr></thead>
+  <tbody>{% for it in S["items"] %}
+    <tr class="{{ 'low' if it.rate is not none and it.rate < 50 else '' }}">
+      <td><b>{{ it.n }}</b></td><td class="l">{{ it.type }}</td><td class="l">{{ it.source }}</td><td>{{ fmt(it.points) }}</td>
+      <td>{% if it.kind == "mc" %}{{ ans(it.answer) }}{% else %}서술형{% endif %}</td>
+      <td><span class="rbar"><i style="width:{{ it.rate or 0 }}%"></i></span>{{ it.rate if it.rate is not none else "-" }}%</td>
+      {% if it.kind == "mc" %}{% for c in ["1","2","3","4","5"] %}<td class="{{ 'ans' if c in it.answer.split('/') else '' }}">{{ it.dist[c] or "" }}</td>{% endfor %}<td class="muted">{{ it.dist[""] or "" }}</td>
+      {% else %}<td colspan="6" class="muted">평균 {{ fmt(it.avg) if it.avg is not none else "-" }}점</td>{% endif %}
+      <td>{{ it.disc if it.disc is not none else "" }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+<p class="note">선지 칸의 숫자는 고른 학생 수, 밑줄은 정답입니다. 색칠한 줄은 정답률 50% 미만. 변별도 = 상위 27% 정답률 − 하위 27% 정답률 (0.3 이상이면 상·하위를 잘 가르는 문항).</p>
+{% endblock %}

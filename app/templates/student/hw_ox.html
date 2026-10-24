@@ -1,0 +1,33 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ t.title }} · {{ academy.name }}{% endblock %}
+{% block body %}
+<p class="small muted" style="margin:0"><a href="/s/{{ code }}/hw/{{ h.id }}">{{ h.title }}</a></p>
+<h1 style="font-size:1.25rem">{{ t.title }}</h1>
+<p class="small muted">글의 내용과 일치하면 O, 일치하지 않으면 X. {{ items|length }}문항</p>
+<form method="post" action="/s/{{ code }}/hw/{{ h.id }}/{{ i }}" id="oxf">
+  {% set ns = namespace(p=-1) %}
+  {% for it in items %}
+    {% if it.p != ns.p %}{% set ns.p = it.p %}{% set ps = t.passages[it.p] %}
+      <details class="student-card" style="margin:16px 0 4px;padding:12px 14px"><summary class="small"><b>{{ ps.title }}</b> 지문 보기</summary><p class="small" style="margin:8px 0 0;line-height:1.7">{{ ps.text }}</p></details>
+    {% endif %}
+    <div class="oxrow" data-q>
+      <p><b>{{ loop.index }}.</b> {{ it.q }}</p>
+      <div class="oxbtns">
+        <label class="ec"><input type="radio" name="a{{ loop.index0 }}" value="O"><span>O</span></label>
+        <label class="ec"><input type="radio" name="a{{ loop.index0 }}" value="X"><span>X</span></label>
+      </div>
+    </div>
+  {% endfor %}
+  <p class="small muted" id="left" style="margin:14px 0 8px"></p>
+  <button class="btn" type="submit" style="width:100%;padding:12px">제출하고 채점하기</button>
+</form>
+{% endblock %}
+{% block script %}
+<script>
+  const f = document.getElementById("oxf"), qs = [...f.querySelectorAll("[data-q]")], left = document.getElementById("left");
+  const empty = () => qs.filter(q => !q.querySelector("input:checked")).length;
+  function upd() { const n = empty(); left.textContent = n ? `안 푼 문항 ${n}개` : "다 풀었어요."; }
+  f.addEventListener("change", upd); upd();
+  f.addEventListener("submit", e => { const n = empty(); if (n && !confirm(`안 푼 문항이 ${n}개 있어요. 이대로 낼까요?`)) e.preventDefault(); });
+</script>
+{% endblock %}

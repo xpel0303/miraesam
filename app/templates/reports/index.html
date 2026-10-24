@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}학생·반 리포트 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>학생·반 리포트</h1><a class="btn" href="/reports/new">새 시험</a></div>
+<p class="lead">시험 정답과 배점을 넣고 학생 답을 받으면 자동으로 채점해요. 학생별 오답 리포트, 반 리포트, 상담·게시용 결과 이미지를 만들 수 있어요.</p>
+{% if exams %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>시험</th><th>학교</th><th>반</th><th>문항</th><th>응시</th><th>시험일</th><th></th></tr></thead>
+  <tbody>{% for e in exams %}
+    <tr><td class="wrap"><a href="/reports/{{ e.id }}"><b>{{ e.title }}</b></a>{% if e.options.open %} <span class="tag">학생 제출 받는 중</span>{% endif %}</td>
+      <td>{{ e.school.name if e.school else "" }}</td>
+      <td class="small wrap">{{ e.classes|map(attribute="name")|join(", ") }}</td>
+      <td>{{ e.items|length }}</td><td>{{ counts.get(e.id, 0) }}명</td>
+      <td class="muted small">{{ e.exam_date }}</td>
+      <td><a class="small" href="/reports/{{ e.id }}?tab=results">결과</a></td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 만든 시험이 없어요.</p><a class="btn" href="/reports/new">첫 시험 만들기</a></div>
+{% endif %}
+{% endblock %}

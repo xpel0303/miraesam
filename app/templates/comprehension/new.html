@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}새 워크북 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>새 내용이해 워크북</h1>
+<p class="lead">지문은 한 번에 {{ max }}개까지 넣을 수 있어요. 제목과 한글 해석은 비워 두면 자동으로 만들어집니다.</p>
+
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+{% set o = form.options or {"start_number": 1, "show_grammar": True, "show_translation": True} %}
+
+<form method="post" action="/comprehension" id="wb-form">
+  <section class="panel">
+    <div class="row">
+      <div class="field">
+        <label for="title">워크북 제목</label>
+        <input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 3월 모의고사 내용이해 워크북">
+      </div>
+      <div class="field">
+        <label for="common_grammar">공통 목표어법 <span class="hint">지문마다 따로 안 쓰면 이걸 씁니다. 비우면 작문은 일반 영작으로</span></label>
+        <input type="text" id="common_grammar" name="common_grammar" value="{{ form.common_grammar or '' }}" placeholder="예: 관계대명사 what">
+      </div>
+    </div>
+  </section>
+
+  <div id="passages">
+    {% set rows = form.passages or [{}] %}
+    {% for r in rows %}
+    <section class="panel passage-card">
+      <div class="panel-head">
+        <h2>지문 <span data-num>{{ loop.index }}</span></h2>
+        <button class="linklike small" type="button" data-remove>이 지문 빼기</button>
+      </div>
+      <div class="row">
+        <div class="field"><label>제목 <span class="hint">선택</span></label><input type="text" name="p_title" value="{{ r.title or '' }}" placeholder="예: 03회-1 안내방송"></div>
+        <div class="field"><label>목표어법 <span class="hint">선택</span></label><input type="text" name="p_grammar" value="{{ r.grammar or '' }}" placeholder="예: 동명사 / to부정사"></div>
+      </div>
+      <div class="field">
+        <label>영어 지문</label>
+        <textarea name="p_text" rows="7" placeholder="영어 본문을 붙여 넣으세요">{{ r.text or '' }}</textarea>
+      </div>
+      <details {% if r.ko %}open{% endif %}>
+        <summary class="small">한글 해석 직접 넣기 <span class="muted">(비우면 자동 번역)</span></summary>
+        <textarea name="p_ko" rows="4" style="margin-top:8px">{{ r.ko or '' }}</textarea>
+      </details>
+    </section>
+    {% endfor %}
+  </div>
+  <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
+
+  <section class="panel">
+    <h2>문제지 설정</h2>
+    <div class="row">
+      <div class="field">
+        <label for="start_number">시작 번호</label>
+        <input type="text" id="start_number" name="start_number" inputmode="numeric" value="{{ o.start_number }}">
+      </div>
+      <div class="field">
+        <label for="split">지문 칸 (영어 : 해석)</label>
+        <select id="split" name="split">
+          {% for k in ["6:4", "7:3", "5:5"] %}<option value="{{ k }}" {% if (form.split_key or "6:4") == k %}selected{% endif %}>{{ k }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <label style="font-weight:400"><input type="checkbox" name="show_translation" value="1" {% if o.show_translation %}checked{% endif %}> 문제지에 한글 해석 보여 주기</label>
+    <label style="font-weight:400"><input type="checkbox" name="show_grammar" value="1" {% if o.show_grammar %}checked{% endif %}> 문제지에 목표어법 표시하기 <span class="hint" style="display:inline">(답지에는 항상 표시)</span></label>
+  </section>
+
+  <div class="actions">
+    <button class="btn" type="submit">워크북 만들기</button>
+    <span class="small muted">지문 하나에 30초~1분쯤 걸려요. 만드는 동안 다른 화면으로 가도 됩니다.</span>
+  </div>
+</form>
+
+<script>
+  const MAX = {{ max }};
+  const box = document.getElementById("passages");
+  const addBtn = document.getElementById("add-passage");
+  function renumber() {
+    const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => c.querySelector("[data-num]").textContent = i + 1);
+    cards.forEach(c => c.querySelector("[data-remove]").hidden = cards.length === 1);
+    addBtn.disabled = cards.length >= MAX;
+    document.getElementById("count-note").textContent = `${cards.length} / ${MAX}개`;
+  }
+  addBtn.addEventListener("click", () => {
+    const card = box.querySelector(".passage-card").cloneNode(true);
+    card.querySelectorAll("input, textarea").forEach(el => el.value = "");
+    card.querySelector("details").open = false;
+    box.appendChild(card);
+    renumber();
+    card.querySelector("textarea").focus();
+  });
+  box.addEventListener("click", (e) => {
+    if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); }
+  });
+  renumber();
+</script>
+{% endblock %}

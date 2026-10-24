@@ -1,0 +1,30 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ h.title }} · {{ academy.name }}{% endblock %}
+{% block body %}
+<h1 style="font-size:1.3rem">{{ h.title }}</h1>
+<p class="muted small">{% if h.due %}마감 {{ h.due }}{% if late %} (지났어요){% endif %}{% endif %}</p>
+{% if h.memo %}<div class="flash small">{{ h.memo }}</div>{% endif %}
+<div class="student-card">
+  {% for row in rows %}{% set t = row.t %}
+    <div class="oxrow" style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1">
+        <p style="margin:0"><b>{{ loop.index }}. {{ t.title }}</b></p>
+        <p class="small muted" style="margin:2px 0 0">{{ kinds[t.kind] }} · {{ row.sum }}{% if row.r and row.r.attempts and t.kind != "check" %} · 최고 {{ row.r.best }}점{% endif %}</p>
+      </div>
+      {% if t.kind == "check" %}
+        <form method="post" action="/s/{{ code }}/hw/{{ h.id }}/{{ row.i }}">
+          {% if row.st == "done" %}<input type="hidden" name="undo" value="1"><button class="btn ghost small" type="submit" title="누르면 취소">✓ 완료</button>
+          {% else %}<button class="btn ghost small" type="submit">했어요</button>{% endif %}
+        </form>
+      {% elif row.st == "done" %}
+        <a class="btn ghost small" href="/s/{{ code }}/hw/{{ h.id }}/{{ row.i }}">✓ 완료</a>
+      {% elif row.st == "retry" %}
+        <a class="btn small" href="/s/{{ code }}/hw/{{ h.id }}/{{ row.i }}">다시 풀기</a>
+      {% else %}
+        <a class="btn small" href="/s/{{ code }}/hw/{{ h.id }}/{{ row.i }}">풀기</a>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+<p style="margin-top:16px"><a class="btn ghost" href="/s/{{ code }}">처음으로</a></p>
+{% endblock %}

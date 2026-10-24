@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}단어장 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px">
+  <h1>단어장</h1>
+  <a class="btn" href="/vocab/new">새 단어장 만들기</a>
+</div>
+<p class="lead">지문에서 단어를 뽑거나 단어 목록을 붙여 넣어 만들어요. 단어장·시험지 PDF를 뽑고, 반에 내주면 학생이 접속 코드로 들어와 퀴즈를 풉니다.</p>
+
+{% if lists %}
+<div class="table-wrap">
+  <table class="list">
+    <thead><tr><th>단어장</th><th>단어</th><th>내준 반</th><th>만든 사람</th><th>만든 날</th></tr></thead>
+    <tbody>
+    {% for wl in lists %}
+      <tr>
+        <td class="wrap"><a href="/vocab/{{ wl.id }}"><b>{{ wl.title }}</b></a>
+          {% if wl.status in ("waiting", "making") %} <span class="tag">만드는 중</span>{% elif wl.status == "failed" %} <span class="tag" style="color:var(--err)">실패</span>{% endif %}</td>
+        <td>{{ wl.words|length }}개</td>
+        <td class="small">{{ wl.classes|map(attribute="name")|join(", ") or "—" }}</td>
+        <td>{{ wl.teacher.name if wl.teacher else "" }}</td>
+        <td class="muted small">{{ wl.created_at|kst("%Y-%m-%d") }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="panel empty"><p>아직 단어장이 없어요.</p><a class="btn" href="/vocab/new">첫 단어장 만들기</a></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "pdf/_base.html" %}
+{# 변형문제: 2단 시험지 + 정답·해설 (맨 뒤 페이지) #}
+{% block style %}
+  .head { border-bottom: 1.4pt solid var(--brand); padding-bottom: 5pt; margin-bottom: 8pt; }
+  .head h1 { margin: 0; }
+  .info { display: table; width: 100%; font-size: 8.8pt; margin-top: 5pt; }
+  .info span { display: table-cell; border-bottom: 0.6pt solid var(--ink-3); padding: 2pt 0; }
+  .info span + span { padding-left: 10pt; }
+  .cols { columns: 2; column-gap: 16pt; column-rule: 0.5pt solid var(--line); }
+  .q { margin: 0 0 13pt; font-size: 9.2pt; line-height: 1.55; }
+  .q .stem { font-weight: 700; break-after: avoid; }
+  .q .n { color: var(--brand); font-weight: 800; margin-right: 3pt; }
+  .src { font-size: 7.5pt; color: var(--ink-3); font-weight: 400; }
+  .box { border: 0.7pt solid var(--line); border-radius: 3pt; padding: 5pt 7pt; margin: 4pt 0; text-align: justify; }
+  .given { border: 0.9pt solid var(--ink-2); border-radius: 3pt; padding: 4pt 7pt; margin: 4pt 0; font-style: normal; }
+  .part { margin: 3pt 0 0; text-align: justify; }
+  .part b { margin-right: 2pt; }
+  .blank { display: inline-block; min-width: 70pt; border-bottom: 0.8pt solid var(--ink); }
+  .gap { font-weight: 700; white-space: nowrap; }
+  .u { text-decoration: underline; text-underline-offset: 1.5pt; }
+  .mk { font-size: 8pt; font-weight: 700; margin-right: 1pt; }
+  .ch { margin: 2pt 0 0; break-inside: avoid; }
+  .ch div { padding-left: 13pt; text-indent: -13pt; }
+  .sum { border: 0.9pt solid var(--ink-2); border-radius: 3pt; padding: 4pt 7pt; margin: 4pt 0; }
+  .down { text-align: center; color: var(--ink-3); margin: 1pt 0; }
+  table.pairs { font-size: 8.8pt; margin-top: 2pt; }
+  table.pairs td, table.pairs th { border: 0; padding: 0.5pt 4pt; }
+  table.pairs th { background: none; font-weight: 700; color: var(--ink-2); }
+  .ans { break-before: page; }
+  .ans .row { break-inside: avoid; margin: 0 0 6pt; font-size: 8.8pt; line-height: 1.5; }
+  .ans .why { color: var(--ink-2); }
+{% endblock %}
+
+{% macro choices(list) %}<div class="ch">{% for c in list %}<div>{{ circled[loop.index0] }} {{ c }}</div>{% endfor %}</div>{% endmacro %}
+
+{% block body %}
+<div class="head">
+  <h1>{{ vs.title }}</h1>
+  <div class="info"><span>반:</span><span>이름:</span><span>점수:</span></div>
+</div>
+
+<div class="cols">
+{% for q in qs %}
+  {% set n = loop.index %}{% set t = q.type %}
+  <div class="q">
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems["match_" ~ q.ask] if t == "match" else stems[t] }}
+      <span class="src">[지문 {{ q.p + 1 }}{% if q.ptitle %} · {{ q.ptitle }}{% endif %}]</span></div>
+    {% set text = vs.passages[q.p].text %}
+    {% if t in ("topic", "title", "gist", "match") %}
+      <div class="box">{{ text }}</div>{{ choices(q.choices) }}
+    {% elif t == "blank" %}
+      <div class="box">{{ q.before }}<span class="blank">&nbsp;</span>{{ q.after }}</div>{{ choices(q.choices) }}
+    {% elif t == "order" %}
+      <div class="box">{{ q.intro }}</div>
+      {% for k in "ABC" %}<div class="part"><b>({{ k }})</b>{{ q.parts[k] }}</div>{% endfor %}
+      {{ choices(orders) }}
+    {% elif t == "insert" %}
+      <div class="given">{{ q.given }}</div>
+      <div class="box">{% for s in q.sentences %}{{ s }} {% if loop.index0 in q.gaps %}<span class="gap">( {{ circled[q.gaps.index(loop.index0)] }} )</span> {% endif %}{% endfor %}</div>
+    {% elif t == "irrelevant" %}
+      <div class="box">{{ q.lead }} {% for s in q.numbered %}<b>{{ circled[loop.index0] }}</b> {{ s }} {% endfor %}{{ q.tail }}</div>
+    {% elif t == "summary" %}
+      <div class="box">{{ text }}</div>
+      <div class="down">↓</div>
+      <div class="sum">{{ q.summary }}</div>
+      <table class="pairs"><tr><th></th><th>(A)</th><th></th><th>(B)</th></tr>
+        {% for a, b in q.choices %}<tr><td>{{ circled[loop.index0] }}</td><td>{{ a }}</td><td>……</td><td>{{ b }}</td></tr>{% endfor %}</table>
+    {% elif t == "vocab" %}
+      <div class="box">{% for pc in q.pieces %}{% if pc.mark is none %}{{ pc.text }}{% else %}<span class="mk">{{ circled[pc.mark] }}</span><span class="u">{{ pc.text }}</span>{% endif %}{% endfor %}</div>
+    {% endif %}
+  </div>
+{% endfor %}
+</div>
+
+<div class="ans">
+  <h1>정답 및 해설</h1>
+  <div class="sub">{{ vs.title }}</div>
+  <div class="cols" style="margin-top:8pt">
+  {% for q in qs %}
+    <div class="row">
+      <span style="color:var(--brand);font-weight:800">{{ loop.index }}.</span> <b>{{ q.answer_text }}</b>
+      <span class="src">[{{ types[q.type] }} · 지문 {{ q.p + 1 }}]</span>
+      {% if q.type == "order" %}<span> {{ orders[q.answer - 1] }}</span>{% endif %}
+      {% if q.type == "blank" %}<div class="why">빈칸: {{ q.phrase }}</div>{% endif %}
+      {% if q.type == "vocab" %}{% for m in q.marks if m.wrong %}<div class="why">{{ m.text }} → <b>{{ m.fix }}</b>{% if m.why %} · {{ m.why }}{% endif %}</div>{% endfor %}{% endif %}
+      {% if q.explain %}<div class="why">{{ q.explain }}</div>{% endif %}
+    </div>
+  {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "pdf/_base.html" %}
+{# 기출 분석지: 1쪽 요약(구성·유형별·출제 특징) → 문항별 분석표 #}
+{% macro lab(q) %}{{ q.label }}{% endmacro %}
+{% macro f(x) %}{{ "-" if x is none else ("%.2f"|format(x)).rstrip("0").rstrip(".") }}{% endmacro %}
+{% block style %}
+  .sub { color: var(--ink-2); font-size: 9pt; margin-bottom: 8pt; }
+  .tiles { display: flex; border: 0.8pt solid var(--line); border-radius: 4pt; margin: 6pt 0 10pt; }
+  .tiles div { flex: 1; padding: 6pt 9pt; border-right: 0.6pt solid var(--line-2); }
+  .tiles div:last-child { border-right: 0; }
+  .tiles span { display: block; font-size: 7.6pt; color: var(--ink-2); }
+  .tiles b { font-size: 14pt; font-weight: 800; }
+  .tiles small { font-size: 7.6pt; font-weight: 400; color: var(--ink-3); }
+  table.ty { table-layout: fixed; width: 100%; }
+  table.ty td, table.ty th { padding: 3pt 5pt; font-size: 8.6pt; }
+  table.ty td.c, table.ty th.c { text-align: center; }
+  .bar { display: inline-block; height: 6pt; background: var(--brand); vertical-align: middle; border-radius: 1pt; }
+  ul.notes { margin: 4pt 0 0; padding-left: 13pt; font-size: 9pt; }
+  ul.notes li { margin: 2.5pt 0; }
+  .newpage { break-before: page; }
+  table.qs { font-size: 8pt; table-layout: fixed; width: 100%; }
+  table.qs td, table.qs th { padding: 3pt 4pt; }
+  table.qs td.c, table.qs th.c { text-align: center; }
+  table.qs tr.sa td { background: #f6f6f4; }
+  table.qs .stem { color: var(--ink-2); font-size: 7.6pt; }
+  table.qs .first { color: var(--ink-3); font-size: 7.2pt; font-style: italic; }
+  .src { font-size: 7.2pt; color: var(--ink-3); }
+{% endblock %}
+{% block body %}
+<h1>{{ p.title }} 기출 분석</h1>
+<div class="sub">{{ [p.school or None, p.date or None]|select|join(" · ") }} · {{ st.n }}문항 · 만점 {{ f(st.total) }}점 · 분석일 {{ today }}</div>
+
+<div class="tiles">
+  <div><span>객관식</span><b>{{ st.mc }}</b><small> 문항 · {{ f(st.mc_points) }}점</small></div>
+  <div><span>서술형</span><b>{{ st.sa }}</b><small> 문항 · {{ f(st.sa_points) }}점</small></div>
+  <div><span>서술형 비중</span><b>{{ st.sa_share }}%</b></div>
+  <div><span>지문</span><b>{{ st.passages }}</b><small> 개</small></div>
+  <div><span>평균 지문 길이</span><b>{{ st.avg_words }}</b><small> 단어</small></div>
+</div>
+
+<h2>출제 특징</h2>
+<ul class="notes">{% for n in notes %}<li>{{ n }}</li>{% endfor %}</ul>
+
+<h2>유형별 구성</h2>
+{% set peak = st.types|map(attribute="points")|max %}
+<table class="ty">
+  <colgroup><col style="width:20%"><col style="width:10%"><col style="width:9%"><col style="width:30%"><col style="width:31%"></colgroup>
+  <thead><tr><th>유형</th><th class="c">문항 수</th><th class="c">배점</th><th>비중</th><th>문항 번호</th></tr></thead>
+  <tbody>{% for t in st.types %}
+    <tr><td><b>{{ t.type }}</b></td><td class="c">{{ t.count }}</td><td class="c">{{ f(t.points) }}</td>
+      <td><span class="bar" style="width:{{ (100 * t.points / peak) if peak else 0 }}pt"></span> {{ t.share }}%</td>
+      <td>{{ t.labels|join(", ") }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+
+<div class="newpage"></div>
+<h2 style="margin-top:0">문항별 분석</h2>
+<table class="qs">
+  <colgroup><col style="width:9%"><col style="width:12%"><col style="width:6%"><col style="width:45%"><col style="width:28%"></colgroup>
+  <thead><tr><th class="c">번호</th><th>유형</th><th class="c">배점</th><th>발문 · 지문 첫머리</th><th>출제 포인트</th></tr></thead>
+  <tbody>{% for q in qs %}
+    <tr class="{{ q.kind }}">
+      <td class="c"><b>{{ lab(q) }}</b>{% if q.group %}<div class="src">[{{ q.group }}]</div>{% endif %}</td>
+      <td>{{ q.type }}</td><td class="c">{{ f(q.points) }}</td>
+      <td><div class="stem">{{ q.stem }}</div>
+        {% if q.passage %}<div class="first">{{ (q.passage|replace("[u]", "")|replace("[/u]", "")|replace("\n", " "))[:120] }}…</div>
+        {% elif q.shared_with %}<div class="first">지문: {{ q.shared_with }}{{ "번" if q.shared_with.isdigit() else "" }}과 같음</div>{% endif %}</td>
+      <td>{{ q.point }}</td></tr>
+  {% endfor %}</tbody>
+</table>
+<p class="src" style="margin-top:6pt">지문 첫 문장은 출처(교과서·모의고사·부교재) 확인용입니다. 원문을 등록하면 출처와 변형 정도가 자동으로 채워질 예정입니다.</p>
+{% endblock %}

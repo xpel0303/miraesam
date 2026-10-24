@@ -1,0 +1,56 @@
+{% extends "student/_base.html" %}
+{% block title %}퀴즈 · {{ wl.title }}{% endblock %}
+{% block body %}
+<p class="small muted" style="margin:0">{% if hw %}숙제 · {% endif %}{{ wl.title }} · {{ modes[mode] }}</p>
+<div class="qbar" aria-hidden="true"><i id="qbar"></i></div>
+<p class="small muted" id="qcount" aria-live="polite"></p>
+
+<form method="post" action="{{ action or ('/s/' ~ code ~ '/vocab/' ~ wl.id ~ '/quiz') }}" id="quiz">
+  <input type="hidden" name="mode" value="{{ mode }}"><input type="hidden" name="seed" value="{{ seed }}"><input type="hidden" name="count" value="{{ count }}">
+  {% for q in qs %}
+    <fieldset class="qcard" data-i="{{ loop.index0 }}">
+      <legend class="small muted">{{ loop.index }} / {{ qs|length }}</legend>
+      <p class="qprompt {{ 'ko' if mode in ('mc_ko', 'write_en') else '' }}">{{ q.prompt }}</p>
+      {% if q.choices %}
+        <input type="hidden" name="a{{ loop.index0 }}" value="">
+        <div class="choices">{% for c in q.choices %}<button type="button" class="choice" data-v="{{ c }}">{{ c }}</button>{% endfor %}</div>
+      {% else %}
+        <input type="text" name="a{{ loop.index0 }}" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="{{ '뜻을 쓰세요' if mode == 'write_ko' else '영어 단어를 쓰세요' }}" aria-label="답">
+        <button type="button" class="btn next" style="width:100%;margin-top:10px">다음</button>
+      {% endif %}
+    </fieldset>
+  {% endfor %}
+  <button class="btn" type="submit" id="submit" style="width:100%">제출하고 채점하기</button>
+</form>
+{% endblock %}
+{% block script %}
+<script>
+  // 한 문제씩 보여 주기. 자바스크립트가 없으면 모든 문제가 한 화면에 보이고 그대로 제출됩니다.
+  const cards = [...document.querySelectorAll(".qcard")];
+  const submit = document.getElementById("submit");
+  const bar = document.getElementById("qbar"), count = document.getElementById("qcount");
+  let cur = 0;
+  function show(i) {
+    cards.forEach((c, k) => c.hidden = k !== i);
+    submit.hidden = i < cards.length;
+    bar.style.width = (100 * i / cards.length) + "%";
+    count.textContent = i < cards.length ? "" : "다 풀었어요. 제출해 주세요.";
+    const inp = i < cards.length && cards[i].querySelector("input[type=text]");
+    if (inp) inp.focus();
+  }
+  function next() { cur++; show(cur); if (cur >= cards.length) submit.focus(); }
+  cards.forEach(c => {
+    c.querySelectorAll(".choice").forEach(b => b.addEventListener("click", () => {
+      c.querySelector("input[type=hidden]").value = b.dataset.v;
+      c.querySelectorAll(".choice").forEach(x => x.classList.toggle("picked", x === b));
+      setTimeout(next, 180);
+    }));
+    const n = c.querySelector(".next");
+    if (n) {
+      n.addEventListener("click", next);
+      c.querySelector("input[type=text]").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); next(); } });
+    }
+  });
+  show(0);
+</script>
+{% endblock %}

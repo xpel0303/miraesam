@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}새 지문 분석 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>새 지문 분석</h1>
+<p class="lead">지문은 한 번에 {{ max }}개까지, PDF 한 파일로 이어서 나옵니다. 문장은 프로그램이 나누므로 빠지는 문장이 없어요.</p>
+
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+{% set o = form.options or {"layout": "split", "show_background": True, "show_sketch": True, "show_vocab": True} %}
+
+<form method="post" action="/analysis">
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label for="title">자료 제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 2학기 중간 교과서 3과 분석"></div>
+      <div class="field"><label for="level">대상 <span class="hint">해설 말투와 어휘 난이도를 맞춥니다</span></label>
+        <select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
+    </div>
+  </section>
+
+  <div id="passages">
+    {% for r in (form.passages or [{}]) %}
+    <section class="panel passage-card">
+      <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
+      <div class="field"><label>제목 <span class="hint">비우면 영문·한글 제목을 자동으로 붙여요</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+      <div class="field"><label>영어 지문</label><textarea name="p_text" rows="8" placeholder="영어 본문을 붙여 넣으세요">{{ r.text or '' }}</textarea></div>
+    </section>
+    {% endfor %}
+  </div>
+  <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
+
+  <section class="panel"><h2>PDF 설정</h2>{% include "analysis/_options.html" %}</section>
+
+  <div class="actions">
+    <button class="btn" type="submit">분석 만들기</button>
+    <span class="small muted">지문 하나에 1분 안팎 걸려요. 만드는 동안 다른 화면으로 가도 됩니다.</span>
+  </div>
+</form>
+
+<script>
+  const MAX = {{ max }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
+  function renumber() {
+    const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => { c.querySelector("[data-num]").textContent = i + 1; c.querySelector("[data-remove]").hidden = cards.length === 1; });
+    addBtn.disabled = cards.length >= MAX;
+    document.getElementById("count-note").textContent = `${cards.length} / ${MAX}개`;
+  }
+  addBtn.addEventListener("click", () => {
+    const card = box.querySelector(".passage-card").cloneNode(true);
+    card.querySelectorAll("input, textarea").forEach(el => el.value = "");
+    box.appendChild(card); renumber(); card.querySelector("textarea").focus();
+  });
+  box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
+  renumber();
+</script>
+{% endblock %}

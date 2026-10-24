@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}새 지문 변형 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>새 지문 변형</h1>
+<p class="lead">지문마다 강도를 따로 고를 수 있어요. 약 {{ spec.STRENGTHS.light.band[0] }}~{{ spec.STRENGTHS.light.band[1] }}% · 중 {{ spec.STRENGTHS.medium.band[0] }}~{{ spec.STRENGTHS.medium.band[1] }}% · 강 {{ spec.STRENGTHS.strong.band[0] }}~{{ spec.STRENGTHS.strong.band[1] }}% (원문 대비 바뀐 단어 비율)</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+<form method="post" action="/paraphrase">
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 교과서 3과 변형"></div>
+      <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label for="focus">특히 신경 쓸 것 <span class="hint">선택. 예: "관계사절과 분사구문을 많이 넣어 주세요", "어휘는 교과서 수준으로"</span></label><input type="text" id="focus" name="focus" value="{{ form.focus or '' }}"></div>
+    <label style="font-weight:400"><input type="checkbox" name="show_compare" value="1" {% if form.show_compare %}checked{% endif %}> PDF 뒤쪽에 교사용 원문 대조 넣기</label>
+  </section>
+  <div id="passages">
+    {% for r in form.passages %}
+    <section class="panel passage-card">
+      <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
+      <div class="row" style="grid-template-columns: 2fr 1fr">
+        <div class="field"><label>제목 <span class="hint">선택</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+        <div class="field"><label>강도</label><select name="p_strength">{% for k, v in spec.STRENGTHS.items() %}<option value="{{ k }}" {% if (r.strength or "medium") == k %}selected{% endif %}>{{ v.name }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="field"><label>영어 원문</label><textarea name="p_text" rows="7">{{ r.text or '' }}</textarea></div>
+    </section>
+    {% endfor %}
+  </div>
+  <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
+  <button class="btn" type="submit">변형하기</button>
+</form>
+<script>
+  const MAX = {{ spec.MAX_PASSAGES }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
+  function renumber() { const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => { c.querySelector("[data-num]").textContent = i + 1; c.querySelector("[data-remove]").hidden = cards.length === 1; });
+    addBtn.disabled = cards.length >= MAX; document.getElementById("count-note").textContent = `${cards.length} / ${MAX}개`; }
+  addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
+  box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
+  renumber();
+</script>
+{% endblock %}

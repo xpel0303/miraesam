@@ -1,0 +1,27 @@
+{% extends "student/_base.html" %}
+{% block title %}결과 · {{ t.title }}{% endblock %}
+{% block body %}
+<p class="small muted" style="margin:0"><a href="/s/{{ code }}/hw/{{ h.id }}">{{ h.title }}</a> · {{ t.title }}</p>
+<p class="score"><b>{{ correct }}</b> / {{ total }} <span class="small muted">({{ pct }}점)</span></p>
+<p class="small" style="margin:0">{% if r.done %}<b>숙제 완료!</b>{% if t.pass %} 통과 점수 {{ t.pass }}점을 넘었어요.{% endif %}{% else %}통과 점수는 {{ t.pass }}점이에요. 다시 풀어서 넘어 봐요.{% endif %}</p>
+<div class="actions" style="margin:16px 0">
+  <a class="btn {{ '' if r.done else 'ghost' }}" href="/s/{{ code }}/hw/{{ h.id }}">숙제 목록으로</a>
+  <a class="btn {{ 'ghost' if r.done else '' }}" href="/s/{{ code }}/hw/{{ h.id }}/{{ i }}">다시 풀기</a>
+</div>
+{% if wrong %}
+<div class="student-card">
+  <h2>틀린 문항 {{ wrong|length }}개</h2>
+  {% for w in wrong %}
+    <div class="wrong">
+      {% if t.kind == "ox" %}
+        <p style="margin:0"><b>{{ w.i }}.</b> {{ w.q }}</p>
+        {% if reveal %}<p class="small" style="margin:2px 0 0">정답 <b>{{ w.a }}</b> · 내 답 {{ w.given or "안 씀" }}{% if w.why %}<br><span class="muted">{{ w.why }}</span>{% endif %}</p>{% endif %}
+      {% else %}
+        <p style="margin:0"><b>{{ w.n }}번</b>{% if reveal %} <span class="small">정답 <b>{{ w.a_label }}</b> · 내 답 {{ w.g_label }}</span>{% endif %}</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+  {% if not reveal %}<p class="small muted" style="margin:8px 0 0">정답은 수업 시간에 같이 확인해요.</p>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "pdf/_base.html" %}
+{# 단어장. hide: "" | "meaning"(뜻 가리기) | "word"(단어 가리기) #}
+{% block style %}
+  h1 { margin-bottom: 2pt; }
+  table.v { margin-top: 8pt; font-size: 9pt; }
+  table.v th { font-size: 8.5pt; }
+  table.v td { padding: 4pt 5pt; }
+  .no { color: var(--ink-3); width: 6%; text-align: right; }
+  .w { font-weight: 800; font-size: 10pt; }
+  .pos { color: var(--ink-3); font-size: 8pt; font-style: italic; }
+  .sa { font-size: 8pt; color: var(--ink-2); }
+  .ex { font-size: 8.3pt; color: var(--ink-2); margin-top: 2pt; }
+  .ex i { font-style: normal; color: var(--ink-3); display: block; }
+  .blankcell { border-bottom: 0.6pt dashed var(--ink-3); height: 12pt; }
+{% endblock %}
+{% block body %}
+<h1>{{ title }}</h1>
+<div class="sub">{{ today }} · 단어 {{ words|length }}개{% if hide == "meaning" %} · 뜻 쓰기 연습{% elif hide == "word" %} · 단어 쓰기 연습{% endif %}</div>
+<table class="v">
+  <thead><tr><th class="no">#</th><th style="width:22%">단어</th><th style="width:26%">뜻</th><th style="width:18%">유의어 / 반의어</th>{% if show_example %}<th>예문</th>{% endif %}</tr></thead>
+  <tbody>
+  {% for w in words %}
+    <tr>
+      <td class="no">{{ loop.index }}</td>
+      <td>{% if hide == "word" %}<div class="blankcell"></div>{% else %}<span class="w">{{ w.word }}</span>{% endif %} {% if w.pos %}<span class="pos">{{ w.pos }}</span>{% endif %}</td>
+      <td>{% if hide == "meaning" %}<div class="blankcell"></div>{% else %}{{ w.meaning }}{% endif %}</td>
+      <td class="sa">{% if w.syn %}= {{ w.syn }}{% endif %}{% if w.syn and w.ant %}<br>{% endif %}{% if w.ant %}↔ {{ w.ant }}{% endif %}</td>
+      {% if show_example %}<td><div class="ex">{{ w.example }}{% if w.example_ko and hide != "meaning" %}<i>{{ w.example_ko }}</i>{% endif %}</div></td>{% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

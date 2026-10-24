@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}내용이해 워크북 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px">
+  <h1>내용이해 워크북</h1>
+  <a class="btn" href="/comprehension/new">새 워크북 만들기</a>
+</div>
+<p class="lead">지문 하나에 30문항: OX 한글·영어 20, 목표어법 작문 5, 단어 뜻 5. 문제지와 답지가 PDF로 따로 나옵니다.</p>
+
+{% if workbooks %}
+<div class="table-wrap">
+  <table class="list">
+    <thead><tr><th>워크북</th><th>지문</th><th>상태</th><th>만든 사람</th><th>만든 날</th><th></th></tr></thead>
+    <tbody>
+    {% for wb in workbooks %}
+      {% set done = wb.passages|selectattr("status", "equalto", "done")|list|length %}
+      <tr>
+        <td class="wrap"><a href="/comprehension/{{ wb.id }}"><b>{{ wb.title }}</b></a></td>
+        <td>{{ wb.passages|length }}개</td>
+        <td>{% if wb.problem_file_id %}완성{% elif wb.passages|selectattr("status", "equalto", "failed")|list %}<span style="color:var(--err)">일부 실패</span>{% else %}{{ done }}/{{ wb.passages|length }} 진행{% endif %}</td>
+        <td>{{ wb.teacher.name if wb.teacher else "" }}</td>
+        <td class="muted small">{{ wb.created_at|kst("%Y-%m-%d") }}</td>
+        <td>{% if wb.problem_file_id %}<a href="/files/{{ wb.problem_file_id }}" target="_blank" rel="noopener">문제지</a> · <a href="/files/{{ wb.answer_file_id }}" target="_blank" rel="noopener">답지</a>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="panel empty">
+  <p>아직 만든 워크북이 없어요.</p>
+  <a class="btn" href="/comprehension/new">첫 워크북 만들기</a>
+</div>
+{% endif %}
+{% endblock %}

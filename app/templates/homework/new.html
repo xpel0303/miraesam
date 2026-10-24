@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}새 숙제 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/homework">숙제</a></p>
+<h1>새 숙제</h1>
+<p class="lead">만들어 둔 단어장·워크북·변형문제·어법 문제를 골라 숙제로 내요. 학생은 접속 코드로 들어와 폰으로 풀고, 바로 채점됩니다.</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+<form method="post" action="/homework">
+  <section class="panel">
+    <div class="row" style="grid-template-columns: 2fr 1fr">
+      <div class="field"><label for="title">숙제 이름</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 3과 복습 숙제" required></div>
+      <div class="field"><label for="due">마감일 <span class="muted" style="font-weight:400">(선택)</span></label><input type="text" id="due" name="due" value="{{ form.due or '' }}" placeholder="2026-10-28" inputmode="numeric"></div>
+    </div>
+    <div class="field"><label>반</label>
+      {% if classes %}<div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if form.class_ids and c.id in form.class_ids %}checked{% endif %}> {{ c.name }}</label>{% endfor %}</div>
+      {% else %}<p class="small muted" style="margin:0">아직 반이 없어요. <a href="/roster?tab=classes">학생 명단에서 반을 먼저 만들어 주세요.</a></p>{% endif %}
+    </div>
+    <div class="field"><label for="memo">안내 문구 <span class="hint">선택. 학생 화면 맨 위와 카톡 문구에 들어가요.</span></label><input type="text" id="memo" name="memo" value="{{ form.memo or '' }}"></div>
+    <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" {% if form.reveal %}checked{% endif %}> 제출하면 틀린 문제의 정답·해설 보여 주기</label>
+  </section>
+
+  <section class="panel">
+    <h2>할 일</h2>
+    <div id="tasks">
+      {% for i in range(3) %}
+      <div class="task-row">
+        <span class="tn">{{ loop.index }}</span>
+        <div class="field" style="flex:2 1 260px"><select name="t_src" aria-label="할 일 종류">
+          <option value="">— 고르기 —</option>
+          {% if src.vocab %}<optgroup label="단어 퀴즈">{% for x in src.vocab %}<option value="vocab:{{ x.id }}">{{ x.title }} ({{ x.words|length }}단어)</option>{% endfor %}</optgroup>{% endif %}
+          {% if src.workbook %}<optgroup label="OX 퀴즈 (내용이해 워크북)">{% for x in src.workbook %}<option value="workbook:{{ x.id }}">{{ x.title }}</option>{% endfor %}</optgroup>{% endif %}
+          {% if src.variant %}<optgroup label="답 입력 (변형문제 시험지)">{% for x in src.variant %}<option value="variant:{{ x.id }}">{{ x.title }}</option>{% endfor %}</optgroup>{% endif %}
+          {% if src.grammar %}<optgroup label="답 입력 (어법 문제 시험지)">{% for x in src.grammar %}<option value="grammar:{{ x.id }}">{{ x.title }}</option>{% endfor %}</optgroup>{% endif %}
+          <optgroup label="기타"><option value="key">답 입력 (정답 직접 넣기 — 교재·프린트)</option><option value="check">할 일 체크 (본문 암기 등)</option></optgroup>
+        </select></div>
+        <div class="field opt" data-for="vocab workbook" style="flex:1 1 150px"><select name="t_mode" aria-label="방식"></select></div>
+        <div class="field opt" data-for="vocab" style="flex:0 0 90px"><input type="text" name="t_count" value="20" inputmode="numeric" aria-label="문제 수" title="문제 수"></div>
+        <div class="field opt" data-for="key" style="flex:1 1 160px"><input type="text" name="t_title" placeholder="이름 (예: 수능특강 3강)" aria-label="이름"></div>
+        <div class="field opt" data-for="key check" style="flex:2 1 220px"><input type="text" name="t_text" aria-label="내용" placeholder=""></div>
+        <div class="field opt" data-for="vocab workbook variant grammar key" style="flex:0 0 110px"><input type="text" name="t_pass" inputmode="numeric" aria-label="통과 점수" placeholder="통과 점수%"></div>
+      </div>
+      {% endfor %}
+    </div>
+    <button class="btn ghost small" type="button" id="add-task">할 일 추가</button>
+    <p class="small muted" style="margin:10px 0 0">통과 점수를 넣으면 그 점수가 넘을 때까지 '다시 풀기'로 남아요 (단어 퀴즈는 기본 80점). 비우면 한 번 내면 완료.
+      '답 입력'은 종이로 푼 시험지의 번호만 폰에 넣는 방식이에요. 시험지 PDF는 정답지가 붙어 있어서 학생에게 링크로 주지 않아요.</p>
+  </section>
+  <button class="btn" type="submit">숙제 내기</button>
+</form>
+<script>
+  const MODES = {{ modes|tojson }}, OX = {{ ox_levels|tojson }}, MAX = {{ max }};
+  const box = document.getElementById("tasks");
+  function setup(row) {
+    const src = row.querySelector("[name=t_src]"), mode = row.querySelector("[name=t_mode]"), text = row.querySelector("[name=t_text]"), pass = row.querySelector("[name=t_pass]");
+    function upd() {
+      const kind = src.value.split(":")[0];
+      row.querySelectorAll(".opt").forEach(o => o.hidden = !o.dataset.for.split(" ").includes(kind));
+      const opts = kind === "vocab" ? MODES : kind === "workbook" ? OX : null;
+      if (opts && mode.dataset.kind !== kind) { mode.innerHTML = Object.entries(opts).map(([k, v]) => `<option value="${k}">${v}</option>`).join(""); mode.dataset.kind = kind; if (kind === "workbook") mode.value = "all"; }
+      text.placeholder = kind === "key" ? "정답 한 줄 (예: 35214 23415, 복수 정답 2/4)" : "예: 교과서 3과 본문 외우기";
+      text.style.fontFamily = kind === "key" ? "ui-monospace,monospace" : "";
+      if (kind === "vocab" && !pass.value) pass.placeholder = "통과 80%"; else pass.placeholder = "통과 점수%";
+    }
+    src.addEventListener("change", upd); upd();
+  }
+  box.querySelectorAll(".task-row").forEach(setup);
+  document.getElementById("add-task").addEventListener("click", () => {
+    const rows = box.querySelectorAll(".task-row"); if (rows.length >= MAX) return;
+    const r = rows[0].cloneNode(true); r.querySelectorAll("input").forEach(i => i.value = i.name === "t_count" ? "20" : ""); r.querySelector("[name=t_src]").value = "";
+    r.querySelector("[name=t_mode]").dataset.kind = ""; r.querySelector(".tn").textContent = rows.length + 1; box.appendChild(r); setup(r);
+  });
+</script>
+{% endblock %}

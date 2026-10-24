@@ -1,0 +1,8 @@
+{% extends "auth_base.html" %}
+{% block box %}
+<div class="panel">
+  <p class="auth-title">{{ message }}</p>
+  <p class="muted small">오류 {{ code }}</p>
+  <a class="btn ghost" href="/">홈으로</a>
+</div>
+{% endblock %}

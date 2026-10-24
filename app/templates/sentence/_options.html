@@ -1,0 +1,8 @@
+{# o = options #}
+<div class="field"><label>유형</label>
+  <div class="actions">{% for k, v in spec.TYPES.items() %}<label style="font-weight:400;margin:0 12px 4px 0"><input type="checkbox" name="types" value="{{ k }}" {% if k in o.types %}checked{% endif %}> {{ v }}</label>{% endfor %}</div>
+</div>
+<div class="row">
+  <div class="field"><label>영작 힌트</label><select name="hint">{% for k, v in hints.items() %}<option value="{{ k }}" {% if o.hint == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="field"><label>&nbsp;</label><label style="font-weight:400"><input type="checkbox" name="shuffle" value="1" {% if o.shuffle %}checked{% endif %}> 영작·배열·빈칸은 문장 순서 섞기</label></div>
+</div>

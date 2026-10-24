@@ -1,0 +1,26 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ t.title }} · {{ academy.name }}{% endblock %}
+{% block body %}
+<p class="small muted" style="margin:0"><a href="/s/{{ code }}/hw/{{ h.id }}">{{ h.title }}</a></p>
+<h1 style="font-size:1.25rem">{{ t.title }}</h1>
+<p class="small muted">종이에 푼 답을 번호대로 눌러 주세요. 문항 번호는 시험지 번호와 같아요.</p>
+<form method="post" action="/s/{{ code }}/hw/{{ h.id }}/{{ i }}" id="omr">
+  {% for n in nums %}
+    <div class="erow" role="radiogroup" aria-label="{{ n }}번">
+      <span class="en">{{ n }}</span>
+      {% for c in ["1","2","3","4","5"] %}<label class="ec"><input type="radio" name="a{{ n }}" value="{{ c }}"><span>{{ circ[c] }}</span></label>{% endfor %}
+    </div>
+  {% endfor %}
+  <p class="small muted" id="left" style="margin:14px 0 8px"></p>
+  <button class="btn" type="submit" style="width:100%;padding:12px">제출하고 채점하기</button>
+</form>
+{% endblock %}
+{% block script %}
+<script>
+  const f = document.getElementById("omr"), gs = [...f.querySelectorAll("[role=radiogroup]")], left = document.getElementById("left");
+  const empty = () => gs.filter(g => !g.querySelector("input:checked")).map(g => g.getAttribute("aria-label"));
+  function upd() { const e = empty(); left.textContent = e.length ? `안 고른 문항: ${e.join(", ")}` : "다 골랐어요."; }
+  f.addEventListener("change", upd); upd();
+  f.addEventListener("submit", ev => { const n = empty().length; if (n && !confirm(`안 고른 문항이 ${n}개 있어요. 이대로 낼까요?`)) ev.preventDefault(); });
+</script>
+{% endblock %}

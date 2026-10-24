@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ wl.title }} · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/vocab">단어장</a></p>
+<h1>{{ wl.title }}</h1>
+<p class="lead">단어 {{ wl.words|length }}개{% if wl.level %} · {{ wl.level }}{% endif %} · {{ wl.teacher.name if wl.teacher else "" }} · {{ wl.created_at|kst("%Y-%m-%d") }}</p>
+
+{% if busy %}
+  <div class="job" data-job-id="{{ job.id }}" data-reload></div>
+{% elif wl.status == "failed" and wl.error %}
+  <div class="flash error" role="alert">{{ wl.error }}</div>
+{% elif wl.error %}
+  <div class="flash small">{{ wl.error }}</div>
+{% endif %}
+
+{% if not busy %}
+<section class="panel" id="pdf">
+  <h2>PDF</h2>
+  <div class="row">
+    <form method="post" action="/vocab/{{ wl.id }}/pdf">
+      <input type="hidden" name="kind" value="list">
+      <h3>단어장</h3>
+      <div class="field"><select name="hide" aria-label="가리기">
+        <option value="">전부 보이기</option><option value="meaning">뜻 가리기 (뜻 쓰기 연습)</option><option value="word">단어 가리기 (단어 쓰기 연습)</option></select></div>
+      <label style="font-weight:400"><input type="checkbox" name="show_example" value="1" checked> 예문 넣기</label>
+      <button class="btn small" type="submit" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>단어장 PDF</button>
+      <button class="btn ghost small" type="submit" formaction="/vocab/{{ wl.id }}/docx" formmethod="get" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>워드로</button>
+    </form>
+    <form method="post" action="/vocab/{{ wl.id }}/pdf">
+      <input type="hidden" name="kind" value="test">
+      <h3>단어 시험지 <span class="small muted" style="font-weight:400">답지는 맨 뒤 페이지</span></h3>
+      <div class="row" style="grid-template-columns: 1fr 100px">
+        <div class="field"><select name="mode" aria-label="문제 방향"><option value="en_ko">영어 → 뜻 쓰기</option><option value="ko_en">뜻 → 영어 쓰기</option><option value="mix">섞어서</option></select></div>
+        <div class="field"><input type="text" name="count" inputmode="numeric" value="{{ wl.words|length }}" aria-label="문항 수"></div>
+      </div>
+      <label style="font-weight:400"><input type="checkbox" name="shuffle" value="1" checked> 순서 섞기 (누를 때마다 다른 시험지)</label>
+      <button class="btn small" type="submit" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>시험지 PDF</button>
+      <button class="btn ghost small" type="submit" formaction="/vocab/{{ wl.id }}/docx" formmethod="get" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>워드로</button>
+    </form>
+  </div>
+  {% if pdf_job %}<div class="job" data-job-id="{{ pdf_job }}"></div>{% endif %}
+</section>
+
+<section class="panel" id="classes">
+  <h2>반에 내주기</h2>
+  {% if classes %}
+  <form method="post" action="/vocab/{{ wl.id }}/classes">
+    <div class="actions" style="margin-bottom:10px">
+      {% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}
+    </div>
+    <button class="btn small" type="submit">저장</button>
+    <span class="small muted">내준 반 학생은 접속 코드로 들어가 단어 카드와 퀴즈를 볼 수 있어요.</span>
+  </form>
+  {% else %}
+  <p class="small muted" style="margin:0">아직 반이 없어요. <a href="/roster?tab=classes">학생 명단에서 반을 먼저 만들어 주세요.</a></p>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2>학생 퀴즈 결과</h2>
+  {% if results %}
+    {% if top_miss %}<p class="small">많이 틀린 단어: {% for w, n in top_miss %}<b>{{ w }}</b> {{ n }}회{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+    <div class="table-wrap"><table class="list">
+      <thead><tr><th>학생</th><th>방식</th><th>점수</th><th>틀린 단어</th><th>시각</th></tr></thead>
+      <tbody>{% for r in results %}
+        <tr><td><b>{{ r.student.name }}</b></td><td class="small">{{ modes[r.mode] }}</td><td>{{ r.correct }} / {{ r.total }}</td>
+          <td class="small wrap">{{ r.wrong|map(attribute="word")|join(", ") }}</td><td class="muted small">{{ r.created_at|kst }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+  {% else %}
+    <p class="small muted" style="margin:0">아직 푼 학생이 없어요.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="panel">
+  <div class="panel-head"><h2>단어 {{ wl.words|length }}개</h2>
+    {% if blank_count and not busy %}<span class="small muted">빈칸 있는 단어 {{ blank_count }}개</span>{% endif %}</div>
+  <form method="post" action="/vocab/{{ wl.id }}/words" id="words-form">
+    <div class="field" style="max-width:420px"><label>단어장 이름</label><input type="text" name="title" value="{{ wl.title }}"></div>
+    <div class="table-wrap">
+      <table class="list edit-items" id="wtable">
+        <thead><tr><th>#</th><th>단어</th><th>품사</th><th>뜻</th><th>유의어</th><th>반의어</th><th>예문 / 해석</th><th>빼기</th></tr></thead>
+        <tbody>
+        {% for w in wl.words %}
+          <tr>
+            <td class="muted">{{ loop.index }}</td>
+            <td><input type="text" name="word" value="{{ w.word }}" aria-label="단어" style="min-width:120px;font-weight:700"></td>
+            <td><input type="text" name="pos" value="{{ w.pos }}" aria-label="품사" style="width:60px"></td>
+            <td class="wrap"><input type="text" name="meaning" value="{{ w.meaning }}" aria-label="뜻"></td>
+            <td><input type="text" name="syn" value="{{ w.syn }}" aria-label="유의어" style="min-width:110px"></td>
+            <td><input type="text" name="ant" value="{{ w.ant }}" aria-label="반의어" style="min-width:90px"></td>
+            <td class="wrap"><input type="text" name="example" value="{{ w.example }}" aria-label="예문"><input type="text" name="example_ko" value="{{ w.example_ko }}" aria-label="예문 해석" style="margin-top:4px"></td>
+            <td><input type="checkbox" name="remove" value="{{ loop.index0 }}" aria-label="이 단어 빼기"></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <template id="row-tpl"><tr><td class="muted">새</td>
+      <td><input type="text" name="word" aria-label="단어" style="min-width:120px;font-weight:700"></td><td><input type="text" name="pos" aria-label="품사" style="width:60px"></td>
+      <td class="wrap"><input type="text" name="meaning" aria-label="뜻"></td><td><input type="text" name="syn" aria-label="유의어" style="min-width:110px"></td>
+      <td><input type="text" name="ant" aria-label="반의어" style="min-width:90px"></td>
+      <td class="wrap"><input type="text" name="example" aria-label="예문"><input type="text" name="example_ko" aria-label="예문 해석" style="margin-top:4px"></td><td></td></tr></template>
+    <div class="actions" style="margin-top:12px">
+      <button class="btn ghost small" type="button" id="add-row" {% if busy %}disabled{% endif %}>단어 추가</button>
+      <button class="btn" type="submit" {% if busy %}disabled{% endif %}>저장</button>
+      <button class="btn ghost" type="submit" name="then" value="fill" {% if busy %}disabled{% endif %}>저장하고 빈칸 AI로 채우기</button>
+    </div>
+    <p class="small muted">단어 칸을 비우거나 '빼기'를 체크하고 저장하면 빠집니다. AI는 비어 있는 칸만 채우고, 적어 둔 뜻은 바꾸지 않아요.</p>
+  </form>
+</section>
+
+{% if not busy %}
+<form method="post" action="/vocab/{{ wl.id }}/delete" onsubmit="return confirm('이 단어장과 학생 퀴즈 기록을 지울까요?')"><button class="btn danger small" type="submit">단어장 지우기</button></form>
+{% endif %}
+
+<script>
+  document.getElementById("add-row")?.addEventListener("click", () => {
+    const tb = document.querySelector("#wtable tbody");
+    tb.appendChild(document.getElementById("row-tpl").content.cloneNode(true));
+    tb.lastElementChild.querySelector("input").focus();
+  });
+  document.addEventListener("job:done", (e) => { if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600); });
+  const watch = document.querySelector("[data-reload]");
+  if (watch) new MutationObserver(() => { if (watch.classList.contains("failed")) setTimeout(() => location.reload(), 1500); }).observe(watch, { attributes: true, attributeFilter: ["class"] });
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>{% block title %}{{ doc_title or "" }}{% endblock %}</title>
+<style>
+  {% for w in [400, 700, 800] %}
+  @font-face { font-family: "Nanum Gothic"; font-weight: {{ w }};
+    src: url("{{ font_dir }}/nanum-gothic-korean-{{ w }}-normal.woff") format("woff"); }
+  @font-face { font-family: "Nanum Gothic"; font-weight: {{ w }};
+    src: url("{{ font_dir }}/nanum-gothic-latin-{{ w }}-normal.woff") format("woff");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215; }
+  {% endfor %}
+
+  :root {
+    --ink: #222222;
+    --ink-2: #555555;
+    --ink-3: #8a8a8a;
+    --line: #d4d4d4;
+    --line-2: #ececec;
+    --fill: #f5f5f4;
+    --brand: {{ academy.brand_color if academy else "#3a3a3a" }};
+  }
+  @page {
+    size: A4;
+    margin: 18mm 15mm 18mm 15mm;
+    @top-left { content: element(pdf-header); }
+    @bottom-center { content: counter(page) " / " counter(pages); font-family: "Nanum Gothic"; font-size: 8pt; color: #8a8a8a; }
+  }
+  * { box-sizing: border-box; }
+  html { font-family: "Nanum Gothic", sans-serif; font-size: 10pt; color: var(--ink); line-height: 1.55; }
+  body { margin: 0; }
+  .pdf-header { position: running(pdf-header); display: flex; align-items: center; gap: 6pt;
+    font-size: 8pt; color: var(--ink-3); width: 180mm; }
+  .pdf-header img { height: 12pt; }
+  .pdf-header .doc { margin-left: auto; }
+  h1 { font-size: 17pt; font-weight: 800; margin: 0 0 4pt; letter-spacing: -0.3pt; }
+  h2 { font-size: 12pt; font-weight: 800; margin: 16pt 0 6pt; padding-bottom: 3pt; border-bottom: 1.2pt solid var(--brand); }
+  h3 { font-size: 10.5pt; font-weight: 700; margin: 10pt 0 4pt; }
+  .sub { color: var(--ink-2); font-size: 9pt; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th { background: var(--fill); font-weight: 700; text-align: left; }
+  th, td { border: 0.6pt solid var(--line); padding: 4pt 6pt; vertical-align: top; }
+  tr { page-break-inside: avoid; }
+  .muted { color: var(--ink-3); }
+  .chip { display: inline-block; border: 0.6pt solid var(--line); border-radius: 8pt; padding: 0 5pt; font-size: 8pt; color: var(--ink-2); }
+  {% block style %}{% endblock %}
+</style>
+</head>
+<body>
+  <div class="pdf-header">
+    {% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% endif %}
+    <span>{{ academy.name if academy else "" }}</span>
+    <span class="doc">{{ doc_title or "" }}</span>
+  </div>
+  {% block body %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,38 @@
+{% extends "pdf/_base.html" %}
+{# 단어 시험지 + 답지(맨 뒤 페이지) #}
+{% block style %}
+  .info { display: table; width: 100%; margin: 6pt 0 10pt; font-size: 9pt; }
+  .info span { display: table-cell; border-bottom: 0.6pt solid var(--ink-2); padding: 3pt 0; }
+  .info span + span { padding-left: 10pt; }
+  .dir { font-size: 9.5pt; font-weight: 700; margin-bottom: 6pt; }
+  .cols { columns: 2; column-gap: 18pt; }
+  .q { break-inside: avoid; display: table; width: 100%; margin: 0 0 7pt; }
+  .q > * { display: table-cell; vertical-align: bottom; }
+  .n { width: 22pt; color: var(--brand); font-weight: 800; }
+  .show { width: 44%; font-weight: 700; padding-right: 6pt; }
+  .show.ko { font-weight: 400; font-size: 9pt; }
+  .line { border-bottom: 0.6pt solid var(--ink-2); }
+  .ans { break-before: page; }
+  .ans .q { margin-bottom: 3pt; font-size: 9pt; }
+  .ans .line { border: 0; color: var(--ink); font-weight: 700; }
+{% endblock %}
+{% block body %}
+<h1>{{ title }} 단어 시험</h1>
+<div class="info"><span>반:</span><span>이름:</span><span>점수: &nbsp;&nbsp;&nbsp;&nbsp;/ {{ qs|length }}</span></div>
+<div class="dir">{% if mode == "en_ko" %}영어 단어의 뜻을 쓰시오.{% elif mode == "ko_en" %}우리말 뜻에 맞는 영어 단어를 쓰시오.{% else %}영어는 뜻을, 우리말은 영어 단어를 쓰시오.{% endif %}</div>
+<div class="cols">
+  {% for q in qs %}
+    <div class="q"><span class="n">{{ loop.index }}</span><span class="show {{ 'ko' if q.dir == 'ko_en' else '' }}">{{ q.show }}</span><span class="line">&nbsp;</span></div>
+  {% endfor %}
+</div>
+
+<div class="ans">
+  <h1>정답</h1>
+  <div class="sub">{{ title }} 단어 시험 · {{ today }}</div>
+  <div class="cols" style="margin-top:8pt">
+    {% for q in qs %}
+      <div class="q"><span class="n">{{ loop.index }}</span><span class="show {{ 'ko' if q.dir == 'ko_en' else '' }}">{{ q.show }}</span><span class="line">{{ q.answer }}</span></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

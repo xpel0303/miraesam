@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}학생 명단 · {{ APP_NAME }}{% endblock %}
+{% macro school_options(selected) %}
+  <option value="">학교 없음</option>
+  {% for s in schools %}<option value="{{ s.id }}" {% if selected == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+{% endmacro %}
+{% macro class_options(selected, blank="반 미배정") %}
+  <option value="">{{ blank }}</option>
+  {% for c in classes if c.active or selected == c.id %}<option value="{{ c.id }}" {% if selected == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+{% endmacro %}
+{% macro grade_options(selected) %}
+  <option value="">학년 없음</option>
+  {% for g in grades %}<option value="{{ g }}" {% if selected == g %}selected{% endif %}>{{ g }}</option>{% endfor %}
+{% endmacro %}
+{% set base = request.base_url|string %}
+
+{% block main %}
+<h1>학생 명단</h1>
+<p class="lead">여기 등록한 학교·반·학생을 시험 분석, 리포트, 숙제 기능이 함께 씁니다. 학생은 접속 코드로 로그인 없이 들어옵니다.</p>
+
+<nav class="tabs" aria-label="명단 종류">
+  <a href="/roster?tab=students" {% if tab == "students" %}aria-current="page"{% endif %}>학생 {{ class_counts.values()|sum }}</a>
+  <a href="/roster?tab=classes" {% if tab == "classes" %}aria-current="page"{% endif %}>반 {{ classes|selectattr("active")|list|length }}</a>
+  <a href="/roster?tab=schools" {% if tab == "schools" %}aria-current="page"{% endif %}>학교 {{ schools|length }}</a>
+</nav>
+
+{% if tab == "students" %}
+  <div class="actions" style="margin-bottom:12px">
+    <details class="panel" style="padding:12px 16px;margin:0;flex:1 1 280px" {% if not students and not filters.q %}open{% endif %}>
+      <summary><b>학생 한 명 추가</b></summary>
+      <form method="post" action="/roster/students" style="margin-top:12px">
+        <div class="row">
+          <div class="field"><label for="n-name">이름</label><input type="text" id="n-name" name="name" required></div>
+          <div class="field"><label for="n-school">학교</label><select id="n-school" name="school_id">{{ school_options(None) }}</select></div>
+          <div class="field"><label for="n-grade">학년</label><select id="n-grade" name="grade">{{ grade_options(None) }}</select></div>
+          <div class="field"><label for="n-class">반</label><select id="n-class" name="class_id">{{ class_options(filters.class_id|int if filters.class_id.isdigit() else None) }}</select></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="n-phone">학부모 연락처 <span class="hint">알림톡용, 선택</span></label><input type="tel" id="n-phone" name="parent_phone"></div>
+          <div class="field"><label for="n-memo">메모</label><input type="text" id="n-memo" name="memo"></div>
+        </div>
+        <button class="btn" type="submit">학생 추가</button>
+      </form>
+    </details>
+    <details class="panel" style="padding:12px 16px;margin:0;flex:1 1 280px">
+      <summary><b>여러 명 붙여 넣기</b></summary>
+      <form method="post" action="/roster/students/bulk" style="margin-top:12px">
+        <div class="field">
+          <label for="bulk">한 줄에 한 명: 이름, 학교, 학년, 반 <span class="hint">엑셀에서 네 칸을 그대로 복사해 붙여도 됩니다. 처음 보는 학교와 반은 자동으로 만들어집니다.</span></label>
+          <textarea id="bulk" name="text" placeholder="김하늘, 지인고, 고1, 고1 내신반&#10;이바다, 유일여고, 고2, 고2 수능반" required></textarea>
+        </div>
+        <button class="btn" type="submit">한꺼번에 추가</button>
+      </form>
+    </details>
+  </div>
+
+  <form class="actions" method="get" action="/roster" style="margin:16px 0 12px" role="search">
+    <input type="hidden" name="tab" value="students">
+    <select name="class_id" aria-label="반으로 거르기" style="width:auto">
+      <option value="">모든 반</option>
+      <option value="none" {% if filters.class_id == "none" %}selected{% endif %}>반 미배정</option>
+      {% for c in classes %}<option value="{{ c.id }}" {% if filters.class_id == c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+    <select name="school_id" aria-label="학교로 거르기" style="width:auto">
+      <option value="">모든 학교</option>
+      {% for s in schools %}<option value="{{ s.id }}" {% if filters.school_id == s.id|string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="이름 찾기" aria-label="이름 찾기" style="width:140px">
+    <label style="font-weight:400;margin:0"><input type="checkbox" name="inactive" value="1" {% if filters.inactive %}checked{% endif %}> 퇴원생 포함</label>
+    <button class="btn ghost small" type="submit">거르기</button>
+  </form>
+
+  <div class="panel-head">
+    <span class="small muted">{{ students|length }}명</span>
+    <form method="post" action="/roster/pdf">
+      <input type="hidden" name="class_id" value="{{ filters.class_id if filters.class_id.isdigit() else '' }}">
+      <button class="btn ghost small" type="submit" {% if not students %}disabled{% endif %}>{{ "이 반 " if filters.class_id.isdigit() else "" }}명단 PDF</button>
+    </form>
+  </div>
+  {% if pdf_job %}<div class="job" data-job-id="{{ pdf_job }}"></div>{% endif %}
+
+  {% if students %}
+  <div class="table-wrap">
+    <table class="list">
+      <thead><tr><th>이름</th><th>학교</th><th>학년</th><th>반</th><th>접속 코드</th><th>메모</th><th></th></tr></thead>
+      <tbody>
+      {% for s in students %}
+        <tr {% if not s.active %}class="muted"{% endif %}>
+          <td><b>{{ s.name }}</b>{% if not s.active %} <span class="tag">퇴원</span>{% endif %}</td>
+          <td>{{ s.school.name if s.school else "" }}</td>
+          <td>{{ s.grade or "" }}</td>
+          <td>{{ s.class_group.name if s.class_group else "" }}</td>
+          <td><span class="code">{{ s.access_code }}</span> <button class="linklike small" type="button" data-copy="{{ base }}s/{{ s.access_code }}">링크 복사</button></td>
+          <td class="muted small wrap">{{ s.memo or "" }}</td>
+          <td><button class="linklike small" type="button" data-row="edit-{{ s.id }}" aria-expanded="false">수정</button></td>
+        </tr>
+        <tr class="edit-row" id="edit-{{ s.id }}" hidden>
+          <td colspan="7">
+            <form method="post" action="/roster/students/{{ s.id }}/edit">
+              <div class="row">
+                <div class="field"><label>이름</label><input type="text" name="name" value="{{ s.name }}" required></div>
+                <div class="field"><label>학교</label><select name="school_id">{{ school_options(s.school_id) }}</select></div>
+                <div class="field"><label>학년</label><select name="grade">{{ grade_options(s.grade) }}</select></div>
+                <div class="field"><label>반</label><select name="class_id">{{ class_options(s.class_id) }}</select></div>
+              </div>
+              <div class="row">
+                <div class="field"><label>학부모 연락처</label><input type="tel" name="parent_phone" value="{{ s.parent_phone or '' }}"></div>
+                <div class="field"><label>메모</label><input type="text" name="memo" value="{{ s.memo or '' }}"></div>
+              </div>
+              <div class="actions">
+                <button class="btn small" type="submit">저장</button>
+                <button class="btn ghost small" type="submit" formaction="/roster/students/{{ s.id }}/code" onclick="return confirm('접속 코드를 새로 만들까요? 예전 코드로는 들어올 수 없게 됩니다.')">접속 코드 새로 만들기</button>
+                <button class="btn danger small" type="submit" formaction="/roster/students/{{ s.id }}/toggle">{{ "퇴원 처리" if s.active else "재원으로 되돌리기" }}</button>
+              </div>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="panel empty">
+      {% if filters.q or filters.class_id or filters.school_id %}조건에 맞는 학생이 없어요. 거르기 조건을 바꿔 보세요.
+      {% else %}아직 학생이 없어요. 위에서 한 명씩 추가하거나, 엑셀 명단을 붙여 넣어 한꺼번에 등록하세요.{% endif %}
+    </div>
+  {% endif %}
+
+{% elif tab == "classes" %}
+  <section class="panel">
+    <h2>반 만들기</h2>
+    <form method="post" action="/roster/classes">
+      <div class="row">
+        <div class="field"><label for="c-name">반 이름</label><input type="text" id="c-name" name="name" placeholder="예: 고1 내신반" required></div>
+        <div class="field"><label for="c-teacher">담당 선생님</label>
+          <select id="c-teacher" name="teacher_id"><option value="">정하지 않음</option>{% for t in teachers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="c-sched">수업 시간 <span class="hint">선택</span></label><input type="text" id="c-sched" name="schedule" placeholder="예: 월수금 7시"></div>
+      </div>
+      <button class="btn" type="submit">반 만들기</button>
+    </form>
+  </section>
+  {% if classes %}
+  <div class="table-wrap">
+    <table class="list">
+      <thead><tr><th>반</th><th>담당</th><th>수업 시간</th><th>학생</th><th></th></tr></thead>
+      <tbody>
+      {% for c in classes %}
+        <tr {% if not c.active %}class="muted"{% endif %}>
+          <td><a href="/roster?tab=students&class_id={{ c.id }}"><b>{{ c.name }}</b></a>{% if not c.active %} <span class="tag">종료</span>{% endif %}</td>
+          <td>{{ c.teacher.name if c.teacher else "" }}</td>
+          <td class="small">{{ c.schedule or "" }}</td>
+          <td>{{ class_counts.get(c.id, 0) }}명</td>
+          <td><button class="linklike small" type="button" data-row="cedit-{{ c.id }}" aria-expanded="false">수정</button></td>
+        </tr>
+        <tr class="edit-row" id="cedit-{{ c.id }}" hidden>
+          <td colspan="5">
+            <form method="post" action="/roster/classes/{{ c.id }}/edit">
+              <div class="row">
+                <div class="field"><label>반 이름</label><input type="text" name="name" value="{{ c.name }}" required></div>
+                <div class="field"><label>담당 선생님</label><select name="teacher_id"><option value="">정하지 않음</option>{% for t in teachers %}<option value="{{ t.id }}" {% if c.teacher_id == t.id %}selected{% endif %}>{{ t.name }}</option>{% endfor %}</select></div>
+                <div class="field"><label>수업 시간</label><input type="text" name="schedule" value="{{ c.schedule or '' }}"></div>
+              </div>
+              <label style="font-weight:400"><input type="checkbox" name="active" value="1" {% if c.active %}checked{% endif %}> 운영 중 <span class="hint">끄면 학생 등록 화면의 반 목록에서 빠집니다</span></label>
+              <button class="btn small" type="submit" style="margin-top:8px">저장</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="panel empty">아직 반이 없어요. 위에서 첫 반을 만들어 보세요.</div>
+  {% endif %}
+
+{% else %}
+  <section class="panel">
+    <h2>학교 등록</h2>
+    <p class="small muted">기출 분석과 경향분석은 여기 등록한 학교 단위로 쌓입니다.</p>
+    <form method="post" action="/roster/schools" class="actions">
+      <input type="text" name="name" placeholder="예: 전주고" aria-label="학교 이름" style="flex:1 1 200px" required>
+      <select name="level" aria-label="학교급" style="width:auto">{% for l in levels %}<option value="{{ l }}" {% if l == "고" %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+      <button class="btn" type="submit">등록</button>
+    </form>
+  </section>
+  {% if schools %}
+  <div class="table-wrap">
+    <table class="list">
+      <thead><tr><th>학교</th><th>학교급</th><th>학생</th><th></th></tr></thead>
+      <tbody>
+      {% for s in schools %}
+        <tr>
+          <td><a href="/roster?tab=students&school_id={{ s.id }}"><b>{{ s.name }}</b></a></td>
+          <td>{{ s.level }}</td>
+          <td>{{ school_counts.get(s.id, 0) }}명</td>
+          <td><button class="linklike small" type="button" data-row="sedit-{{ s.id }}" aria-expanded="false">수정</button></td>
+        </tr>
+        <tr class="edit-row" id="sedit-{{ s.id }}" hidden>
+          <td colspan="4">
+            <form method="post" action="/roster/schools/{{ s.id }}/edit" class="actions">
+              <input type="text" name="name" value="{{ s.name }}" aria-label="학교 이름" style="flex:1 1 200px" required>
+              <select name="level" aria-label="학교급" style="width:auto">{% for l in levels %}<option value="{{ l }}" {% if l == s.level %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+              <button class="btn small" type="submit">저장</button>
+              <button class="btn danger small" type="submit" formaction="/roster/schools/{{ s.id }}/delete" onclick="return confirm('{{ s.name }}를 지울까요?')">지우기</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div class="panel empty">아직 학교가 없어요. 학교를 등록하거나, 학생을 붙여 넣을 때 학교 이름을 함께 쓰면 자동으로 등록됩니다.</div>
+  {% endif %}
+{% endif %}
+
+<script>
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-row]");
+    if (!b) return;
+    const row = document.getElementById(b.dataset.row);
+    row.hidden = !row.hidden;
+    b.setAttribute("aria-expanded", row.hidden ? "false" : "true");
+    b.textContent = row.hidden ? "수정" : "닫기";
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ h.title }} · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/homework">숙제</a></p>
+<h1>{{ h.title }}{% if not h.active %} <span class="tag">닫음</span>{% endif %}</h1>
+<p class="lead">{{ h.classes|map(attribute="name")|join(", ") or "반 없음" }}{% if h.due %} · 마감 {{ h.due }}{% if late %} (지남){% endif %}{% endif %} · 할 일 {{ h.tasks|length }}개{% if h.memo %}<br>{{ h.memo }}{% endif %}</p>
+
+<section class="panel">
+  <h2>할 일</h2>
+  {% for pt in per_task %}{% set t = pt.t %}
+    <div class="hw-task">
+      <div><span class="tag">{{ kinds[t.kind] }}</span> <b>{{ t.title }}</b> <span class="small muted">{{ summary(t) }}</span></div>
+      <div class="small">완료 <b>{{ pt.done }}</b> / {{ rows|length }}명{% if pt.avg is not none %} · 평균(최고 점수) {{ pt.avg }}점{% endif %}
+        {% if pt.miss %}<span class="muted"> · 많이 틀린 {{ "단어" if t.kind == "vocab" else "문항" }}: {% for k, n in pt.miss %}{{ k }}{{ "" if t.kind == "vocab" else "번" }}({{ n }}){% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>
+    </div>
+  {% endfor %}
+</section>
+
+<section class="panel" id="grid">
+  <div class="panel-head"><h2>학생별</h2>
+    {% if h.classes|length > 1 %}<form method="get" action="/homework/{{ h.id }}"><select name="class_id" onchange="this.form.submit()" aria-label="반" style="width:auto"><option value="">전체 반</option>{% for c in h.classes %}<option value="{{ c.id }}" {% if class_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></form>{% endif %}</div>
+  {% if rows %}
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th>학생</th><th>반</th>{% for t in h.tasks %}<th title="{{ t.title }}">{{ loop.index }}. {{ kinds[t.kind] }}</th>{% endfor %}<th>완료</th></tr></thead>
+    <tbody>{% for row in rows %}
+      <tr><td><b>{{ row.s.name }}</b></td><td class="small muted">{{ row.s.class_group.name if row.s.class_group else "" }}</td>
+        {% for st, r in row.cells %}
+          <td><form method="post" action="/homework/{{ h.id }}/check/{{ row.s.id }}/{{ loop.index0 }}" style="display:inline">
+            <button class="hw-cell {{ st }}" type="submit" title="눌러서 선생님이 완료/미완료로 바꾸기">
+              {% if st == "done" %}✓{% if r.total %} {{ r.best }}{% endif %}{% elif st == "retry" %}{{ r.best }}점 · 다시{% else %}—{% endif %}{% if r and r.late %}<small> 늦음</small>{% endif %}
+            </button></form>{% if r and r.attempts > 1 %}<span class="small muted"> {{ r.attempts }}회</span>{% endif %}</td>
+        {% endfor %}
+        <td>{{ row.done }} / {{ h.tasks|length }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  <p class="small muted" style="margin:8px 0 0">칸을 누르면 선생님이 직접 완료·미완료로 바꿀 수 있어요 (종이로 낸 숙제 확인용).</p>
+  {% else %}<p class="small muted" style="margin:0">이 반에 학생이 없어요.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>카톡 문구</h2>
+  <p class="small muted">복사해서 단톡방이나 학부모 카톡에 붙여 넣으세요. (알림톡 자동 발송은 학원 카카오 비즈니스 채널을 만든 뒤 연결할 수 있어요.)</p>
+  <h3>전체 안내</h3>
+  <pre class="copybox">{{ notice }}</pre>
+  <button class="btn ghost small" type="button" data-copy="{{ notice }}">전체 안내 복사</button>
+  {% if todo_people %}
+  <h3 style="margin-top:18px">아직 다 못 한 학생 {{ todo_people|length }}명 <span class="small muted" style="font-weight:400">학생마다 바로 들어가는 링크가 들어가요</span></h3>
+  <div class="table-wrap"><table class="list">
+    <tbody>{% for p in todo_people %}
+      <tr><td><b>{{ p.s.name }}</b></td><td class="small muted">{{ p.s.parent_phone or "" }}</td>
+        <td class="small wrap muted">{{ p.text.split("\n")[2:-1]|join(" ") }}</td>
+        <td><button class="btn ghost small" type="button" data-copy="{{ p.text }}">문구 복사</button></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <details><summary><b>숙제 고치기</b></summary>
+  <form method="post" action="/homework/{{ h.id }}/edit" style="margin-top:12px">
+    <div class="row" style="grid-template-columns: 2fr 1fr">
+      <div class="field"><label>숙제 이름</label><input type="text" name="title" value="{{ h.title }}"></div>
+      <div class="field"><label>마감일</label><input type="text" name="due" value="{{ h.due }}" inputmode="numeric" placeholder="2026-10-28"></div>
+    </div>
+    <div class="field"><label>안내 문구</label><input type="text" name="memo" value="{{ h.memo }}"></div>
+    <div class="field"><label>반</label><div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}</div></div>
+    <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" {% if h.options.reveal %}checked{% endif %}> 제출하면 틀린 문제의 정답·해설 보여 주기</label>
+    <label style="font-weight:400"><input type="checkbox" name="active" value="1" {% if h.active %}checked{% endif %}> 학생 화면에 보이기 (끄면 숙제 닫기)</label>
+    <button class="btn small" type="submit" style="margin-top:8px">저장</button>
+    <p class="small muted" style="margin:8px 0 0">할 일 목록은 학생 기록이 꼬이지 않도록 바꿀 수 없어요. 바꾸려면 새 숙제를 내 주세요.</p>
+  </form>
+  </details>
+</section>
+<form method="post" action="/homework/{{ h.id }}/delete" onsubmit="return confirm('이 숙제와 학생 기록을 지울까요?')"><button class="btn danger small" type="submit">숙제 지우기</button></form>
+{% endblock %}

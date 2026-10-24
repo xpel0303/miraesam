@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}기출 분석 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>기출 분석</h1><a class="btn" href="/exam/new">시험지 올리기</a></div>
+<p class="lead">학교 시험지 PDF·사진을 올리면 문항을 하나씩 뽑아 유형·배점·출제 포인트를 정리해요. 같은 학교 시험이 쌓이면 경향분석에 쓰입니다.</p>
+{% if by_school %}
+  {% for school, papers in by_school.items() %}
+  <section class="panel">
+    <div class="panel-head"><h2>{{ school }}</h2><span class="small muted">{{ papers|length }}회</span></div>
+    <div class="table-wrap"><table class="list">
+      <thead><tr><th>시험</th><th>문항</th><th>상태</th><th>올린 날</th><th></th></tr></thead>
+      <tbody>{% for p in papers %}
+        <tr><td class="wrap"><a href="/exam/{{ p.id }}"><b>{{ p.title }}</b></a></td>
+          <td>{% if p.questions %}{{ p.questions|length }}문항{% endif %}</td>
+          <td class="small">{% if p.status == "done" %}{% if p.warnings %}<span class="tag">확인 {{ p.warnings|length }}</span>{% else %}완료{% endif %}{% elif p.status == "failed" %}<span class="tag" style="color:var(--err)">실패</span>{% else %}<span class="tag">읽는 중</span>{% endif %}</td>
+          <td class="muted small">{{ p.created_at|kst("%Y-%m-%d") }}</td>
+          <td>{% if p.file_id %}<a class="small" href="/files/{{ p.file_id }}" target="_blank" rel="noopener">분석지</a>{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+  </section>
+  {% endfor %}
+{% else %}
+<div class="panel empty"><p>아직 올린 시험지가 없어요.</p><a class="btn" href="/exam/new">첫 시험지 올리기</a></div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "pdf/_base.html" %}
+{#  지문 분석본. opts.layout: "split" = 지문 7 : 주석 3 / "single" = 1단 (포인트는 문장 아래)  #}
+{% block style %}
+  :root {
+    --g: #9a3324; --g-bg: #f6eed0;   /* 문법: 벽돌색 + 옅은 형광펜 */
+    --v: #2b4f7d;                    /* 어휘: 남색 */
+    --b: #6a3d7a;                    /* 문법+어휘: 자주 */
+    --hl: #f6eed0;
+  }
+  .passage { break-before: page; }
+  .passage.first { break-before: avoid; }
+  .ptitle { font-size: 16pt; font-weight: 800; margin: 0 0 3pt; padding-bottom: 5pt; border-bottom: 1.6pt solid var(--brand); }
+  .ptitle .kr { font-size: 10pt; font-weight: 400; color: var(--ink-2); margin-left: 6pt; }
+  .meta { font-size: 8.5pt; color: var(--ink-3); margin: 3pt 0 6pt; }
+  .legend { font-size: 8pt; color: var(--ink-2); background: var(--fill); border-radius: 4pt; padding: 4pt 8pt; margin-bottom: 8pt; }
+  .legend span { margin-right: 10pt; }
+
+  .grammar { color: var(--g); font-weight: 700; background: var(--g-bg); border-radius: 2pt; }
+  .vocab { color: var(--v); font-weight: 700; }
+  .both { color: var(--b); font-weight: 700; }
+  .connective { background: var(--hl); text-decoration: underline; text-decoration-thickness: 1pt; }
+  .highlight { background: var(--hl); }
+
+  .row { display: table; width: 100%; table-layout: fixed; border-bottom: 0.6pt solid var(--line-2); break-inside: avoid; }
+  .row > div { display: table-cell; vertical-align: top; padding: 7pt 0; }
+  .split .main { width: 70%; padding-right: 10pt; }
+  .split .side { width: 30%; }
+  .single .main { width: 100%; }
+  .num { font-weight: 800; margin-right: 4pt; color: var(--brand); }
+  .ins { font-size: 7.5pt; border: 0.6pt solid var(--ink-3); color: var(--ink-2); border-radius: 6pt; padding: 0 4pt; margin-left: 3pt; }
+  .en { font-size: 10.5pt; line-height: 1.6; }
+  .chips { margin-top: 3pt; }
+  .chip { display: inline-block; font-size: 7.6pt; background: #4a4a4a; color: #fff; border-radius: 7pt; padding: 0.5pt 6pt; margin: 1pt 3pt 1pt 0; }
+  .chip.voc { background: none; color: var(--v); border: 0.6pt solid #b9c6d8; }
+  .chip.voc.b { color: var(--b); border-color: #d2c3d9; }
+  .ko { margin-top: 4pt; padding: 4pt 7pt; background: var(--fill); border-radius: 3pt; font-size: 9.3pt; color: #333; }
+
+  .pt { border: 0.7pt solid var(--line); border-radius: 4pt; padding: 5pt 7pt; font-size: 8.6pt; line-height: 1.5; background: #fff; }
+  .single .pt { margin-top: 5pt; }
+  .pt .lb { display: inline-block; font-weight: 700; font-size: 7.6pt; border-radius: 6pt; padding: 0.5pt 6pt; margin-bottom: 3pt; }
+  .t-grammar .lb { color: #9a3324; background: #f5e6e2; }
+  .t-reading .lb, .t-implication .lb { color: #2b4f7d; background: #e3eaf3; }
+  .t-topic .lb { color: #3d6b4f; background: #e4efe7; }
+  .t-blank .lb { color: #6a3d7a; background: #ece4f0; }
+  .t-insertion .lb { color: #7a5a1e; background: #f4ecd9; }
+
+  .sum { margin-top: 12pt; break-inside: avoid; }
+  .sum table th { width: 16%; background: #3a3a3a; color: #fff; }
+  .bg { margin-top: 8pt; background: var(--fill); border-radius: 4pt; padding: 7pt 10pt; font-size: 9.2pt; line-height: 1.65; break-inside: avoid; }
+  .bg h3 { margin: 0 0 3pt; }
+  .sketch { margin-top: 10pt; break-inside: avoid; }
+  .sketch h3 { margin: 0 0 6pt; }
+  .step { display: inline-block; border: 1.5pt solid #555; border-radius: 10pt 12pt 9pt 13pt; padding: 5pt 10pt; text-align: center; margin: 3pt 0; background: #fffdf7; vertical-align: middle; }
+  .step b { display: block; font-size: 10.5pt; }
+  .step i { display: block; font-style: normal; font-size: 8pt; color: var(--ink-3); }
+  .arrow { display: inline-block; font-size: 13pt; color: #555; margin: 0 4pt; vertical-align: middle; }
+  .vt { margin-top: 10pt; }
+  .vt td:first-child { font-weight: 700; }
+{% endblock %}
+
+{% block body %}
+{% set layout = opts.layout %}
+{% for p in passages %}
+<div class="passage {% if loop.first %}first{% endif %}">
+  <div class="ptitle">{{ p.title_en or p.title or ("지문 " ~ loop.index) }}{% if p.title_ko %}<span class="kr">{{ p.title_ko }}</span>{% endif %}</div>
+  <div class="meta">지문 {{ loop.index }} · {{ p.sentences|length }}문장{% if p.level %} · {{ p.level }}{% endif %}</div>
+  <div class="legend">
+    <span class="grammar">문법</span><span class="vocab">어휘</span><span class="both">문법+어휘</span><span class="connective">연결어</span><span class="highlight">구조 강조</span>
+  </div>
+
+  <div class="{{ layout }}">
+  {% for s in p.sentences %}
+    <div class="row">
+      <div class="main">
+        <div class="en"><span class="num">{{ s.n }}</span>{% for seg in s.segments %}{% if seg.type %}<span class="{{ seg.type }}">{{ seg.text }}</span>{% else %}{{ seg.text }}{% endif %}{% endfor %}{% if s.insertion %}<span class="ins">문장삽입</span>{% endif %}</div>
+        {% set vocs = s.segments|selectattr("type", "in", ["vocab", "both"])|selectattr("label")|list %}
+        {% if s.chips or vocs %}
+        <div class="chips">{% for c in s.chips %}<span class="chip">{{ c }}</span>{% endfor %}{% for v in vocs %}<span class="chip voc {{ 'b' if v.type == 'both' else '' }}">{{ v.text }} {{ v.label }}</span>{% endfor %}</div>
+        {% endif %}
+        <div class="ko">{{ s.ko }}</div>
+        {% if layout == "single" and s.point %}
+          <div class="pt t-{{ s.point.type }}"><span class="lb">{{ s.n }}번 {{ point_types[s.point.type] }}</span><br>{{ s.point.text }}</div>
+        {% endif %}
+      </div>
+      {% if layout == "split" %}
+      <div class="side">
+        {% if s.point %}<div class="pt t-{{ s.point.type }}"><span class="lb">{{ s.n }}번 {{ point_types[s.point.type] }}</span><br>{{ s.point.text }}</div>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+
+  <div class="sum">
+    <table>
+      <tr><th>주제</th><td>{{ p.summary.topic }}</td></tr>
+      <tr><th>흐름</th><td>{{ p.summary.flow|map(attribute="ko")|join(" → ") }}</td></tr>
+    </table>
+  </div>
+
+  {% if opts.show_background and p.summary.background %}
+  <div class="bg"><h3>관련 배경지식</h3>{{ p.summary.background }}</div>
+  {% endif %}
+
+  {% if opts.show_sketch and p.summary.flow %}
+  <div class="sketch"><h3>흐름 한눈에 보기</h3>
+    {% for st in p.summary.flow %}<span class="step" style="transform: rotate({{ [-1.2, 1, -0.7, 1.3, -1, 0.8][loop.index0 % 6] }}deg)"><b>{{ st.ko }}</b>{% if st.en %}<i>{{ st.en }}</i>{% endif %}</span>{% if not loop.last %}<span class="arrow">→</span>{% endif %}{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if opts.show_vocab and p.vocab %}
+  <div class="vt"><h3>중요 어휘</h3>
+    <table>
+      <thead><tr><th style="width:22%">단어</th><th style="width:30%">의미</th><th style="width:28%">유의어</th><th>반의어</th></tr></thead>
+      <tbody>{% for v in p.vocab %}<tr><td>{{ v.word }}</td><td>{{ v.meaning }}</td><td>{{ v.syn }}</td><td>{{ v.ant }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

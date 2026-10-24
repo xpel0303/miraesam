@@ -1,0 +1,60 @@
+{% extends "pdf/_base.html" %}
+{# 문장 시험지 + 정답 (맨 뒤 페이지) #}
+{% block style %}
+  .head { border-bottom: 1.4pt solid var(--brand); padding-bottom: 5pt; margin-bottom: 6pt; }
+  .head h1 { margin: 0; }
+  .info { display: table; width: 100%; font-size: 8.8pt; margin-top: 5pt; }
+  .info span { display: table-cell; border-bottom: 0.6pt solid var(--ink-3); padding: 2pt 0; }
+  .info span + span { padding-left: 10pt; }
+  .ptitle { font-size: 11pt; font-weight: 800; margin: 12pt 0 2pt; color: var(--brand); }
+  .stem { font-weight: 700; margin: 9pt 0 4pt; break-after: avoid; }
+  .stem .tag { display: inline-block; font-size: 8pt; border: 0.6pt solid var(--brand); color: var(--brand); border-radius: 6pt; padding: 0 6pt; margin-right: 4pt; font-weight: 700; }
+  .it { break-inside: avoid; margin: 0 0 7pt; padding-left: 20pt; text-indent: -20pt; font-size: 9.6pt; line-height: 1.55; }
+  .it .n { display: inline-block; width: 20pt; text-indent: 0; color: var(--brand); font-weight: 800; }
+  .it .sub { color: var(--ink-2); font-size: 8.8pt; }
+  .bank { font-weight: 700; }
+  .ln { border-bottom: 0.6pt solid var(--ink-3); height: 16pt; margin-left: 20pt; text-indent: 0; }
+  .bl { display: inline-block; min-width: 46pt; border-bottom: 0.7pt solid var(--ink); text-indent: 0; }
+  .bl i { font-style: normal; color: var(--ink-3); font-size: 8pt; }
+  .ans { break-before: page; }
+  .ans .it { margin-bottom: 3pt; font-size: 8.8pt; }
+{% endblock %}
+{% block body %}
+<div class="head"><h1>{{ s.title }}</h1><div class="info"><span>반:</span><span>이름:</span><span>점수:</span></div></div>
+
+{% set ns = namespace(n=0) %}
+{% for g in groups %}
+  {% if groups|length > 1 %}<div class="ptitle">{{ g.title }}</div>{% endif %}
+  {% for sec in g.sections %}
+    <div class="stem"><span class="tag">{{ types[sec.type] }}</span>{{ stems[sec.type] }}</div>
+    {% for q in sec["items"] %}
+      {% set ns.n = ns.n + 1 %}
+      <div class="it"><span class="n">{{ ns.n }}</span>
+      {% if sec.type == "translate" %}{{ q.en }}</div><div class="ln"></div><div class="ln" style="margin-bottom:6pt"></div>
+      {% elif sec.type == "compose" %}{{ q.ko }}{% if q.hint %} <span class="sub">({{ q.hint }})</span>{% endif %}</div><div class="ln"></div><div class="ln" style="margin-bottom:6pt"></div>
+      {% elif sec.type == "arrange" %}{{ q.ko }}<br><span class="bank">( {{ q.given|join(" / ") }} )</span></div><div class="ln" style="margin-bottom:6pt"></div>
+      {% else %}{% for pc in q.pieces %}{% if pc.blank %}<span class="bl"><i>{{ pc.hint }}</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>{% else %}{{ pc.text }}{% endif %}{% endfor %}<br><span class="sub">{{ q.ko }}</span></div>
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
+
+<div class="ans">
+  <h1>정답</h1>
+  <div class="sub">{{ s.title }}</div>
+  {% set ns.n = 0 %}
+  {% for g in groups %}
+    {% if groups|length > 1 %}<div class="ptitle">{{ g.title }}</div>{% endif %}
+    {% for sec in g.sections %}
+      <div class="stem"><span class="tag">{{ types[sec.type] }}</span></div>
+      {% for q in sec["items"] %}
+        {% set ns.n = ns.n + 1 %}
+        <div class="it"><span class="n">{{ ns.n }}</span>
+          {% if sec.type == "translate" %}{{ q.ko }}
+          {% elif sec.type == "blank" %}{{ q.pieces|selectattr("blank")|map(attribute="blank")|join(", ") }} <span class="sub">— {{ q.en }}</span>
+          {% else %}{{ q.en }}{% endif %}</div>
+      {% endfor %}
+    {% endfor %}
+  {% endfor %}
+</div>
+{% endblock %}

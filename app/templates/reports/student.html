@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ st.name }} · {{ e.title }} · {{ APP_NAME }}{% endblock %}
+{% macro ans(a) %}{% if a %}{% for c in a.split("/") %}{{ circ[c] }}{% endfor %}{% endif %}{% endmacro %}
+{% block main %}
+<p class="small"><a href="/reports">학생·반 리포트</a> · <a href="/reports/{{ e.id }}?tab=answers">{{ e.title }}</a></p>
+<div class="panel-head" style="margin-bottom:4px">
+  <h1>{{ st.name }} <span class="small muted" style="font-weight:400">{{ [st.school.name if st.school else None, st.grade, st.class_group.name if st.class_group else None]|select|join(" / ") }}</span></h1>
+  <div class="actions">
+    {% if prev %}<a class="btn ghost small" href="/reports/{{ e.id }}/s/{{ prev }}">← 이전 학생</a>{% endif %}
+    {% if next %}<a class="btn ghost small" href="/reports/{{ e.id }}/s/{{ next }}">다음 학생 →</a>{% endif %}
+  </div>
+</div>
+
+{% if view %}{% set me = view.me %}
+<div class="tiles">
+  <div><span>점수</span><b>{{ fmt(me.score) }}<small> / {{ fmt(me.max) }}</small></b></div>
+  <div><span>반 평균</span><b>{{ fmt(S.avg) }}</b></div>
+  <div><span>등수</span><b>{{ me.rank }}<small> / {{ S.n }}</small></b></div>
+  <div><span>잃은 점수</span><b>{{ fmt(view.lost) }}</b></div>
+  <div><span>아까운 점수</span><b>{{ fmt(view.easy_lost) }}</b></div>
+</div>
+<div class="row" style="grid-template-columns: 1fr 1fr; align-items:start">
+  <section class="panel">
+    <h2>유형별 <span class="small muted" style="font-weight:400">진한 막대 = {{ st.name }}, 옅은 막대 = 반</span></h2>
+    {% for t in view.types %}
+      <div class="hrow"><span>{{ t.type }}</span><div><div class="hbar"><i style="width:{{ t.rate or 0 }}%"></i></div><div class="hbar sm ghost"><i style="width:{{ t['class'] or 0 }}%"></i></div></div><b>{{ t.rate if t.rate is not none else "-" }}%</b></div>
+    {% endfor %}
+  </section>
+  <section class="panel">
+    <h2>요약</h2>
+    <ul class="small" style="margin:0;padding-left:18px">{% for l in view.auto %}<li>{{ l }}</li>{% endfor %}</ul>
+    {% if view.wrong %}<h3 style="margin-top:14px">틀린 문항</h3>
+    <p class="small" style="margin:0">{% for w in view.wrong %}<span class="tag" {% if w.easy %}style="border-color:var(--ink-2);color:var(--ink)"{% endif %} title="{{ w.type }} · 반 정답률 {{ w.class_rate }}%">{{ w.n }}번{% if w.type %} {{ w.type }}{% endif %}</span> {% endfor %}</p>
+    <p class="small muted" style="margin:6px 0 0">테두리가 진한 문항은 반 정답률 70% 이상인데 틀린 문항이에요.</p>{% endif %}
+  </section>
+</div>
+<section class="panel" id="pdf">
+  <form method="post" action="/reports/{{ e.id }}/pdf" class="actions">
+    <input type="hidden" name="kind" value="one"><input type="hidden" name="student_id" value="{{ st.id }}">
+    <button class="btn small" type="submit">이 학생 리포트 PDF</button>
+    <label class="small" style="font-weight:400;margin:0"><input type="checkbox" name="show_rank" value="1"> 등수 넣기</label>
+    <span class="small muted">코멘트를 먼저 저장하고 만드세요.</span>
+  </form>
+  {% if pdf_job %}<div class="job" data-job-id="{{ pdf_job }}"></div>{% endif %}
+</section>
+{% else %}
+<div class="flash small">아직 답이 없어요. 아래에 답을 넣고 저장하면 채점됩니다.</div>
+{% endif %}
+
+<form method="post" action="/reports/{{ e.id }}/s/{{ st.id }}">
+  <section class="panel">
+    <h2>선생님 코멘트 <span class="small muted" style="font-weight:400">리포트에 그대로 들어가요</span></h2>
+    <textarea name="comment" rows="4" placeholder="예: 빈칸 추론에서 선지를 끝까지 비교하지 않고 고르는 습관이 보입니다. 다음 시험까지 주 2회 빈칸 집중 훈련을 하겠습니다.">{{ r.comment if r else "" }}</textarea>
+  </section>
+  <section class="panel">
+    <h2>답안</h2>
+    <div class="table-wrap"><table class="list edit-items">
+      <thead><tr><th>#</th><th>유형</th><th>정답</th><th>학생 답</th><th>결과</th></tr></thead>
+      <tbody>{% for it in items %}{% set k = it.n|string %}{% set row = view.me.rows[loop.index0] if view else None %}
+        <tr>
+          <td class="muted">{{ it.n }}</td><td class="small">{{ it.type }}</td>
+          {% if it.kind == "mc" %}
+            <td><b>{{ ans(it.answer) }}</b></td>
+            <td><select name="a{{ k }}" aria-label="{{ it.n }}번 학생 답" style="width:auto"><option value="">안 씀</option>
+              {% for c in ["1","2","3","4","5"] %}<option value="{{ c }}" {% if r and r.answers.get(k) == c %}selected{% endif %}>{{ circ[c] }}</option>{% endfor %}
+              {% if r and r.answers.get(k) and "/" in r.answers.get(k) %}<option value="{{ r.answers.get(k) }}" selected>{{ ans(r.answers.get(k)) }} (중복 마킹)</option>{% endif %}</select></td>
+            <td class="small">{% if row %}{{ "O" if row.ok else "X" }}{% endif %}</td>
+          {% else %}
+            <td class="small wrap" style="max-width:220px">{{ it.answer or "서술형" }} <span class="muted">/{{ fmt(it.points) }}점</span></td>
+            <td class="wrap"><input type="text" name="t{{ k }}" value="{{ r.sa_text.get(k, '') if r else '' }}" placeholder="학생이 쓴 답 (선택)" aria-label="{{ it.n }}번 학생 답" style="min-width:220px"></td>
+            <td><input type="text" name="s{{ k }}" value="{{ fmt(r.sa_scores.get(k)) if r and r.sa_scores.get(k) is not none else '' }}" style="width:60px" inputmode="decimal" aria-label="{{ it.n }}번 점수" placeholder="점수"></td>
+          {% endif %}
+        </tr>
+      {% endfor %}</tbody>
+    </table></div>
+  </section>
+  <div class="actions">
+    <button class="btn" type="submit">저장</button>
+    {% if next %}<button class="btn ghost" type="submit" name="then" value="{{ next }}">저장하고 다음 학생</button>{% endif %}
+  </div>
+</form>
+{% if r %}<form method="post" action="/reports/{{ e.id }}/s/{{ st.id }}/clear" onsubmit="return confirm('이 학생의 답안과 코멘트를 지울까요?')" style="margin-top:16px"><button class="btn danger small" type="submit">이 학생 답안 지우기</button></form>{% endif %}
+{% endblock %}

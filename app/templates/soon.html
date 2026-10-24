@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ feature.name }} · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>{{ feature.name }}</h1>
+<p class="lead">{{ feature.summary }}</p>
+<div class="panel">
+  <h2>아직 만드는 중이에요</h2>
+  <p>이 기능은 통합 로드맵의 <b>{{ STAGE_NAMES[feature.stage] }}</b>에서 만듭니다. 완성되면 이 메뉴에서 바로 열립니다.</p>
+  <p class="muted small">지금 쓸 수 있는 기능은 홈의 기능 진척표에서 채워진 칸입니다.</p>
+  <a class="btn ghost" href="/">홈으로</a>
+</div>
+{% endblock %}

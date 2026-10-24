@@ -1,0 +1,26 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ e.title }} 결과 · {{ academy.name }}{% endblock %}
+{% block body %}
+<h1 style="font-size:1.3rem">{{ e.title }}</h1>
+{% if view %}{% set me = view.me %}
+  <p class="score"><b>{{ fmt(me.score) }}</b> / {{ fmt(me.max) }}점</p>
+  {% if me.pending %}<p class="small muted">서술형 {{ me.pending }}문항은 선생님이 채점하면 점수에 더해져요.</p>{% endif %}
+  <div class="student-card" style="margin-top:16px">
+    <h2>유형별</h2>
+    {% for t in view.types %}<div class="hrow"><span>{{ t.type }}</span><div class="hbar"><i style="width:{{ t.rate or 0 }}%"></i></div><b>{{ t.rate if t.rate is not none else "-" }}%</b></div>{% endfor %}
+  </div>
+  {% if view.wrong %}
+  <div class="student-card" style="margin-top:16px">
+    <h2>다시 볼 문항</h2>
+    <p style="margin:0">{% for w in view.wrong %}<span class="tag">{{ w.n }}번{% if w.type %} {{ w.type }}{% endif %}</span> {% endfor %}</p>
+    <p class="small muted" style="margin:8px 0 0">정답과 해설은 수업 시간에 같이 봐요.</p>
+  </div>
+  {% endif %}
+{% else %}
+  <div class="student-card" style="margin-top:16px">
+    <p style="margin:0"><b>답을 냈어요.</b> 객관식 {{ r.answers|length }} / {{ n_mc }}문항을 골랐어요.</p>
+    <p class="small muted" style="margin:6px 0 0">결과는 선생님이 알려 주실 거예요.</p>
+  </div>
+{% endif %}
+<p style="margin-top:18px" class="actions"><a class="btn ghost" href="/s/{{ code }}/exam/{{ e.id }}">답 고치기</a><a class="btn ghost" href="/s/{{ code }}">처음으로</a></p>
+{% endblock %}

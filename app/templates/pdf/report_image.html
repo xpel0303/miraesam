@@ -1,0 +1,69 @@
+{% extends "pdf/_base.html" %}
+{# 결과 이미지: 세로 4:5 한 장 → PNG. 머리말·쪽 번호 없음 #}
+{% macro ans(a) %}{% if a %}{% for c in a.split("/") %}{{ circ[c] }}{% endfor %}{% endif %}{% endmacro %}
+{% block style %}
+  @page { size: 150mm 187.5mm; margin: 0; @top-left { content: none; } @bottom-center { content: none; } }
+  .pdf-header { display: none; }
+  .card { height: 187.5mm; padding: 10mm 11mm 0; position: relative; background: #fbfbfa; overflow: hidden; }
+  .hd { display: flex; align-items: center; align-items: center; gap: 6pt; font-size: 9pt; color: var(--ink-2); }
+  .hd img { height: 16pt; }
+  .hd .dt { margin-left: auto; color: var(--ink-3); }
+  .ttl { font-size: 19pt; font-weight: 800; letter-spacing: -0.4pt; margin: 8pt 0 1pt; }
+  .meta { font-size: 9pt; color: var(--ink-2); padding-bottom: 7pt; border-bottom: 1.8pt solid var(--brand); }
+  .big { display: flex; align-items: flex-start; gap: 8pt; margin: 9pt 0 2pt; }
+  .big div { flex: 1; background: #fff; border: 0.8pt solid var(--line); border-radius: 5pt; padding: 7pt 9pt; }
+  .big span { display: block; font-size: 8pt; color: var(--ink-2); }
+  .big b { font-size: 19pt; font-weight: 800; }
+  .big .main b { color: var(--brand); }
+  h3 { font-size: 10pt; margin: 9pt 0 4pt; }
+  .vb { display: flex; align-items: flex-end; gap: 3pt; height: 72pt; border-bottom: 0.8pt solid var(--ink-3); }
+  .vb div { flex: 1; text-align: center; font-size: 7.6pt; font-weight: 700; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
+  .vb i { display: block; background: var(--brand); border-radius: 1.5pt 1.5pt 0 0; }
+  .vl { display: flex; gap: 3pt; font-size: 6.8pt; color: var(--ink-3); }
+  .vl span { flex: 1; text-align: center; }
+  .two { display: flex; align-items: flex-start; gap: 12pt; }
+  .two > div { flex: 1; min-width: 0; }
+  .hrow { display: flex; align-items: center; gap: 5pt; font-size: 8.3pt; margin: 3pt 0; }
+  .hrow .t { width: 58pt; flex: none; overflow: hidden; white-space: nowrap; }
+  .hrow .bar { flex: 1; height: 6pt; background: var(--line-2); border-radius: 1pt; }
+  .hrow .bar i { display: block; height: 100%; background: var(--brand); }
+  .hrow .v { width: 26pt; text-align: right; font-weight: 700; }
+  .miss { font-size: 8.3pt; }
+  .miss div { display: flex; justify-content: space-between; padding: 2.6pt 0; border-bottom: 0.5pt solid var(--line-2); }
+  .top { font-size: 9pt; margin-top: 2pt; }
+  .top span { display: inline-block; background: #fff; border: 0.7pt solid var(--line); border-radius: 9pt; padding: 1pt 7pt; margin: 0 3pt 3pt 0; }
+  .ft { position: absolute; left: 11mm; right: 11mm; bottom: 7mm; font-size: 7.4pt; color: var(--ink-3); text-align: right; }
+{% endblock %}
+{% block body %}
+<div class="card">
+  <div class="hd">{% if academy.logo %}<img src="{{ academy.logo }}" alt="">{% endif %}<b>{{ academy.name }}</b><span class="dt">{{ exam.date or today }}</span></div>
+  <div class="ttl">{{ exam.title }}</div>
+  <div class="meta">{{ [exam.school or None, exam.classes or None]|select|join(" · ") }} · {{ items|length }}문항 · 만점 {{ fmt(S.full) }}점</div>
+
+  <div class="big">
+    <div class="main"><span>평균</span><b>{{ fmt(S.avg) }}</b></div>
+    <div><span>최고</span><b>{{ fmt(S.max) }}</b></div>
+    <div><span>중앙값</span><b>{{ fmt(S.median) }}</b></div>
+    <div><span>응시</span><b>{{ S.n }}<span style="display:inline;font-size:9pt"> 명</span></b></div>
+  </div>
+
+  <h3>점수 분포</h3>
+  {% set peak = S.bins|map(attribute="count")|max %}
+  <div class="vb">{% for b in S.bins %}<div>{% if b.count %}{{ b.count }}{% endif %}<i style="height:{{ (80 * b.count / peak) if peak else 0 }}%"></i></div>{% endfor %}</div>
+  <div class="vl">{% for b in S.bins %}<span>{{ b.label.split("~")[0] }}</span>{% endfor %}</div>
+
+  <div class="two">
+    <div>
+      <h3>유형별 득점률 <span style="font-weight:400;font-size:7.5pt;color:var(--ink-3)">낮은 순</span></h3>
+      {% for t in (S.types|sort(attribute='rate'))[:7] if t.rate is not none %}<div class="hrow"><span class="t">{{ t.type }}</span><div class="bar"><i style="width:{{ t.rate or 0 }}%"></i></div><span class="v">{{ t.rate if t.rate is not none else "-" }}%</span></div>{% endfor %}
+    </div>
+    <div>
+      <h3>많이 틀린 문항</h3>
+      <div class="miss">{% for it in worst[:5] %}<div><span><b>{{ it.n }}번</b> {{ it.type }}</span><span>정답률 <b>{{ it.rate }}%</b></span></div>{% endfor %}</div>
+    </div>
+  </div>
+
+  {% if top %}<h3>잘했어요</h3><div class="top">{% for p in top %}<span>{{ p.rank }}등 <b>{{ mask(p.name) }}</b> {{ fmt(p.score) }}점</span>{% endfor %}</div>{% endif %}
+  <div class="ft">{{ academy.name }}</div>
+</div>
+{% endblock %}

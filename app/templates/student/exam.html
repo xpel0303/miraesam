@@ -1,0 +1,37 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ e.title }} · {{ academy.name }}{% endblock %}
+{% block body %}
+<h1 style="font-size:1.3rem">{{ e.title }}</h1>
+<p class="muted small">시험지를 보면서 내가 고른 답을 그대로 눌러 주세요. {% if r %}이미 낸 답이 있어요. 고쳐서 다시 내면 바뀝니다.{% endif %}</p>
+<form method="post" action="/s/{{ code }}/exam/{{ e.id }}" id="exam-form">
+  {% for it in items %}{% set k = it.n|string %}
+    {% if it.kind == "mc" %}
+    <div class="erow" role="radiogroup" aria-label="{{ it.n }}번">
+      <span class="en">{{ it.n }}</span>
+      {% for c in ["1","2","3","4","5"] %}<label class="ec"><input type="radio" name="a{{ k }}" value="{{ c }}" {% if r and r.answers.get(k) == c %}checked{% endif %}><span>{{ circ[c] }}</span></label>{% endfor %}
+    </div>
+    {% else %}
+    <div class="erow sa"><span class="en">{{ it.n }}</span>
+      <div style="flex:1"><label class="small" for="t{{ k }}" style="font-weight:400;color:var(--ink-2)">서술형 {{ fmt(it.points) }}점 · 내가 쓴 답</label>
+        <textarea id="t{{ k }}" name="t{{ k }}" rows="2" style="min-height:0">{{ r.sa_text.get(k, '') if r else '' }}</textarea></div></div>
+    {% endif %}
+  {% endfor %}
+  <p class="small muted" id="left" style="margin:14px 0 8px"></p>
+  <button class="btn" type="submit" style="width:100%;padding:12px">답 내기</button>
+</form>
+{% endblock %}
+{% block script %}
+<script>
+  const form = document.getElementById("exam-form"), left = document.getElementById("left");
+  const groups = [...form.querySelectorAll("[role=radiogroup]")];
+  function upd() {
+    const empty = groups.filter(g => !g.querySelector("input:checked")).map(g => g.getAttribute("aria-label"));
+    left.textContent = empty.length ? `아직 안 고른 문항: ${empty.join(", ")}` : "객관식을 모두 골랐어요.";
+  }
+  form.addEventListener("change", upd); upd();
+  form.addEventListener("submit", (ev) => {
+    const empty = groups.filter(g => !g.querySelector("input:checked")).length;
+    if (empty && !confirm(`안 고른 문항이 ${empty}개 있어요. 이대로 낼까요?`)) ev.preventDefault();
+  });
+</script>
+{% endblock %}

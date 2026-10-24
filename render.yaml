@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: miraesam
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      # Neon 또는 Supabase 에서 만든 무료 Postgres 주소를 대시보드에서 직접 넣으세요.
+      # 비워 두면 서버 안 파일(sqlite)에 저장되어, 재시작 때마다 자료가 모두 지워집니다.
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_NAME
+        value: 수업 도구함

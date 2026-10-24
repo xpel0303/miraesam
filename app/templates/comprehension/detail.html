@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ wb.title }} · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/comprehension">내용이해 워크북</a></p>
+<h1>{{ wb.title }}</h1>
+<p class="lead">지문 {{ wb.passages|length }}개 · {{ wb.passages|length * per }}문항 · {{ wb.teacher.name if wb.teacher else "" }} · {{ wb.created_at|kst("%Y-%m-%d") }}</p>
+
+{% if busy %}
+  <div class="job" data-job-id="{{ job.id }}" data-reload></div>
+{% elif job and job.status == "failed" %}
+  <div class="flash error" role="alert">{{ job.error }}</div>
+{% endif %}
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>PDF</h2>
+    {% if not busy %}
+    <div class="actions">
+      {% if all_done %}
+        <form method="post" action="/comprehension/{{ wb.id }}/render"><button class="btn {{ '' if wb.options.dirty else 'ghost' }} small" type="submit">PDF 다시 만들기</button></form>
+      {% else %}
+        <form method="post" action="/comprehension/{{ wb.id }}/retry"><button class="btn small" type="submit">못 만든 지문 이어서 만들기</button></form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% if wb.problem_file_id %}
+    <div class="actions">
+      <a class="btn" href="/files/{{ wb.problem_file_id }}" target="_blank" rel="noopener">문제지 PDF</a>
+      <a class="btn ghost" href="/files/{{ wb.answer_file_id }}" target="_blank" rel="noopener">답지 PDF</a>
+      {% if not busy and all_done %}<a class="btn ghost" href="/comprehension/{{ wb.id }}/docx?part=problem">문제지 워드</a>
+      <a class="btn ghost" href="/comprehension/{{ wb.id }}/docx?part=answer">답지 워드</a>{% endif %}
+    </div>
+    {% if wb.options.dirty %}<p class="small" style="margin:10px 0 0;color:var(--err)">고친 문항이 아직 PDF에 반영되지 않았어요. 'PDF 다시 만들기'를 눌러 주세요.</p>{% endif %}
+  {% elif busy %}
+    <p class="muted small" style="margin:0">문제를 다 만들면 여기에 문제지와 답지가 생겨요. 이 화면을 닫아도 계속 만들어집니다.</p>
+  {% else %}
+    <p class="muted small" style="margin:0">아직 PDF가 없어요.</p>
+  {% endif %}
+</section>
+
+{% for p in wb.passages %}
+{% set idx = loop.index0 %}
+{% set base_n = start + idx * per %}
+<section class="panel" id="p{{ idx }}">
+  <div class="panel-head">
+    <h2>{{ p.title or ("지문 " ~ loop.index) }} <span class="small muted" style="font-weight:400">{{ base_n }}~{{ base_n + per - 1 }}번</span></h2>
+    <span class="tag">{% if p.status == "done" %}완성{% elif p.status == "making" %}만드는 중{% elif p.status == "failed" %}실패{% else %}대기{% endif %}</span>
+  </div>
+  {% if p.target_grammar %}<p class="small">목표어법: <b>{{ p.target_grammar }}</b></p>{% endif %}
+  {% if p.status == "failed" and p.error %}<div class="flash error">{{ p.error }}</div>{% endif %}
+  {% if p.warnings %}
+    <div class="flash small">확인해 볼 점: {{ p.warnings|join(" / ") }}</div>
+  {% endif %}
+
+  {% if p.status == "done" %}
+    <details>
+      <summary class="small"><b>문항 보기·고치기</b></summary>
+      <form method="post" action="/comprehension/{{ wb.id }}/passages/{{ idx }}" style="margin-top:14px">
+        <div class="row">
+          <div class="field"><label>제목</label><input type="text" name="title" value="{{ p.title or '' }}"></div>
+          <div class="field"><label>목표어법</label><input type="text" name="target_grammar" value="{{ p.target_grammar or '' }}"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>영어 지문</label><textarea name="passage" rows="6">{{ p.passage }}</textarea></div>
+          <div class="field"><label>한글 해석</label><textarea name="passage_ko" rows="6">{{ p.passage_ko or '' }}</textarea></div>
+        </div>
+
+        {% set ns = namespace(n=base_n) %}
+        {% for key, cnt, instr in sections %}
+          <h3 style="margin-top:18px">{{ labels[key] }} <span class="small muted" style="font-weight:400">{{ ns.n }}~{{ ns.n + cnt - 1 }}번</span></h3>
+          <div class="table-wrap">
+          <table class="list edit-items">
+            {% for x in p[key] %}
+              {% set pre = key ~ "-" ~ loop.index0 ~ "-" %}
+              <tr>
+                <td style="width:36px" class="muted">{{ ns.n + loop.index0 }}</td>
+                {% if key.startswith("ox_") %}
+                  <td class="wrap"><input type="text" name="{{ pre }}q" value="{{ x.q }}" aria-label="문제"></td>
+                  <td style="width:76px"><select name="{{ pre }}a" aria-label="정답"><option {% if x.a == "O" %}selected{% endif %}>O</option><option {% if x.a == "X" %}selected{% endif %}>X</option></select></td>
+                  <td class="wrap" style="width:32%"><input type="text" name="{{ pre }}why" value="{{ x.why }}" aria-label="해설"></td>
+                {% elif key == "compose" %}
+                  <td class="wrap">
+                    <input type="text" name="{{ pre }}ko" value="{{ x.ko }}" aria-label="우리말">
+                    <input type="text" name="{{ pre }}answer" value="{{ x.answer }}" aria-label="정답 문장" style="margin-top:6px;font-weight:700">
+                    <div class="small muted" style="margin-top:4px">괄호: ({{ x.given|join(" / ") }}) · {{ x.source }} 문장
+                      <label style="display:inline;font-weight:400;margin-left:6px"><input type="checkbox" name="{{ pre }}reshuffle" value="1"> 단어 다시 섞기</label></div>
+                  </td>
+                  <td class="wrap" style="width:36%"><input type="text" name="{{ pre }}point" value="{{ x.point }}" aria-label="어법 설명"></td>
+                {% else %}
+                  <td><input type="text" name="{{ pre }}word" value="{{ x.word }}" aria-label="단어"></td>
+                  <td class="wrap"><input type="text" name="{{ pre }}meaning" value="{{ x.meaning }}" aria-label="뜻"></td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </table>
+          </div>
+          {% set ns.n = ns.n + cnt %}
+        {% endfor %}
+        <p class="small muted" style="margin-top:10px">작문 정답 문장을 고치면 괄호 단어는 새 정답에서 자동으로 다시 뽑아요.</p>
+        <div class="actions">
+          <button class="btn" type="submit" {% if busy %}disabled{% endif %}>이 지문 저장</button>
+        </div>
+      </form>
+    </details>
+  {% endif %}
+
+  {% if not busy and p.status in ("done", "failed") %}
+    <form method="post" action="/comprehension/{{ wb.id }}/regenerate/{{ idx }}" style="margin-top:12px"
+          onsubmit="return confirm('이 지문의 30문항을 새로 만들까요? 고친 내용은 사라집니다.')">
+      <button class="btn ghost small" type="submit">이 지문만 다시 만들기</button>
+    </form>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if not busy %}
+<form method="post" action="/comprehension/{{ wb.id }}/delete" onsubmit="return confirm('이 워크북과 PDF를 지울까요?')">
+  <button class="btn danger small" type="submit">워크북 지우기</button>
+</form>
+{% endif %}
+
+<script>
+  document.addEventListener("job:done", (e) => {
+    if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600);
+  });
+  // 실패해도 지문 상태를 새로 보여 주기 위해 새로고침
+  const watch = document.querySelector("[data-reload]");
+  if (watch) new MutationObserver(() => { if (watch.classList.contains("failed")) setTimeout(() => location.reload(), 1500); })
+    .observe(watch, { attributes: true, attributeFilter: ["class"] });
+</script>
+{% endblock %}

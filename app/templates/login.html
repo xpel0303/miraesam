@@ -1,0 +1,21 @@
+{% extends "auth_base.html" %}
+{% block title %}로그인 · {{ APP_NAME }}{% endblock %}
+{% block box %}
+<div class="panel">
+  <p class="auth-title">{{ APP_NAME }}</p>
+  <p class="muted small">수업 자료부터 시험 분석까지 한곳에서</p>
+  {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    <div class="field">
+      <label for="login_id">아이디</label>
+      <input type="text" id="login_id" name="login_id" value="{{ login_id or '' }}" autocomplete="username" autocapitalize="off" required autofocus>
+    </div>
+    <div class="field">
+      <label for="pin">PIN</label>
+      <input type="password" id="pin" name="pin" inputmode="numeric" autocomplete="current-password" required>
+    </div>
+    <button class="btn" type="submit" style="width:100%">로그인</button>
+  </form>
+</div>
+<p class="small muted" style="text-align:center">처음 오셨나요? <a href="/signup">계정 만들기</a> · 학생이라면 <a href="/s">접속 코드로 들어가기</a></p>
+{% endblock %}

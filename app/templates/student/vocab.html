@@ -1,0 +1,43 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ wl.title }} · {{ academy.name }}{% endblock %}
+{% block body %}
+<h1>{{ wl.title }}</h1>
+<p class="muted small">단어 {{ wl.words|length }}개 · 카드를 누르면 뜻이 보여요</p>
+
+<form class="student-card" method="get" action="/s/{{ code }}/vocab/{{ wl.id }}/quiz" style="margin:16px 0">
+  <h2>퀴즈 풀기</h2>
+  <div class="field">
+    {% for k, label in modes.items() %}
+      <label style="font-weight:400"><input type="radio" name="mode" value="{{ k }}" {% if loop.first %}checked{% endif %}> {{ label }}</label>
+    {% endfor %}
+  </div>
+  <div class="field" style="max-width:160px"><label for="count">문제 수</label>
+    {% set n_all = wl.words|length %}<select id="count" name="count">
+      {% for n in [10, 20, 30, 50] if n < n_all %}<option value="{{ n }}" {% if n == 20 %}selected{% endif %}>{{ n }}개</option>{% endfor %}
+      <option value="{{ n_all }}" {% if n_all <= 20 %}selected{% endif %}>전부 ({{ n_all }}개)</option></select></div>
+  <button class="btn" type="submit" style="width:100%">시작</button>
+</form>
+
+{% if history %}
+<div class="student-card" style="margin-bottom:16px">
+  <h2>내 기록</h2>
+  {% for r in history %}<p class="small" style="margin:0 0 4px">{{ r.created_at|kst }} · {{ modes[r.mode] }} · <b>{{ r.correct }}/{{ r.total }}</b></p>{% endfor %}
+</div>
+{% endif %}
+
+<div class="cards">
+  {% for w in wl.words %}
+    <button class="wcard" type="button" aria-expanded="false">
+      <span class="front"><b>{{ w.word }}</b>{% if w.pos %} <i>{{ w.pos }}</i>{% endif %}</span>
+      <span class="back">{{ w.meaning }}{% if w.syn %}<small>= {{ w.syn }}</small>{% endif %}{% if w.example %}<small class="ex">{{ w.example }}</small>{% endif %}</span>
+    </button>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block script %}
+<script>
+  document.querySelectorAll(".wcard").forEach(c => c.addEventListener("click", () => {
+    const open = c.classList.toggle("open"); c.setAttribute("aria-expanded", open);
+  }));
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}문장 시험지 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>문장 시험지</h1><a class="btn" href="/sentence/new">새 문장 시험지 만들기</a></div>
+<p class="lead">지문의 문장으로 해석 쓰기, 영작, 단어 배열, 빈칸 채우기 시험지를 만들어요. 정답은 맨 뒤 페이지.</p>
+{% if sets %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>제목</th><th>지문</th><th>만든 사람</th><th>만든 날</th><th></th></tr></thead>
+  <tbody>{% for s in sets %}
+    <tr><td class="wrap"><a href="/sentence/{{ s.id }}"><b>{{ s.title }}</b></a>
+        {% if s.passages|selectattr("status", "in", ["waiting", "making"])|list %} <span class="tag">만드는 중</span>{% elif s.passages|selectattr("status", "equalto", "failed")|list %} <span class="tag" style="color:var(--err)">일부 실패</span>{% endif %}</td>
+      <td>{{ s.passages|length }}개</td><td>{{ s.teacher.name if s.teacher else "" }}</td><td class="muted small">{{ s.created_at|kst("%Y-%m-%d") }}</td>
+      <td>{% if s.file_id %}<a href="/files/{{ s.file_id }}" target="_blank" rel="noopener">PDF</a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 만든 문장 시험지가 없어요.</p><a class="btn" href="/sentence/new">첫 문장 시험지 만들기</a></div>
+{% endif %}
+{% endblock %}

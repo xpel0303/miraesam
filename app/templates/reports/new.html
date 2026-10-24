@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}새 시험 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/reports">학생·반 리포트</a></p>
+<h1>새 시험</h1>
+<p class="lead">문항 수와 정답만 넣으면 바로 시작할 수 있어요. 유형·출처·문항별 배점은 다음 화면에서 고칩니다.</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+<form method="post" action="/reports">
+  <section class="panel">
+    <div class="row" style="grid-template-columns: 2fr 1fr 1fr">
+      <div class="field"><label for="title">시험 이름</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 지인고 1학년 1학기 중간" required></div>
+      <div class="field"><label for="school">학교 <span class="hint">선택</span></label><select id="school" name="school_id"><option value="">학교 없음 (학원 시험)</option>
+        {% for s in schools %}<option value="{{ s.id }}" {% if form.school_id|string == s.id|string %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="date">시험일</label><input type="text" id="date" name="date" value="{{ form.date or '' }}" placeholder="2026-10-24" inputmode="numeric"></div>
+    </div>
+    <div class="field"><label>반 <span class="hint">고른 반 학생이 답 입력 표에 나와요. 나중에 바꿀 수 있어요.</span></label>
+      {% if classes %}<div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if form.class_ids and c.id in form.class_ids %}checked{% endif %}> {{ c.name }}</label>{% endfor %}</div>
+      {% else %}<p class="small muted" style="margin:0">아직 반이 없어요. <a href="/roster?tab=classes">학생 명단에서 반을 먼저 만들어 주세요.</a></p>{% endif %}
+    </div>
+  </section>
+  <section class="panel">
+    <h2>문항</h2>
+    <div class="row">
+      <div class="field"><label for="mc">객관식 문항 수</label><input type="text" id="mc" name="mc" value="{{ form.mc }}" inputmode="numeric"></div>
+      <div class="field"><label for="mc_points">객관식 배점 <span class="hint">비우면 자동</span></label><input type="text" id="mc_points" name="mc_points" value="{{ form.mc_points or '' }}" inputmode="decimal" placeholder="예: 2.8"></div>
+      <div class="field"><label for="sa">서술형 문항 수</label><input type="text" id="sa" name="sa" value="{{ form.sa }}" inputmode="numeric"></div>
+      <div class="field"><label for="sa_points">서술형 배점 <span class="hint">비우면 남은 점수를 나눔</span></label><input type="text" id="sa_points" name="sa_points" value="{{ form.sa_points or '' }}" inputmode="decimal"></div>
+    </div>
+    <div class="field"><label for="key">객관식 정답 <span class="hint">이어서 쓰거나(35214…) 띄어 써도 돼요. 복수 정답은 2/4 처럼. 비워 두고 다음 화면에서 넣어도 됩니다.</span></label>
+      <input type="text" id="key" name="key" value="{{ form.key or '' }}" style="font-family:ui-monospace,monospace;letter-spacing:0.12em" autocomplete="off"></div>
+    <p class="small muted" id="key-note" style="margin:-6px 0 0"></p>
+  </section>
+  <button class="btn" type="submit">시험 만들기</button>
+</form>
+<script>
+  const key = document.getElementById("key"), mc = document.getElementById("mc"), note = document.getElementById("key-note");
+  function count() {
+    const s = key.value.replace(/[①②③④⑤]/g, c => "①②③④⑤".indexOf(c) + 1);
+    const n = (s.match(/[1-5](\s*\/\s*[1-5])*|[0.\-xX?]/g) || []).length, want = parseInt(mc.value || "0", 10);
+    note.textContent = key.value.trim() ? `정답 ${n}개 / 객관식 ${want}문항` + (n !== want ? " · 개수가 달라요" : "") : "";
+    note.style.color = key.value.trim() && n !== want ? "var(--err)" : "";
+  }
+  key.addEventListener("input", count); mc.addEventListener("input", count); count();
+</script>
+{% endblock %}

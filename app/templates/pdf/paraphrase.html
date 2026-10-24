@@ -1,0 +1,43 @@
+{% extends "pdf/_base.html" %}
+{# 지문 변형: 앞쪽 학생용(변형 지문만) + 뒤쪽 교사용(원문 대조·변형 목록) #}
+{% block style %}
+  .pg { break-before: page; }
+  .pg.first { break-before: avoid; }
+  .ptitle { font-size: 13pt; font-weight: 800; padding-bottom: 4pt; border-bottom: 1.4pt solid var(--brand); margin-bottom: 8pt; }
+  .ptitle small { font-size: 9pt; font-weight: 400; color: var(--ink-2); margin-left: 6pt; }
+  .text { font-size: 10.5pt; line-height: 1.8; text-align: justify; }
+  .teacher-cover { break-before: page; border: 1pt solid var(--ink-2); border-radius: 4pt; padding: 8pt 10pt; margin-bottom: 10pt; }
+  .teacher-cover b { color: var(--brand); }
+  .cmp { font-size: 9.6pt; line-height: 1.75; text-align: justify; border: 0.7pt solid var(--line); border-radius: 3pt; padding: 7pt 9pt; }
+  .del { text-decoration: line-through; color: #9a3324; }
+  .ins { text-decoration: underline; text-decoration-thickness: 1pt; color: #2f5e3e; font-weight: 700; }
+  .legend { font-size: 8pt; color: var(--ink-2); margin: 3pt 0 6pt; }
+  .meta { font-size: 8.8pt; color: var(--ink-2); margin: 4pt 0; }
+  .notes { font-size: 8.8pt; margin: 6pt 0; padding-left: 14pt; }
+  table.ch { font-size: 8.6pt; margin-top: 6pt; }
+  table.ch td:first-child { color: #9a3324; width: 45%; }
+  table.ch td:last-child { color: #2f5e3e; }
+{% endblock %}
+{% block body %}
+{% for v in views %}
+  <div class="pg {% if loop.first %}first{% endif %}">
+    <div class="ptitle">{{ v.title }}<small>{{ s.title }}</small></div>
+    <div class="text">{{ v.p.out }}</div>
+  </div>
+{% endfor %}
+
+{% if show_compare %}
+<div class="teacher-cover"><b>교사용</b> · 원문 대조와 변형 포인트입니다. 학생에게 나눠 줄 때는 이 쪽부터 빼고 인쇄하세요.</div>
+{% for v in views %}
+  <div class="{% if not loop.first %}pg{% endif %}">
+    <div class="ptitle">{{ v.title }} · 원문 대조<small>강도 {{ v.strength }} · 변형도 {{ v.ratio }}%</small></div>
+    <div class="legend"><span class="del">지운 부분</span> · <span class="ins">새로 넣은 부분</span></div>
+    <div class="cmp">{% for o in v.ops %}{% if o.sp %} {% endif %}{% if o.op == "equal" %}{{ o.text }}{% elif o.op == "delete" %}<span class="del">{{ o.text }}</span>{% else %}<span class="ins">{{ o.text }}</span>{% endif %}{% endfor %}</div>
+    {% if v.p.notes %}<h3 style="margin-top:10pt">주요 변형 포인트</h3><ul class="notes">{% for n in v.p.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
+    {% if v.changes %}<h3>바뀐 표현</h3>
+      <table class="ch"><thead><tr><th>원문</th><th>변형</th></tr></thead><tbody>
+        {% for c in v.changes %}<tr><td>{{ c["from"] }}</td><td>{{ c.to }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+  </div>
+{% endfor %}
+{% endif %}
+{% endblock %}

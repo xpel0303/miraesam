@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}변형문제 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px">
+  <h1>변형문제</h1>
+  <a class="btn" href="/variant/new">새 변형문제 만들기</a>
+</div>
+<p class="lead">지문으로 수능 유형 문제를 만들어요. 주제·제목·요지, 빈칸, 순서, 삽입, 무관한 문장, 요약문, 내용 일치, 어휘. 2단 시험지에 정답·해설은 맨 뒤 페이지.</p>
+{% if sets %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>제목</th><th>지문</th><th>문항</th><th>만든 사람</th><th>만든 날</th><th></th></tr></thead>
+  <tbody>{% for v in sets %}
+    <tr>
+      <td class="wrap"><a href="/variant/{{ v.id }}"><b>{{ v.title }}</b></a>{% if v.status in ("waiting", "making") %} <span class="tag">만드는 중</span>{% elif v.status == "failed" %} <span class="tag" style="color:var(--err)">실패</span>{% endif %}</td>
+      <td>{{ v.passages|length }}개</td><td>{{ v.questions|length }}개</td>
+      <td>{{ v.teacher.name if v.teacher else "" }}</td><td class="muted small">{{ v.created_at|kst("%Y-%m-%d") }}</td>
+      <td>{% if v.file_id %}<a href="/files/{{ v.file_id }}" target="_blank" rel="noopener">PDF</a>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 만든 변형문제가 없어요.</p><a class="btn" href="/variant/new">첫 변형문제 만들기</a></div>
+{% endif %}
+{% endblock %}

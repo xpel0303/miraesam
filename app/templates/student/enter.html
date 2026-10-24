@@ -1,0 +1,16 @@
+{% extends "auth_base.html" %}
+{% block title %}학생 입장 · {{ APP_NAME }}{% endblock %}
+{% block box %}
+<div class="panel">
+  <p class="auth-title">학생 입장</p>
+  <p class="muted small">선생님께 받은 접속 코드 6자리를 넣으세요.</p>
+  {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/s">
+    <div class="field">
+      <label for="code" class="muted" style="font-weight:400">접속 코드</label>
+      <input class="code-input" type="text" id="code" name="code" value="{{ code or '' }}" maxlength="8" autocomplete="off" autocapitalize="characters" required autofocus>
+    </div>
+    <button class="btn" type="submit" style="width:100%">들어가기</button>
+  </form>
+</div>
+{% endblock %}
