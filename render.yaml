@@ -13,4 +13,4 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: APP_NAME
-        value: 수업 도구함
+        value: 미래샘

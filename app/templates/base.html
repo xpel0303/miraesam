@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
 <link rel="stylesheet" href="/static/app.css">
-<link rel="icon" href="/static/mascot-pencil.svg" type="image/svg+xml">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 {% set academy = teacher.academy if teacher is defined and teacher else None %}
-{% if academy and academy.brand_color and academy.brand_color|lower not in ("#3a3a3a", "") %}<style>:root { --brand: {{ academy.brand_color }}; --brand-soft: color-mix(in srgb, {{ academy.brand_color }} 18%, #fff); }</style>{% endif %}
+{% if academy and academy.brand_color and academy.brand_color|lower not in ("#3a3a3a", "#f2846b", "#1b2a5c", "") %}<style>:root { --brand: {{ academy.brand_color }}; --brand-soft: color-mix(in srgb, {{ academy.brand_color }} 18%, #fff); }</style>{% endif %}
 </head>
 <body>
 {% import "_art.html" as art %}
 {% macro brandmark(academy) %}
   <a class="brand" href="/">
-    {% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% else %}{{ art.mascot(40) }}{% endif %}
-    <span><strong>{{ academy.name if academy else APP_NAME }}</strong><span>{{ APP_NAME }}</span></span>
+    {{ art.logomark(30) }}
+    <span><strong>{{ APP_NAME }}</strong><span>{{ academy.name if academy and academy.name != APP_NAME else APP_SUB }}</span></span>
   </a>
 {% endmacro %}
 <div class="shell">

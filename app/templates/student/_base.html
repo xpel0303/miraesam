@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}{{ student.name }} · {{ academy.name }}{% endblock %}</title>
 <link rel="stylesheet" href="/static/app.css">
-<link rel="icon" href="/static/mascot-pencil.svg" type="image/svg+xml">
-{% if academy.brand_color and academy.brand_color|lower != "#3a3a3a" %}<style>:root { --brand: {{ academy.brand_color }}; --brand-soft: color-mix(in srgb, {{ academy.brand_color }} 18%, #fff); }</style>{% endif %}
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+{% if academy.brand_color and academy.brand_color|lower not in ("#3a3a3a", "#f2846b", "#1b2a5c") %}<style>:root { --brand: {{ academy.brand_color }}; --brand-soft: color-mix(in srgb, {{ academy.brand_color }} 18%, #fff); }</style>{% endif %}
 </head>
 <body>
 <div class="student">

@@ -19,7 +19,7 @@
     --line: #d4d4d4;
     --line-2: #ececec;
     --fill: #f5f5f4;
-    --brand: {{ academy.brand_color if academy else "#3a3a3a" }};
+    --brand: {{ academy.brand_color if academy and academy.brand_color|lower not in ("#3a3a3a", "#f2846b", "") else "#1B2A5C" }};
   }
   @page {
     size: A4;
@@ -32,7 +32,7 @@
   body { margin: 0; }
   .pdf-header { position: running(pdf-header); display: flex; align-items: center; gap: 6pt;
     font-size: 8pt; color: var(--ink-3); width: 180mm; }
-  .pdf-header img { height: 12pt; }
+  .pdf-header img { height: 17pt; }
   .pdf-header .doc { margin-left: auto; }
   h1 { font-size: 17pt; font-weight: 800; margin: 0 0 4pt; letter-spacing: -0.3pt; }
   h2 { font-size: 12pt; font-weight: 800; margin: 16pt 0 6pt; padding-bottom: 3pt; border-bottom: 1.2pt solid var(--brand); }
@@ -49,7 +49,7 @@
 </head>
 <body>
   <div class="pdf-header">
-    {% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% endif %}
+    {% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% else %}<img src="static/logo-word.png" alt="미래샘 영어연구소">{% endif %}
     <span>{{ academy.name if academy else "" }}</span>
     <span class="doc">{{ doc_title or "" }}</span>
   </div>

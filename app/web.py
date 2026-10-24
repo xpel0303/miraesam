@@ -6,13 +6,13 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from .config import APP_NAME, BASE_DIR
+from .config import APP_NAME, APP_SUB, BASE_DIR
 from .db import get_db
 from .features import STAGE_NAMES, grouped
 from .models import Teacher
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-templates.env.globals.update(APP_NAME=APP_NAME, NAV_GROUPS=grouped, STAGE_NAMES=STAGE_NAMES)
+templates.env.globals.update(APP_NAME=APP_NAME, APP_SUB=APP_SUB, NAV_GROUPS=grouped, STAGE_NAMES=STAGE_NAMES)
 
 _KST = ZoneInfo("Asia/Seoul")
 

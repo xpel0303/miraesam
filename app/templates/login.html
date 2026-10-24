@@ -3,9 +3,8 @@
 {% import "_art.html" as art %}
 {% block box %}
 <div class="panel">
-  <div class="auth-hero">{{ art.mascot(96, "wave") }}</div>
-  <p class="auth-title">{{ APP_NAME }}</p>
-  <p class="muted small">수업 자료부터 시험 분석까지 한곳에서</p>
+  <div class="auth-hero"><img src="/static/logo-full.png" alt="미래샘 영어연구소 MIRAESAEM ENGLISH LAB" class="logo-full"></div>
+  <p class="muted small" style="text-align:center">수업 자료부터 시험 분석까지 한곳에서 {{ art.mascot(34, "wave") }}</p>
   {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
   <form method="post" action="/login">
     <div class="field">
