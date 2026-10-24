@@ -356,6 +356,7 @@ class ExamResponse(Base):
     sa_text: Mapped[dict] = mapped_column(JSON, default=dict)
     comment: Mapped[str] = mapped_column(Text, default="")
     by: Mapped[str] = mapped_column(String(10), default="teacher")  # teacher | student
+    meta: Mapped[dict] = mapped_column(JSON, default=dict)  # 온라인 시험: {started_at, submitted_at, late}
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 

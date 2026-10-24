@@ -93,7 +93,7 @@
       <tbody>
       {% for row in rows %}{% set s = row.s %}
         <tr>
-          <td><b>{{ s.name }}</b>{% if row.r and row.r.by == "student" %} <span class="tag" title="학생이 직접 제출">제출</span>{% endif %}<input type="hidden" name="sid" value="{{ s.id }}"></td>
+          <td><b>{{ s.name }}</b>{% if row.r and row.r.by == "student" %}{% set m = row.r.meta or {} %}{% if m.started_at and not m.submitted_at %} <span class="tag" title="온라인 시험을 푸는 중">푸는 중</span>{% else %} <span class="tag" title="학생이 직접 제출">제출{% if m.late %} · 시간 초과{% endif %}</span>{% endif %}{% endif %}<input type="hidden" name="sid" value="{{ s.id }}"></td>
           <td class="small muted">{{ s.class_group.name if s.class_group else "" }}</td>
           {% if mc_items %}
           <td><input type="text" name="mc_{{ s.id }}" value="{{ row.line }}" data-line aria-label="{{ s.name }} 객관식 답" autocomplete="off"
@@ -208,10 +208,28 @@
       {% if classes %}<div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}</div>
       {% else %}<p class="small muted" style="margin:0">아직 반이 없어요. <a href="/roster?tab=classes">학생 명단에서 반을 만들어 주세요.</a></p>{% endif %}
     </div>
-    <label style="font-weight:400"><input type="checkbox" name="open" value="1" {% if e.options.open %}checked{% endif %}> 학생이 접속 코드로 들어가 직접 답을 제출하게 하기</label>
+    <label style="font-weight:400"><input type="checkbox" name="open" value="1" {% if e.options.open %}checked{% endif %}> 학생 제출 열기 <span class="muted">— 학생이 접속 코드로 들어가 직접 풀거나 답을 내요</span></label>
     <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" {% if e.options.reveal %}checked{% endif %}> 제출하면 학생에게 점수와 틀린 문항 보여 주기</label>
-    <button class="btn small" type="submit" style="margin-top:8px">저장</button>
+    <div class="online-box">
+      <h3 style="margin:0 0 6px">📱 온라인 시험</h3>
+      {% if has_content %}
+        <label style="font-weight:400"><input type="checkbox" name="online" value="1" {% if e.options.online %}checked{% endif %}> 휴대폰 화면에서 문제(지문·보기)를 보고 풀게 하기</label>
+        <div class="actions" style="margin:6px 0 0">
+          <label class="small" style="font-weight:400;margin:0">제한 시간 <input type="text" name="minutes" value="{{ e.options.minutes or '' }}" inputmode="numeric" style="width:64px" placeholder="없음"> 분</label>
+          <a class="btn ghost small" href="/reports/{{ e.id }}/preview" target="_blank" rel="noopener">학생 화면 미리 보기</a>
+        </div>
+        <p class="small muted" style="margin:6px 0 0">끄면 지금처럼 답만 고르는 OMR 화면이 나와요. 온라인 시험은 한 번만 제출할 수 있고, 다시 보게 하려면 '답 입력' 탭에서 그 학생의 '자세히 → 답안 지우기'를 누르세요.</p>
+      {% elif e.options.paper_id %}
+        <p class="small muted" style="margin:0">이 시험은 문제 글이 아직 없어요. 기출 분석에서 읽은 발문·지문·선지를 붙이면 온라인으로 낼 수 있어요.</p>
+        <button class="btn ghost small" type="submit" form="attach-form" style="margin-top:6px">기출 문제 글 붙이기</button>
+      {% else %}
+        <p class="small muted" style="margin:0">문제 글이 있는 시험만 온라인으로 낼 수 있어요. <b>변형문제</b>·<b>어법 문제</b> 화면의 '온라인 시험으로 내기', 또는 <b>기출 분석</b>의 '학생·반 리포트로 보내기'로 만들어 주세요.</p>
+      {% endif %}
+    </div>
+    <button class="btn small" type="submit" style="margin-top:10px">저장</button>
   </form>
+  {% if e.options.paper_id and not has_content %}<form method="post" action="/reports/{{ e.id }}/attach" id="attach-form"></form>{% endif %}
+  {% if e.options.online and going %}<p class="small" style="margin:10px 0 0">지금 푸는 중: {% for row in going %}<span class="tag">{{ row.s.name }}</span> {% endfor %}</p>{% endif %}
   <p class="small muted" style="margin:12px 0 0">학생 주소: <code>{{ request.base_url }}s</code> 에서 각자 접속 코드를 넣어요 (코드는 <a href="/roster">학생 명단</a>에 있어요). 서술형은 학생이 답을 적어 내고, 점수는 선생님이 넣습니다.</p>
 </section>
 

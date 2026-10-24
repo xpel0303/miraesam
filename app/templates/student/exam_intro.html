@@ -1,0 +1,21 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ e.title }} · {{ APP_NAME }}{% endblock %}
+{% block body %}
+<div class="student-card ox-intro">
+  <p class="tag tag-on" style="margin:0 0 8px">온라인 시험</p>
+  <h1 style="font-size:1.35rem;margin:0 0 6px">{{ e.title }}</h1>
+  <ul class="intro-facts">
+    <li><b>{{ n }}</b>문항{% if n_sa %} (서술형 {{ n_sa }}){% endif %}</li>
+    <li>{% if minutes %}제한 시간 <b>{{ minutes }}</b>분{% else %}시간 제한 없음{% endif %}</li>
+  </ul>
+  <ul class="small intro-rules">
+    {% if minutes %}<li><b>시작</b>을 누르면 바로 시간이 흘러요. 시간이 끝나면 그때까지 고른 답이 자동으로 제출돼요.</li>{% endif %}
+    <li>고른 답은 바로바로 저장돼요. 화면이 꺼지거나 창을 닫아도 다시 들어오면 이어서 풀 수 있어요.</li>
+    <li><b>제출</b>은 한 번만 할 수 있어요. 다 풀고 마지막에 눌러 주세요.</li>
+  </ul>
+  <form method="post" action="/s/{{ code }}/exam/{{ e.id }}/start">
+    <button class="btn" type="submit" style="width:100%;padding:14px;font-size:1.05rem">시작하기</button>
+  </form>
+</div>
+<p style="margin-top:14px"><a class="small" href="/s/{{ code }}">← 처음으로</a></p>
+{% endblock %}

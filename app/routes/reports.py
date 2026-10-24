@@ -16,7 +16,8 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
 from ..jobs import enqueue
-from ..models import ClassGroup, Exam, ExamClass, ExamResponse, School, Student, Teacher
+from ..models import ClassGroup, Exam, ExamClass, ExamPaper, ExamResponse, GrammarSet, School, Student, Teacher, VariantSet
+from ..online import build as obuild
 from ..reports import data, spec
 from ..web import current_teacher, flash, render
 
@@ -116,6 +117,66 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     return _go(f"/reports/{e.id}?tab=items")
 
 
+ONLINE_SOURCES = {"variant": (VariantSet, obuild.from_variant, "변형문제"), "grammar": (GrammarSet, obuild.from_grammar, "어법 문제")}
+
+
+@router.post("/online")
+async def create_online(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """변형문제·어법 문제 세트 → 온라인 시험 (문제·정답·배점이 다 들어감). 반만 고르면 바로 낼 수 있음."""
+    f = await request.form()
+    src, sid = str(f.get("source", "")), str(f.get("id", ""))
+    if src not in ONLINE_SOURCES or not sid.isdigit():
+        raise HTTPException(400)
+    model, make, label = ONLINE_SOURCES[src]
+    obj = db.get(model, int(sid))
+    if obj is None or obj.academy_id != teacher.academy_id:
+        raise HTTPException(404)
+    items = make(obj)
+    if not items:
+        flash(request, f"이 {label}에는 온라인으로 낼 수 있는 문항이 없어요.", "error")
+        return _go(f"/{src}/{obj.id}")
+    today = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+    e = Exam(academy_id=teacher.academy_id, teacher_id=teacher.id, title=obj.title[:120], exam_date=today, items=spec.clean_items(items),
+             options={"open": False, "reveal": True, "online": True, "minutes": 0, f"{src}_id": obj.id})
+    db.add(e)
+    db.commit()
+    flash(request, f"{label} {len(items)}문항으로 온라인 시험을 만들었어요. 반과 제한 시간을 고르고 '학생 제출 열기'를 켜면 학생 휴대폰에 떠요.")
+    return _go(f"/reports/{e.id}?tab=share")
+
+
+@router.post("/{eid}/attach")
+def attach_content(eid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """기출 분석에서 만든 시험에 문제 글(발문·지문·선지)을 붙여 온라인으로 풀 수 있게. 번호 순서대로 맞춰 붙임."""
+    e = _own(db, eid, teacher)
+    p = db.get(ExamPaper, (e.options or {}).get("paper_id") or 0)
+    if p is None or p.academy_id != teacher.academy_id:
+        flash(request, "연결된 기출 분석이 없어요.", "error")
+        return _go(f"/reports/{eid}?tab=share")
+    built = obuild.from_paper(p.questions or [])
+    items = [dict(it) for it in (e.items or [])]
+    for it, b in zip(items, built):
+        it["content"] = b["content"]
+    e.items = spec.clean_items(items)
+    db.commit()
+    n = min(len(items), len(built))
+    flash(request, f"기출 문항 {n}개의 문제 글을 붙였어요." + (f" 문항 수가 달라서(시험 {len(items)} · 기출 {len(built)}) 앞에서부터 맞췄어요." if len(items) != len(built) else ""))
+    return _go(f"/reports/{eid}?tab=share")
+
+
+@router.get("/{eid}/preview")
+def preview(eid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """학생이 보는 온라인 시험 화면 그대로 (답은 저장되지 않음)."""
+    e = _own(db, eid, teacher)
+    items = spec.clean_items(e.items or [])
+    if not obuild.has_content(items):
+        raise HTTPException(404, "온라인으로 볼 문제 글이 없어요.")
+    from ..models import Academy
+    minutes = int((e.options or {}).get("minutes") or 0)
+    return render(request, "student/exam_online.html", {"student": {"name": "미리 보기"}, "academy": db.get(Academy, e.academy_id), "e": e, "code": "",
+                                                        "items": obuild.public_items(items), "draft": {"a": {}, "t": {}}, "left": minutes * 60 if minutes else None,
+                                                        "minutes": minutes, "circ": spec.CIRCLED, "fmt": spec.fmt, "preview": True})
+
+
 @router.get("/{eid}")
 def detail(eid: int, request: Request, tab: str = "", class_id: str = "", pdf_job: int | None = None,
            teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
@@ -137,6 +198,7 @@ def detail(eid: int, request: Request, tab: str = "", class_id: str = "", pdf_jo
         "warnings": spec.check_items(items), "S": S, "rows": rows, "types": spec.TYPES, "fmt": spec.fmt, "circ": spec.CIRCLED,
         "classes": _classes(db, teacher), "assigned": {c.id for c in e.classes}, "schools": _schools(db, teacher),
         "class_id": cid, "pdf_job": pdf_job, "active": "reports", "easy": spec.EASY_MISS,
+        "has_content": obuild.has_content(e.items), "going": [row for row in rows if row["r"] and (row["r"].meta or {}).get("started_at") and not (row["r"].meta or {}).get("submitted_at")],
     })
 
 
@@ -147,10 +209,14 @@ async def save_items(eid: int, request: Request, teacher: Teacher = Depends(curr
     cols = {k: f.getlist(k) for k in ("kind", "answer", "points", "type", "source")}
     removed = set(f.getlist("remove"))
     items = []
+    raw_old = e.items or []
     for i in range(len(cols["kind"])):
         if str(i) in removed:
             continue
-        items.append({k: (cols[k][i] if i < len(cols[k]) else "") for k in cols})
+        row = {k: (cols[k][i] if i < len(cols[k]) else "") for k in cols}
+        if i < len(raw_old) and isinstance(raw_old[i].get("content"), dict):  # 온라인 시험 문제(발문·지문·선지)는 그대로
+            row["content"] = raw_old[i]["content"]
+        items.append(row)
     old = spec.clean_items(e.items or [])
     new_items = spec.clean_items(items)
     # 문항을 빼면 번호가 당겨지므로 저장된 답의 번호도 같이 옮김
@@ -244,12 +310,18 @@ async def save_settings(eid: int, request: Request, teacher: Teacher = Depends(c
     e = _own(db, eid, teacher)
     f = await request.form()
     n = _set_classes(db, e, teacher, f.getlist("class_id"))
-    e.options = {**(e.options or {}), "open": f.get("open") == "1", "reveal": f.get("reveal") == "1"}
+    try:
+        minutes = max(0, min(300, int(str(f.get("minutes") or "0").strip() or 0)))
+    except ValueError:
+        minutes = 0
+    e.options = {**(e.options or {}), "open": f.get("open") == "1", "reveal": f.get("reveal") == "1",
+                 "online": f.get("online") == "1" and obuild.has_content(e.items), "minutes": minutes}
     db.commit()
     if e.options["open"] and not n:
         flash(request, "답 제출을 열었지만 내준 반이 없어요. 반을 골라야 학생 화면에 보입니다.", "error")
     else:
-        flash(request, "저장했어요." + (" 학생이 접속 코드로 들어가면 이 시험 답 입력 칸이 보여요." if e.options["open"] else ""))
+        msg = " 학생이 접속 코드로 들어가면 " + ("휴대폰 화면에서 문제를 보고 풀 수 있어요." if e.options["online"] else "이 시험 답 입력 칸이 보여요.")
+        flash(request, "저장했어요." + (msg if e.options["open"] else ""))
     return _go(f"/reports/{eid}?tab=share")
 
 

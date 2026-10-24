@@ -5,14 +5,16 @@
 퀴즈 정답은 화면에 보내지 않고, 제출하면 서버가 채점합니다.
 """
 import secrets
+import time
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
 from ..homework import spec as hspec
+from ..online import build as obuild
 from ..models import (Academy, Exam, ExamClass, ExamResponse, Homework, HomeworkClass, HomeworkResult, QuizResult, Student, WordList,
                       WordListClass)
 from ..reports import data as rdata, spec as rspec
@@ -20,6 +22,7 @@ from ..vocab import spec
 from ..web import render
 
 router = APIRouter(prefix="/s")
+GRACE = 60  # 제한 시간이 끝난 뒤 네트워크 지연을 봐주는 초
 
 
 def _student(db: Session, code: str) -> Student | None:
@@ -122,9 +125,12 @@ def student_home(code: str, request: Request, db: Session = Depends(get_db)):
         res = _hw_results(db, s, h)
         hw_prog[h.id] = sum(1 for i in range(len(h.tasks)) if res.get(i) and res[i].done)
     exams = _exams_for(db, s)
-    done = set(db.execute(select(ExamResponse.exam_id).where(ExamResponse.student_id == s.id)).scalars())
+    done, going = set(), set()
+    for r in db.execute(select(ExamResponse).where(ExamResponse.student_id == s.id)).scalars():
+        m = r.meta or {}
+        (going if m.get("started_at") and not m.get("submitted_at") else done).add(r.exam_id)
     return render(request, "student/home.html", {"student": s, "academy": db.get(Academy, s.academy_id), "lists": lists, "best": best,
-                                                 "exams": exams, "done": done, "hws": hws, "hw_prog": hw_prog,
+                                                 "exams": exams, "done": done, "going": going, "online": {e.id for e in exams if obuild.is_online(e)}, "hws": hws, "hw_prog": hw_prog,
                                                  "today": hspec.today(), "code": s.access_code})
 
 
@@ -187,16 +193,116 @@ async def submit(code: str, lid: int, request: Request, db: Session = Depends(ge
                                                    "mode": mode, "modes": spec.QUIZ_MODES, "count": count, "code": s.access_code})
 
 
+def _response(db: Session, e: Exam, s: Student) -> ExamResponse | None:
+    return db.execute(select(ExamResponse).where(ExamResponse.exam_id == e.id, ExamResponse.student_id == s.id)).scalar_one_or_none()
+
+
+def _now() -> float:
+    return time.time()
+
+
+def _deadline(e: Exam, r: ExamResponse | None) -> float | None:
+    """시작 시각 + 제한 시간(분). 제한 시간이 없으면 None."""
+    minutes = int((e.options or {}).get("minutes") or 0)
+    started = (r.meta or {}).get("started_at") if r else None
+    return started + minutes * 60 if minutes and started else None
+
+
+def _parse_answers(items: list[dict], get) -> tuple[dict, dict]:
+    answers, texts = {}, {}
+    for it in items:
+        k = str(it["n"])
+        if it["kind"] == "mc":
+            v = str(get(f"a{k}") or "").strip()
+            n_choices = len(((it.get("content") or {}).get("choices")) or []) or 5
+            if v in rspec.CHOICES[:max(2, n_choices)]:
+                answers[k] = v
+        else:
+            t = str(get(f"t{k}") or "").strip()[:1000]
+            if t:
+                texts[k] = t
+    return answers, texts
+
+
+def _finish(db: Session, e: Exam, r: ExamResponse, answers: dict, texts: dict, late: bool = False):
+    """온라인 시험 제출: 임시 저장을 정식 답안으로 옮기고 제출 시각을 남김 (이후엔 다시 못 냄)."""
+    r.answers, r.sa_text = answers, texts
+    meta = dict(r.meta or {})
+    meta.pop("draft", None)
+    meta.update(submitted_at=_now(), late=late)
+    r.meta = meta
+    db.commit()
+
+
 @router.get("/{code}/exam/{eid}")
 def exam(code: str, eid: int, request: Request, db: Session = Depends(get_db)):
     s = _student(db, code)
     if s is None:
         raise HTTPException(404)
     e = _exam_for(db, s, eid)
-    r = db.execute(select(ExamResponse).where(ExamResponse.exam_id == e.id, ExamResponse.student_id == s.id)).scalar_one_or_none()
-    items = [{k: v for k, v in it.items() if k != "answer"} for it in rspec.clean_items(e.items or [])]  # 정답은 보내지 않음
-    return render(request, "student/exam.html", {"student": s, "academy": db.get(Academy, s.academy_id), "e": e, "items": items, "r": r,
-                                                 "circ": rspec.CIRCLED, "fmt": rspec.fmt, "code": s.access_code})
+    r = _response(db, e, s)
+    base = {"student": s, "academy": db.get(Academy, s.academy_id), "e": e, "r": r, "circ": rspec.CIRCLED, "fmt": rspec.fmt, "code": s.access_code}
+    items = rspec.clean_items(e.items or [])
+    if obuild.is_online(e):
+        meta = (r.meta or {}) if r else {}
+        if meta.get("submitted_at") or (r and (r.answers or r.sa_scores) and not meta.get("started_at")):
+            return RedirectResponse(f"/s/{s.access_code}/exam/{e.id}/result", status_code=303)
+        minutes = int((e.options or {}).get("minutes") or 0)
+        if not meta.get("started_at"):
+            return render(request, "student/exam_intro.html", {**base, "n": len(items), "n_sa": sum(it["kind"] == "sa" for it in items), "minutes": minutes})
+        dl = _deadline(e, r)
+        if dl is not None and _now() > dl + GRACE:  # 시간이 지나 창을 닫았던 경우: 임시 저장한 답으로 제출 처리
+            d = meta.get("draft") or {}
+            _finish(db, e, r, d.get("a") or {}, d.get("t") or {}, late=True)
+            return RedirectResponse(f"/s/{s.access_code}/exam/{e.id}/result", status_code=303)
+        draft = meta.get("draft") or {}
+        return render(request, "student/exam_online.html", {**base, "items": obuild.public_items(items), "draft": {"a": draft.get("a") or {}, "t": draft.get("t") or {}},
+                                                            "left": None if dl is None else max(0, int(dl - _now())), "minutes": minutes, "preview": False})
+    items = [{k: v for k, v in it.items() if k not in ("answer", "content")} for it in items]  # 정답은 보내지 않음
+    return render(request, "student/exam.html", {**base, "items": items})
+
+
+@router.post("/{code}/exam/{eid}/start")
+def exam_start(code: str, eid: int, db: Session = Depends(get_db)):
+    s = _student(db, code)
+    if s is None:
+        raise HTTPException(404)
+    e = _exam_for(db, s, eid)
+    r = _response(db, e, s)
+    if r is None:
+        r = ExamResponse(academy_id=e.academy_id, exam_id=e.id, student_id=s.id, by="student", answers={}, sa_text={}, sa_scores={}, meta={})
+        db.add(r)
+    if not (r.meta or {}).get("started_at"):
+        r.meta = {**(r.meta or {}), "started_at": _now()}
+        db.commit()
+    return RedirectResponse(f"/s/{s.access_code}/exam/{e.id}", status_code=303)
+
+
+@router.post("/{code}/exam/{eid}/save")
+async def exam_save(code: str, eid: int, request: Request, db: Session = Depends(get_db)):
+    """푸는 동안 자동 저장 (JSON {a: {"1": "3"}, t: {"21": "..."}}). 휴대폰이 꺼져도 이어서 풀 수 있게."""
+    s = _student(db, code)
+    if s is None:
+        raise HTTPException(404)
+    e = _exam_for(db, s, eid)
+    r = _response(db, e, s)
+    meta = (r.meta or {}) if r else {}
+    if r is None or not meta.get("started_at") or meta.get("submitted_at"):
+        return JSONResponse({"ok": False, "reason": "closed"}, status_code=409)
+    dl = _deadline(e, r)
+    if dl is not None and _now() > dl + GRACE:
+        return JSONResponse({"ok": False, "reason": "time"}, status_code=409)
+    try:
+        body = await request.json()
+    except ValueError:
+        raise HTTPException(400)
+    a, t = (body.get("a") or {}), (body.get("t") or {})
+    if not isinstance(a, dict) or not isinstance(t, dict):
+        raise HTTPException(400)
+    answers, texts = _parse_answers(rspec.clean_items(e.items or []), lambda k: a.get(k[1:]) if k[0] == "a" else t.get(k[1:]))
+    r.meta = {**meta, "draft": {"a": answers, "t": texts}, "saved_at": _now()}
+    db.commit()
+    return {"ok": True, "left": None if dl is None else max(0, int(dl - _now()))}
 
 
 @router.post("/{code}/exam/{eid}")
@@ -207,18 +313,19 @@ async def exam_submit(code: str, eid: int, request: Request, db: Session = Depen
     e = _exam_for(db, s, eid)
     f = await request.form()
     items = rspec.clean_items(e.items or [])
-    answers, texts = {}, {}
-    for it in items:
-        k = str(it["n"])
-        if it["kind"] == "mc":
-            v = str(f.get(f"a{k}", "")).strip()
-            if v in rspec.CHOICES:
-                answers[k] = v
-        else:
-            t = str(f.get(f"t{k}", "")).strip()[:1000]
-            if t:
-                texts[k] = t
-    r = db.execute(select(ExamResponse).where(ExamResponse.exam_id == e.id, ExamResponse.student_id == s.id)).scalar_one_or_none()
+    answers, texts = _parse_answers(items, f.get)
+    r = _response(db, e, s)
+    if obuild.is_online(e):
+        meta = (r.meta or {}) if r else {}
+        if r is None or not meta.get("started_at"):
+            return RedirectResponse(f"/s/{s.access_code}/exam/{e.id}", status_code=303)
+        if not meta.get("submitted_at"):
+            dl = _deadline(e, r)
+            if dl is not None and _now() > dl + GRACE:  # 시간 지나서 낸 답은 받지 않고, 시간 안에 저장된 답으로
+                d = meta.get("draft") or {}
+                answers, texts = d.get("a") or {}, d.get("t") or {}
+            _finish(db, e, r, answers, texts, late=bool(dl is not None and _now() > dl + 5))
+        return RedirectResponse(f"/s/{s.access_code}/exam/{e.id}/result", status_code=303)
     if r is None:
         r = ExamResponse(academy_id=e.academy_id, exam_id=e.id, student_id=s.id, by="student")
         db.add(r)
@@ -234,14 +341,15 @@ def exam_result(code: str, eid: int, request: Request, db: Session = Depends(get
         raise HTTPException(404)
     e = _exam_for(db, s, eid)
     r = db.execute(select(ExamResponse).where(ExamResponse.exam_id == e.id, ExamResponse.student_id == s.id)).scalar_one_or_none()
-    if r is None:
+    online = obuild.is_online(e)
+    if r is None or (online and not (r.meta or {}).get("submitted_at") and (r.meta or {}).get("started_at")):
         return RedirectResponse(f"/s/{s.access_code}/exam/{e.id}", status_code=303)
     view = None
     if (e.options or {}).get("reveal"):
         S, _, _ = rdata.summary(db, e)
         view = rspec.student_view(S, s.id)
     return render(request, "student/exam_result.html", {"student": s, "academy": db.get(Academy, s.academy_id), "e": e, "r": r, "view": view,
-                                                        "n_mc": sum(1 for it in (e.items or []) if it.get("kind") != "sa"),
+                                                        "n_mc": sum(1 for it in (e.items or []) if it.get("kind") != "sa"), "online": online,
                                                         "circ": rspec.CIRCLED, "fmt": rspec.fmt, "code": s.access_code})
 
 

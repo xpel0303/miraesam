@@ -1,0 +1,126 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ e.title }} · {{ APP_NAME }}{% endblock %}
+{% macro qbody(it) %}
+  {% if it.box and it.box_first %}<div class="q-box">{{ it.box }}</div>{% endif %}
+  {% if it.passage %}
+    {% if it.same %}<details class="q-same"><summary>{{ it.same }}번과 같은 글 · 다시 보기</summary><div class="q-passage">{{ it.passage }}</div></details>
+    {% else %}<div class="q-passage">{{ it.passage }}</div>{% endif %}
+  {% endif %}
+  {% if it.box and not it.box_first %}<div class="q-box">{{ it.box }}</div>{% endif %}
+  {% if it.conditions %}<div class="q-cond"><b>조건</b> {{ it.conditions }}</div>{% endif %}
+{% endmacro %}
+{% block body %}
+<div class="exam-bar" id="bar">
+  <b class="exam-bar-title">{{ e.title }}</b>
+  <span class="exam-timer" id="timer" {% if left is none %}hidden{% endif %} aria-live="off">--:--</span>
+  <span class="exam-saved small" id="saved" aria-live="polite"></span>
+</div>
+<nav class="q-nav" id="qnav" aria-label="문항 바로 가기">
+  {% for it in items %}<a href="#q{{ it.n }}" data-n="{{ it.n }}">{{ it.label }}</a>{% endfor %}
+</nav>
+{% if preview %}<div class="flash small">선생님 미리 보기예요. 학생에게는 이렇게 보이고, 여기서 고른 답은 저장되지 않아요.</div>{% endif %}
+
+<form method="post" action="{{ '#' if preview else '/s/' ~ code ~ '/exam/' ~ e.id }}" id="exam-form">
+{% for it in items %}{% set k = it.n|string %}
+  <section class="q-card" id="q{{ it.n }}" data-n="{{ it.n }}" data-kind="{{ it.kind }}">
+    <p class="q-head"><b class="q-num">{{ it.label }}.</b> {{ it.stem }} <span class="q-pts">[{{ fmt(it.points) }}점]</span></p>
+    {{ qbody(it) }}
+    {% if it.kind == "mc" %}
+      <div class="q-choices" role="radiogroup" aria-label="{{ it.label }}번 답">
+      {% for c in it.choices %}{% set v = loop.index|string %}
+        <label class="q-choice"><input type="radio" name="a{{ k }}" value="{{ v }}" {% if draft.a.get(k) == v %}checked{% endif %}>
+          <span><i>{{ circ[v] }}</i>{% if c|string != circ[v] %} {{ c }}{% endif %}</span></label>
+      {% endfor %}
+      </div>
+    {% else %}
+      <label class="small muted" for="t{{ k }}" style="font-weight:400">답 쓰기</label>
+      <textarea id="t{{ k }}" name="t{{ k }}" rows="3" autocapitalize="off" autocomplete="off" spellcheck="false">{{ draft.t.get(k, '') }}</textarea>
+    {% endif %}
+  </section>
+{% endfor %}
+  <div class="q-submit">
+    <p class="small muted" id="left-count" style="margin:0 0 8px"></p>
+    <button class="btn" type="submit" id="submit-btn" style="width:100%;padding:14px;font-size:1.05rem" {% if preview %}disabled{% endif %}>제출하기</button>
+    <p class="small muted" style="margin:8px 0 0">제출하면 답을 고칠 수 없어요.</p>
+  </div>
+</form>
+{% endblock %}
+{% block script %}
+<script>
+(() => {
+  const PREVIEW = {{ (preview is defined and preview)|tojson }};
+  const form = document.getElementById("exam-form"), saved = document.getElementById("saved"), timer = document.getElementById("timer");
+  const cards = [...form.querySelectorAll(".q-card")], nav = document.getElementById("qnav");
+  const leftCount = document.getElementById("left-count");
+  let submitting = false;
+
+  function collect() {
+    const a = {}, t = {};
+    cards.forEach(c => {
+      const n = c.dataset.n;
+      if (c.dataset.kind === "mc") { const x = c.querySelector("input:checked"); if (x) a[n] = x.value; }
+      else { const x = c.querySelector("textarea").value.trim(); if (x) t[n] = x; }
+    });
+    return { a, t };
+  }
+  function marks() {
+    const { a, t } = collect();
+    let empty = 0;
+    cards.forEach(c => {
+      const done = c.dataset.kind === "mc" ? (c.dataset.n in a) : (c.dataset.n in t);
+      nav.querySelector(`[data-n="${c.dataset.n}"]`).classList.toggle("done", done);
+      if (!done) empty++;
+    });
+    leftCount.textContent = empty ? `아직 안 푼 문항 ${empty}개` : "모든 문항에 답했어요.";
+    return empty;
+  }
+
+  // ---- 자동 저장: 고르면 바로, 쓰는 중이면 잠깐 멈췄을 때 ----
+  let timerId = null, dirty = false, inflight = false;
+  async function save() {
+    if (PREVIEW || submitting) return;
+    if (inflight) { dirty = true; return; }
+    inflight = true; dirty = false;
+    try {
+      const res = await fetch("/s/{{ code }}/exam/{{ e.id }}/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(collect()) });
+      if (res.status === 409) { location.reload(); return; }
+      const j = await res.json();
+      saved.textContent = "저장됨 ✓"; saved.classList.remove("err");
+      if (j.left != null) setLeft(j.left);
+    } catch (err) {
+      saved.textContent = "저장 안 됨 · 인터넷 확인"; saved.classList.add("err");
+      dirty = true;
+    } finally {
+      inflight = false;
+      if (dirty) setTimeout(save, 1500);
+    }
+  }
+  function soon(ms) { clearTimeout(timerId); timerId = setTimeout(save, ms); saved.textContent = "저장 중…"; }
+  form.addEventListener("change", (ev) => { marks(); if (ev.target.type === "radio") soon(150); });
+  form.addEventListener("input", (ev) => { if (ev.target.tagName === "TEXTAREA") { marks(); soon(1200); } });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") save(); });
+
+  // ---- 남은 시간 ----
+  let deadline = null;
+  function setLeft(sec) { deadline = Date.now() + sec * 1000; }
+  {% if left is not none %}setLeft({{ left }});{% endif %}
+  function tick() {
+    if (deadline == null) return;
+    const s = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+    timer.textContent = `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+    timer.classList.toggle("warn", s <= 300); timer.classList.toggle("over", s <= 60);
+    if (s === 0 && !submitting && !PREVIEW) { submitting = true; saved.textContent = "시간이 끝나서 제출해요…"; form.submit(); }
+  }
+  setInterval(tick, 1000); tick();
+
+  form.addEventListener("submit", (ev) => {
+    if (PREVIEW) { ev.preventDefault(); return; }
+    if (submitting) return;
+    const empty = marks();
+    if (!confirm(empty ? `안 푼 문항이 ${empty}개 있어요. 그래도 제출할까요?\n제출하면 답을 고칠 수 없어요.` : "제출할까요? 제출하면 답을 고칠 수 없어요.")) { ev.preventDefault(); return; }
+    submitting = true;
+  });
+  marks();
+})();
+</script>
+{% endblock %}

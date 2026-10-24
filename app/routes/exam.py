@@ -11,6 +11,7 @@ from ..exam import pages as pg
 from ..exam import spec
 from ..jobs import enqueue
 from ..models import Exam, ExamPaper, Job, School, StoredFile, Teacher
+from ..online import build as obuild
 from ..reports import spec as rspec
 from ..web import current_teacher, flash, render
 
@@ -290,8 +291,7 @@ def to_report(pid: int, request: Request, teacher: Teacher = Depends(current_tea
         raise HTTPException(400)
     if p.report_exam_id and db.get(Exam, p.report_exam_id):
         return _go(f"/reports/{p.report_exam_id}?tab=items")
-    items = [{"kind": q["kind"], "answer": "", "points": q["points"] or 0, "type": q["type"],
-              "source": (q["label"] if not q["label"].isdigit() else "")} for q in p.questions]
+    items = obuild.from_paper(p.questions)  # 문제 글(발문·지문·선지)도 같이 → 온라인 시험으로도 낼 수 있음
     e = Exam(academy_id=p.academy_id, teacher_id=teacher.id, title=p.title, school_id=p.school_id,
              exam_date="", items=rspec.clean_items(items), options={"open": False, "reveal": True, "paper_id": p.id})
     db.add(e)

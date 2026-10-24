@@ -80,8 +80,11 @@ def clean_items(items: list[dict]) -> list[dict]:
     for i, it in enumerate(items[:MAX_ITEMS]):
         kind = "sa" if it.get("kind") == "sa" else "mc"
         ans = norm_mc(it.get("answer")) if kind == "mc" else str(it.get("answer") or "").strip()[:300]
-        out.append({"n": i + 1, "kind": kind, "answer": ans, "points": num(it.get("points"), 0.0),
-                    "type": str(it.get("type") or "").strip()[:20], "source": str(it.get("source") or "").strip()[:60]})
+        row = {"n": i + 1, "kind": kind, "answer": ans, "points": num(it.get("points"), 0.0),
+               "type": str(it.get("type") or "").strip()[:20], "source": str(it.get("source") or "").strip()[:60]}
+        if isinstance(it.get("content"), dict):  # 온라인 시험: 화면에 띄울 문제 (발문·지문·보기·선지)
+            row["content"] = it["content"]
+        out.append(row)
     return out
 
 

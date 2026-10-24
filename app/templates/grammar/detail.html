@@ -13,6 +13,7 @@
   <div class="panel-head"><h2>PDF</h2>
     {% if not busy %}<div class="actions">
       {% if gs.questions %}<form method="post" action="/grammar/{{ gs.id }}/render"><button class="btn {{ '' if gs.options.dirty else 'ghost' }} small" type="submit">PDF 다시 만들기</button></form>{% endif %}
+      {% if gs.questions %}<form method="post" action="/reports/online"><input type="hidden" name="source" value="grammar"><input type="hidden" name="id" value="{{ gs.id }}"><button class="btn ghost small" type="submit" title="학생이 휴대폰으로 풀고 제출하면 자동 채점돼요">📱 온라인 시험으로 내기</button></form>{% endif %}
       <form method="post" action="/grammar/{{ gs.id }}/regenerate" onsubmit="return confirm('문항을 전부 새로 만들까요? 고친 내용은 사라집니다.')"><button class="btn ghost small" type="submit">전부 새로 만들기</button></form>
     </div>{% endif %}
   </div>

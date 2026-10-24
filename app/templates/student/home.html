@@ -18,10 +18,11 @@
 
 {% if exams %}
 <div class="student-card" style="margin-top:20px">
-  <h2>시험 답 내기</h2>
+  <h2>시험</h2>
   <ul class="s-list">
   {% for e in exams %}
-    <li><a href="/s/{{ code }}/exam/{{ e.id }}{% if e.id in done %}/result{% endif %}"><b>{{ e.title }}</b><span class="muted small">{{ "냈어요 · 결과 보기" if e.id in done else e["items"]|length ~ "문항" }}</span></a></li>
+    <li><a href="/s/{{ code }}/exam/{{ e.id }}{% if e.id in done %}/result{% endif %}"><b>{% if e.id in online %}<span class="tag tag-on">온라인</span> {% endif %}{{ e.title }}</b>
+      <span class="muted small">{% if e.id in done %}냈어요 · 결과 보기{% elif e.id in going %}<b style="color:var(--brand)">푸는 중 · 이어서 풀기</b>{% else %}{{ e["items"]|length }}문항{% if e.id in online and e.options.minutes %} · {{ e.options.minutes }}분{% endif %}{% endif %}</span></a></li>
   {% endfor %}
   </ul>
 </div>

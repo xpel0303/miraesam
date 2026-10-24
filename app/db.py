@@ -42,6 +42,25 @@ def session_scope():
         db.close()
 
 
+# 이미 만들어진 표에 나중에 더한 칸 (create_all 은 새 표만 만들고, 있는 표에 칸을 더하지 않음)
+#   (표, 칸, SQL 자료형, 기본값)
+ADDED_COLUMNS = [
+    ("exam_responses", "meta", "JSON", "'{}'"),  # 온라인 시험: 시작·제출 시각
+]
+
+
+def migrate():
+    from sqlalchemy import inspect, text
+
+    insp = inspect(engine)
+    tables = set(insp.get_table_names())
+    with engine.begin() as conn:
+        for table, col, typ, default in ADDED_COLUMNS:
+            if table in tables and col not in {c["name"] for c in insp.get_columns(table)}:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ} DEFAULT {default}"))
+
+
 def init_db():
     from . import models  # noqa: F401  (모델 등록)
     Base.metadata.create_all(engine)
+    migrate()

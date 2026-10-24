@@ -467,3 +467,44 @@ details.eq { border-top: 2px dashed var(--line-2); }
 .logo-full { width: 190px; height: auto; display: block; margin: 0 auto 4px; }
 .auth-hero .mascot { vertical-align: middle; }
 .hw-cell.done { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+/* ================= 온라인 시험 (학생 휴대폰 화면) ================= */
+.tag-on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; }
+.intro-facts { list-style: none; padding: 0; margin: 10px 0 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+.intro-facts li { background: var(--brand-soft, #e8ecf7); border-radius: 12px; padding: 8px 14px; }
+.intro-facts b { font-size: 1.25rem; color: var(--brand); margin-right: 2px; }
+.intro-rules { padding-left: 18px; margin: 0 0 18px; color: var(--ink-2); line-height: 1.7; }
+.exam-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 10px; margin: 0 -16px; padding: 10px 16px;
+  background: color-mix(in srgb, var(--bg, #fff) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1.5px solid var(--line); }
+.exam-bar-title { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.exam-timer { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 1.1rem; padding: 3px 10px; border-radius: 999px; background: var(--brand); color: #fff; }
+.exam-timer.warn { background: #E8833A; }
+.exam-timer.over { background: #D0312D; animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .6; } }
+.exam-saved { color: var(--ink-3); white-space: nowrap; }
+.exam-saved.err { color: #D0312D; font-weight: 700; }
+.q-nav { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 12px; scrollbar-width: none; }
+.q-nav::-webkit-scrollbar { display: none; }
+.q-nav a { flex: none; min-width: 34px; text-align: center; padding: 5px 8px; border-radius: 10px; border: 1.5px solid var(--line); text-decoration: none; color: var(--ink-2); font-weight: 700; font-size: .85rem; background: var(--surface); }
+.q-nav a.done { background: var(--brand-soft, #e8ecf7); border-color: var(--brand); color: var(--brand); }
+.q-card { background: var(--surface); border: 1.5px solid var(--line); border-radius: 16px; padding: 16px 14px; margin-bottom: 14px; scroll-margin-top: 64px; }
+.q-head { margin: 0 0 10px; line-height: 1.6; }
+.q-num { color: var(--brand); font-size: 1.05rem; }
+.q-pts { color: var(--ink-3); font-size: .85rem; white-space: nowrap; }
+.q-passage { font-family: Georgia, "Times New Roman", "NanumSquareRound", serif; font-size: 1.02rem; line-height: 1.75; padding: 12px 13px; border-radius: 12px; background: var(--fill, #f6f7fb); margin: 0 0 10px; word-break: keep-all; overflow-wrap: anywhere; }
+.q-passage u, .q-box u { text-decoration-thickness: 1.5px; text-underline-offset: 3px; font-weight: 700; }
+.q-same { margin: 0 0 10px; }
+.q-same summary { cursor: pointer; color: var(--brand); font-size: .9rem; font-weight: 700; padding: 4px 0; }
+.q-box { border: 1.5px solid var(--ink-3); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; line-height: 1.7; font-size: .98rem; }
+.q-cond { font-size: .9rem; color: var(--ink-2); margin: 0 0 10px; line-height: 1.6; }
+.q-choices { display: flex; flex-direction: column; gap: 7px; }
+.q-choice { margin: 0; font-weight: 400; }
+.q-choice input { position: absolute; opacity: 0; pointer-events: none; }
+.q-choice span { display: block; padding: 11px 13px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; line-height: 1.5; }
+.q-choice span i { font-style: normal; font-weight: 800; margin-right: 2px; }
+.q-choice input:checked + span { border-color: var(--brand); background: var(--brand-soft, #e8ecf7); color: var(--ink); font-weight: 700; }
+.q-choice input:checked + span i { color: var(--brand); }
+.q-choice input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: 2px; }
+.q-card textarea { font-size: 1rem; }
+.q-submit { padding: 6px 0 30px; }
+.online-box { margin: 12px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--fill); border: 1.5px dashed var(--line); }
