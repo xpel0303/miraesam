@@ -49,8 +49,8 @@ def _read_options(f) -> dict:
     return {
         "layout": layout if layout in LAYOUTS else "split",
         "show_background": f.get("show_background") == "1",
-        "show_sketch": f.get("show_sketch") == "1",
         "show_vocab": f.get("show_vocab") == "1",
+        "show_visual": f.get("show_visual") == "1",  # 정리 그림(4컷): Gemini 답이 길어지므로 고를 때만
     }
 
 
@@ -72,7 +72,7 @@ def new(request: Request, teacher: Teacher = Depends(current_teacher)):
 @router.post("")
 async def create(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     f = await request.form()
-    titles, texts = f.getlist("p_title"), f.getlist("p_text")
+    titles, texts, targets = f.getlist("p_title"), f.getlist("p_text"), f.getlist("p_target")
     level = str(f.get("level") or "")
     level = level if level in LEVELS else ""
     passages, errors = [], []
@@ -83,7 +83,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         sents = spec.split_sentences(text)
         if len(text) > MAX_CHARS or len(sents) > MAX_SENTENCES:
             errors.append(f"지문 {i + 1}이 너무 깁니다 ({len(sents)}문장). {MAX_SENTENCES}문장 이하로 나눠 주세요.")
-        passages.append({"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "passage": text, "level": level, "sentences_src": sents, "status": "waiting"})
+        passages.append({"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "passage": text, "level": level, "sentences_src": sents,
+                         "target": str(targets[i]).strip()[:80] if i < len(targets) else "", "status": "waiting"})
     if not passages:
         errors.append("지문을 하나 이상 넣어 주세요.")
     if len(passages) > spec.MAX_PASSAGES:
@@ -93,7 +94,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     title = str(f.get("title", "")).strip()[:120] or "지문 분석"
     options = _read_options(f)
     if errors:
-        form = {"title": title, "level": level, "options": options, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)]}
+        form = {"title": title, "level": level, "options": options,
+                "passages": [{"title": t, "text": x, "target": targets[k] if k < len(targets) else ""} for k, (t, x) in enumerate(zip(titles, texts))]}
         return render(request, "analysis/new.html", {"teacher": teacher, "form": form, "errors": errors, "levels": LEVELS, "layouts": LAYOUTS, "max": spec.MAX_PASSAGES, "active": "analysis"}, 400)
 
     s = AnalysisSet(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, options=options, passages=passages)
@@ -114,8 +116,8 @@ def detail(sid: int, request: Request, teacher: Teacher = Depends(current_teache
             "teacher": teacher, "aset": s, "job": job,
             "busy": job is not None and job.status in ("queued", "running"),
             "all_done": all(p.get("status") == "done" for p in s.passages),
-            "point_types": spec.POINT_TYPES, "layouts": LAYOUTS,
-            "opts": {"layout": "split", "show_background": True, "show_sketch": True, "show_vocab": True, **(s.options or {})},
+            "point_types": spec.POINT_TYPES, "layouts": LAYOUTS, "icons": spec.ICONS,
+            "opts": {**spec.DEFAULT_OPTIONS, **(s.options or {})},
             "active": "analysis",
         },
     )
@@ -151,12 +153,18 @@ async def save_passage(sid: int, idx: int, request: Request, teacher: Teacher = 
     p = passages[idx]
     p["title_en"] = str(f.get("title_en", p.get("title_en", ""))).strip()
     p["title_ko"] = str(f.get("title_ko", p.get("title_ko", ""))).strip()
+    p["target"] = str(f.get("target", p.get("target", ""))).strip()[:80]
     for row in p.get("sentences") or []:
         pre = f"s{row['n']}-"
         row["ko"] = str(f.get(pre + "ko", row.get("ko", ""))).strip()
-        row["chips"] = [c.strip() for c in str(f.get(pre + "chips", ", ".join(row.get("chips") or []))).split(",") if c.strip()][:8]
-        ptype, ptext = str(f.get(pre + "ptype", "")), str(f.get(pre + "ptext", "")).strip()
-        row["point"] = {"type": ptype, "text": ptext} if ptype in spec.POINT_TYPES and ptext else None
+        pts = []
+        for k in range(spec.MAX_POINTS):
+            ptype, ptext = str(f.get(f"{pre}pt{k}-type", "")), str(f.get(f"{pre}pt{k}-text", "")).strip()
+            if ptype in spec.POINT_TYPES and ptext:
+                pts.append({"type": ptype, "text": ptext})
+        row["points"] = pts
+        row.pop("point", None)
+        row["topic"] = f.get(pre + "topic") == "1"
         row["insertion"] = f.get(pre + "ins") == "1"
     summ = p.setdefault("summary", {})
     summ["topic"] = str(f.get("topic", summ.get("topic", ""))).strip()
@@ -164,8 +172,8 @@ async def save_passage(sid: int, idx: int, request: Request, teacher: Teacher = 
     flow = []
     for line in str(f.get("flow", "")).splitlines():
         if line.strip():
-            ko, _, en = line.partition("/")
-            flow.append({"ko": ko.strip(), "en": en.strip()})
+            ko, _, desc = line.partition("/")
+            flow.append({"ko": ko.strip(), "desc": desc.strip(), "en": ""})
     if flow:
         summ["flow"] = flow[:6]
     vocab = []
@@ -175,6 +183,14 @@ async def save_passage(sid: int, idx: int, request: Request, teacher: Teacher = 
             cells += [""] * (4 - len(cells))
             vocab.append(dict(zip(("word", "meaning", "syn", "ant"), cells[:4])))
     p["vocab"] = vocab[:20]
+    if p.get("visual"):
+        vis = {"title": str(f.get("vis_title", "")).strip()[:60], "message": str(f.get("vis_message", "")).strip()[:120], "panels": []}
+        for k in range(4):
+            head = str(f.get(f"vis{k}-head", "")).strip()[:30]
+            if head:
+                icon = str(f.get(f"vis{k}-icon", "idea"))
+                vis["panels"].append({"icon": icon if icon in spec.ICONS else "idea", "head": head, "text": str(f.get(f"vis{k}-text", "")).strip()[:160]})
+        p["visual"] = vis if len(vis["panels"]) >= 2 else None
     _, p["warnings"] = spec.validate(p, p.get("sentences_src") or [])
     s.passages = passages
     flag_modified(s, "passages")

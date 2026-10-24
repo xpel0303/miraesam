@@ -147,7 +147,7 @@ class AnalysisSet(Base):
 
     passages: [{title, passage, level, sentences_src[...], status, error, warnings[],
                 title_en, title_ko, sentences[...], summary{...}, vocab[...]}]
-    options:  {layout: "split" | "single", show_background, show_sketch, show_vocab}
+    options:  {layout: "split" | "single", show_background, show_vocab, show_visual(정리 그림)}
     """
 
     __tablename__ = "analysis_sets"

@@ -1,5 +1,5 @@
 {% extends "student/_base.html" %}
-{% block title %}{{ e.title }} 결과 · {{ academy.name }}{% endblock %}
+{% block title %}{{ e.title }} 결과 · {{ APP_NAME }}{% endblock %}
 {% block body %}
 <h1 style="font-size:1.3rem">{{ e.title }}</h1>
 {% if view %}{% set me = view.me %}

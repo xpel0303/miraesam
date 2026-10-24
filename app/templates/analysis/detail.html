@@ -58,28 +58,31 @@
       <div class="row">
         <div class="field"><label>영문 제목</label><input type="text" name="title_en" value="{{ p.title_en or '' }}"></div>
         <div class="field"><label>한글 제목</label><input type="text" name="title_ko" value="{{ p.title_ko or '' }}"></div>
+        <div class="field"><label>목표 어법</label><input type="text" name="target" value="{{ p.target or '' }}"></div>
       </div>
 
       {% for s in p.sentences %}
       <div class="sent-edit">
         <p class="sent-en"><b>{{ s.n }}</b> {% for seg in s.segments %}{% if seg.type %}<span class="tg-{{ seg.type }}" title="{{ seg.label }}">{{ seg.text }}</span>{% else %}{{ seg.text }}{% endif %}{% endfor %}</p>
-        <div class="row">
-          <div class="field"><label class="small">해석</label><textarea name="s{{ s.n }}-ko" rows="2">{{ s.ko }}</textarea></div>
-          <div class="field"><label class="small">구문 칩 <span class="hint">쉼표로 구분</span></label><input type="text" name="s{{ s.n }}-chips" value="{{ s.chips|join(', ') }}">
-            <label style="font-weight:400;margin-top:6px"><input type="checkbox" name="s{{ s.n }}-ins" value="1" {% if s.insertion %}checked{% endif %}> 문장삽입 표시</label></div>
+        <div class="field"><label class="small">해석</label><textarea name="s{{ s.n }}-ko" rows="2">{{ s.ko }}</textarea></div>
+        <div class="actions" style="margin:-4px 0 8px">
+          <label class="small" style="font-weight:400;margin:0"><input type="checkbox" name="s{{ s.n }}-topic" value="1" {% if s.topic %}checked{% endif %}> 주제문 (노란 형광펜)</label>
+          <label class="small" style="font-weight:400;margin:0"><input type="checkbox" name="s{{ s.n }}-ins" value="1" {% if s.insertion %}checked{% endif %}> 문장삽입 표시</label>
         </div>
-        <div class="row" style="grid-template-columns: 180px 1fr">
-          <div class="field"><label class="small">포인트</label>
-            <select name="s{{ s.n }}-ptype"><option value="">없음</option>{% for k, v in point_types.items() %}<option value="{{ k }}" {% if s.point and s.point.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
-          <div class="field"><label class="small">포인트 설명</label><textarea name="s{{ s.n }}-ptext" rows="2">{{ s.point.text if s.point else '' }}</textarea></div>
+        {% set pts = s.points if s.points is not none else ([s.point] if s.point else []) %}
+        {% for k in range(3) %}{% set pt = pts[k] if k < pts|length else None %}
+        <div class="row" style="grid-template-columns: 150px 1fr">
+          <div class="field" style="margin-bottom:6px"><select name="s{{ s.n }}-pt{{ k }}-type" aria-label="포인트 {{ k + 1 }} 종류"><option value="">{{ "포인트 " ~ (k + 1) ~ " 없음" }}</option>{% for key, v in point_types.items() %}<option value="{{ key }}" {% if pt and pt.type == key %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+          <div class="field" style="margin-bottom:6px"><textarea name="s{{ s.n }}-pt{{ k }}-text" rows="2" aria-label="포인트 {{ k + 1 }} 설명" style="min-height:0">{{ pt.text if pt else '' }}</textarea></div>
         </div>
+        {% endfor %}
       </div>
       {% endfor %}
 
       <h3 style="margin-top:18px">주제·흐름·배경지식</h3>
       <div class="field"><label>주제</label><input type="text" name="topic" value="{{ p.summary.topic }}"></div>
-      <div class="field"><label>흐름 <span class="hint">한 줄에 한 단계, "한글 / English"</span></label>
-        <textarea name="flow" rows="4">{% for st in p.summary.flow %}{{ st.ko }}{% if st.en %} / {{ st.en }}{% endif %}
+      <div class="field"><label>흐름 <span class="hint">한 줄에 한 단계, "단계 / 내용" (예: 도입 / 신경윤리학을 통한 문제 해결 필요성 제시)</span></label>
+        <textarea name="flow" rows="4">{% for st in p.summary.flow %}{{ st.ko }}{% if st.desc or st.en %} / {{ st.desc or st.en }}{% endif %}
 {% endfor %}</textarea></div>
       <div class="field"><label>관련 배경지식</label><textarea name="background" rows="4">{{ p.summary.background }}</textarea></div>
 
@@ -87,6 +90,19 @@
       <div class="field"><label>한 줄에 하나: 단어 | 의미 | 유의어 | 반의어 <span class="hint">줄을 지우면 빠지고, 새로 쓰면 더해집니다</span></label>
         <textarea name="vocab" rows="8" style="font-size:0.88rem">{% for v in p.vocab %}{{ v.word }} | {{ v.meaning }} | {{ v.syn }} | {{ v.ant }}
 {% endfor %}</textarea></div>
+
+      {% if p.visual %}
+      <h3>정리 그림</h3>
+      <div class="row"><div class="field"><label>그림 제목</label><input type="text" name="vis_title" value="{{ p.visual.title }}"></div>
+        <div class="field"><label>한 줄 결론</label><input type="text" name="vis_message" value="{{ p.visual.message }}"></div></div>
+      {% for k in range(4) %}{% set pn = p.visual.panels[k] if k < p.visual.panels|length else None %}
+      <div class="row" style="grid-template-columns: 130px 160px 1fr">
+        <div class="field"><select name="vis{{ k }}-icon" aria-label="{{ k + 1 }}컷 아이콘">{% for ic in icons %}<option {% if pn and pn.icon == ic %}selected{% endif %}>{{ ic }}</option>{% endfor %}</select></div>
+        <div class="field"><input type="text" name="vis{{ k }}-head" value="{{ pn.head if pn else '' }}" placeholder="{{ k + 1 }}컷 핵심어" aria-label="{{ k + 1 }}컷 핵심어"></div>
+        <div class="field"><input type="text" name="vis{{ k }}-text" value="{{ pn.text if pn else '' }}" placeholder="설명" aria-label="{{ k + 1 }}컷 설명"></div>
+      </div>
+      {% endfor %}
+      {% endif %}
 
       <button class="btn" type="submit" {% if busy %}disabled{% endif %}>이 지문 저장</button>
     </form>

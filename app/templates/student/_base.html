@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block title %}{{ student.name }} · {{ academy.name }}{% endblock %}</title>
+<title>{% block title %}{{ student.name }} · {{ APP_NAME }}{% endblock %}</title>
 <link rel="stylesheet" href="/static/app.css">
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 {% if academy.brand_color and academy.brand_color|lower not in ("#3a3a3a", "#f2846b", "#1b2a5c") %}<style>:root { --brand: {{ academy.brand_color }}; --brand-soft: color-mix(in srgb, {{ academy.brand_color }} 18%, #fff); }</style>{% endif %}
@@ -12,7 +12,7 @@
 <div class="student">
   <p class="small muted" style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
     {% if academy.logo %}<img src="{{ academy.logo }}" alt="" style="height:22px">{% endif %}
-    <a href="/s/{{ code }}" style="text-decoration:none">{{ academy.name }}</a><span>·</span><span>{{ student.name }}</span>
+    <a href="/s/{{ code }}" style="text-decoration:none"><b style="color:var(--brand)">{{ APP_NAME }}</b> {{ APP_SUB }}</a><span>·</span><span>{{ student.name }}</span>
   </p>
   {% block body %}{% endblock %}
 </div>

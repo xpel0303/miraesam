@@ -33,12 +33,12 @@ def _save_passage(set_id: int, idx: int, data: dict):
         flag_modified(s, "passages")
 
 
-def _analyze_one(key: str, model: str, p: dict) -> dict:
+def _analyze_one(key: str, model: str, p: dict, visual: bool = False) -> dict:
     sentences = p.get("sentences_src") or spec.split_sentences(p["passage"])
     need_title = not (p.get("title") or "").strip()
-    prompt = spec.user_prompt(sentences, need_title=need_title, level=p.get("level", ""))
-    # 문장 수에 비례해 답이 길어지므로 출력 한도를 넉넉히
-    max_tokens = min(30000, 4000 + 700 * len(sentences))
+    prompt = spec.user_prompt(sentences, need_title=need_title, level=p.get("level", ""), target=p.get("target", ""), visual=visual)
+    # 문장 수에 비례해 답이 길어지므로 출력 한도를 넉넉히 (정리 그림을 고르면 조금 더)
+    max_tokens = min(32000, 4000 + 700 * len(sentences) + (1500 if visual else 0))
 
     errors: list[str] = []
     for _ in range(2):
@@ -61,14 +61,37 @@ def _analyze_one(key: str, model: str, p: dict) -> dict:
     raise llm.LLMError("규칙에 맞는 분석을 받지 못했습니다: " + " / ".join(errors[:3]))
 
 
+def _fill_visuals(ctx: JobContext, set_id: int):
+    """'정리 그림'을 켰는데 그림 내용이 없는 지문(나중에 켠 경우)만 Gemini로 그림 내용을 따로 받음."""
+    s = _load(set_id)
+    if not {**spec.DEFAULT_OPTIONS, **(s.options or {})}.get("show_visual"):
+        return
+    todo = [i for i, p in enumerate(s.passages) if p.get("status") == "done" and not p.get("visual")]
+    if not todo:
+        return
+    key, model = ctx.gemini()
+    for n, idx in enumerate(todo, 1):
+        p = s.passages[idx]
+        ctx.step(f"정리 그림 만드는 중 ({n}/{len(todo)})", 80)
+        try:
+            raw = llm.generate(key, spec.visual_prompt(p.get("sentences_src") or [], (p.get("summary") or {}).get("topic", "")),
+                               system=spec.VISUAL_SYSTEM, model=model, json_mode=True, temperature=0.5, max_tokens=3000)
+        except llm.LLMError:
+            continue  # 그림이 없어도 분석본은 만듦
+        vis = spec.clean_visual(raw.get("visual") if isinstance(raw, dict) else None)
+        if vis:
+            _save_passage(set_id, idx, {"visual": vis})
+
+
 def render_analysis_pdf(ctx: JobContext, set_id: int) -> dict:
+    _fill_visuals(ctx, set_id)
     s = _load(set_id)
     if not all(p.get("status") == "done" for p in s.passages):
         raise llm.LLMError("아직 분석이 끝나지 않은 지문이 있어 PDF를 만들 수 없습니다.")
     with session_scope() as db:
         academy = db.get(Academy, s.academy_id)
         db.expunge(academy)
-    opts = {"layout": "split", "show_background": True, "show_sketch": True, "show_vocab": True, **(s.options or {})}
+    opts = {**spec.DEFAULT_OPTIONS, **(s.options or {})}
     ctx.step("PDF 만드는 중", 88)
     pdf = render_pdf(
         "pdf/analysis.html",
@@ -93,6 +116,7 @@ def build(ctx: JobContext) -> dict:
     only = ctx.payload.get("only")
     key, model = ctx.gemini()
     s = _load(set_id)
+    visual = bool({**spec.DEFAULT_OPTIONS, **(s.options or {})}.get("show_visual"))
     targets = [i for i in range(len(s.passages)) if only is None or i in only]
     if only is None:
         targets = [i for i in targets if s.passages[i].get("status") != "done"]
@@ -104,7 +128,7 @@ def build(ctx: JobContext) -> dict:
         ctx.step(f"{name} 분석하는 중 ({n}/{len(targets)})", int(5 + 80 * (n - 1) / max(1, len(targets))))
         _save_passage(set_id, idx, {"status": "making", "error": None})
         try:
-            _save_passage(set_id, idx, _analyze_one(key, model, p))
+            _save_passage(set_id, idx, _analyze_one(key, model, p, visual))
         except llm.LLMError as e:
             _save_passage(set_id, idx, {"status": "failed", "error": str(e)})
             failed.append(f"지문 {idx + 1}")

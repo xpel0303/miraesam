@@ -36,7 +36,7 @@
 {% endblock %}
 {% block body %}
 <div class="card">
-  <div class="hd">{% if academy.logo %}<img src="{{ academy.logo }}" alt="">{% endif %}<b>{{ academy.name }}</b><span class="dt">{{ exam.date or today }}</span></div>
+  <div class="hd">{% if academy.logo %}<img src="{{ academy.logo }}" alt=""><b>{{ academy.name }}</b>{% else %}<img src="static/logo-word.png" alt="미래샘 영어연구소" style="height:22pt">{% endif %}<span class="dt">{{ exam.date or today }}</span></div>
   <div class="ttl">{{ exam.title }}</div>
   <div class="meta">{{ [exam.school or None, exam.classes or None]|select|join(" · ") }} · {{ items|length }}문항 · 만점 {{ fmt(S.full) }}점</div>
 
@@ -64,6 +64,6 @@
   </div>
 
   {% if top %}<h3>잘했어요</h3><div class="top">{% for p in top %}<span>{{ p.rank }}등 <b>{{ mask(p.name) }}</b> {{ fmt(p.score) }}점</span>{% endfor %}</div>{% endif %}
-  <div class="ft">{{ academy.name }}</div>
+  <div class="ft">{{ academy.name if academy.logo else "미래샘 영어연구소" }}</div>
 </div>
 {% endblock %}

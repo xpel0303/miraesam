@@ -1,5 +1,5 @@
 {% extends "student/_base.html" %}
-{% block title %}{{ e.title }} · {{ academy.name }}{% endblock %}
+{% block title %}{{ e.title }} · {{ APP_NAME }}{% endblock %}
 {% block body %}
 <h1 style="font-size:1.3rem">{{ e.title }}</h1>
 <p class="muted small">시험지를 보면서 내가 고른 답을 그대로 눌러 주세요. {% if r %}이미 낸 답이 있어요. 고쳐서 다시 내면 바뀝니다.{% endif %}</p>

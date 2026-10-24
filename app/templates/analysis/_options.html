@@ -5,6 +5,7 @@
     <label style="font-weight:400"><input type="radio" name="layout" value="{{ k }}" {% if (o.layout or "split") == k %}checked{% endif %}> {{ label }}</label>
   {% endfor %}
 </div>
-<label style="font-weight:400"><input type="checkbox" name="show_background" value="1" {% if o.show_background %}checked{% endif %}> 관련 배경지식</label>
-<label style="font-weight:400"><input type="checkbox" name="show_sketch" value="1" {% if o.show_sketch %}checked{% endif %}> 흐름 한눈에 보기 (상자 그림)</label>
-<label style="font-weight:400"><input type="checkbox" name="show_vocab" value="1" {% if o.show_vocab %}checked{% endif %}> 중요 어휘표 (단어·의미·유의어·반의어)</label>
+<label style="font-weight:400"><input type="checkbox" name="show_background" value="1" {% if o.show_background %}checked{% endif %}> 배경지식 (주제·흐름 표 아래 칸)</label>
+<label style="font-weight:400"><input type="checkbox" name="show_vocab" value="1" {% if o.show_vocab %}checked{% endif %}> 핵심 어휘 &amp; 유의어·반의어 표</label>
+<label style="font-weight:400"><input type="checkbox" name="show_visual" value="1" {% if o.show_visual %}checked{% endif %}> 🎨 정리 그림 (지문 내용을 4컷 그림으로 한눈에)
+  <span class="hint">Gemini 사용량과 PDF 분량이 조금 늘어서 필요할 때만 켜 주세요. 나중에 켜도 그림만 따로 만들어요.</span></label>

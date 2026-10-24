@@ -5,7 +5,7 @@
 <p class="lead">지문은 한 번에 {{ max }}개까지, PDF 한 파일로 이어서 나옵니다. 문장은 프로그램이 나누므로 빠지는 문장이 없어요.</p>
 
 {% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
-{% set o = form.options or {"layout": "split", "show_background": True, "show_sketch": True, "show_vocab": True} %}
+{% set o = form.options or {"layout": "split", "show_background": True, "show_vocab": True, "show_visual": False} %}
 
 <form method="post" action="/analysis">
   <section class="panel">
@@ -20,7 +20,10 @@
     {% for r in (form.passages or [{}]) %}
     <section class="panel passage-card">
       <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
-      <div class="field"><label>제목 <span class="hint">비우면 영문·한글 제목을 자동으로 붙여요</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+      <div class="row">
+        <div class="field"><label>제목 <span class="hint">비우면 영문·한글 제목을 자동으로 붙여요</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+        <div class="field"><label>목표 어법 <span class="hint">선택. 예: 가목적어-진목적어, 동격의 that</span></label><input type="text" name="p_target" value="{{ r.target or '' }}"></div>
+      </div>
       <div class="field"><label>영어 지문</label><textarea name="p_text" rows="8" placeholder="영어 본문을 붙여 넣으세요">{{ r.text or '' }}</textarea></div>
     </section>
     {% endfor %}

@@ -1,5 +1,5 @@
 {% extends "student/_base.html" %}
-{% block title %}{{ h.title }} · {{ academy.name }}{% endblock %}
+{% block title %}{{ h.title }} · {{ APP_NAME }}{% endblock %}
 {% block body %}
 <h1 style="font-size:1.3rem">{{ h.title }}</h1>
 <p class="muted small">{% if h.due %}마감 {{ h.due }}{% if late %} (지났어요){% endif %}{% endif %}</p>

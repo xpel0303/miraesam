@@ -57,6 +57,12 @@ def _comprehension(prompt: str) -> dict:
 
 def _analysis(prompt: str) -> dict:
     sents = re.findall(r"^\[(\d+)\] (.+)$", prompt, re.M)
+    if "neuroethics" in prompt:  # 선생님이 보내 준 양식 지문 → 실제 분석본 내용 (교과서 지문이라 저장소에는 없음)
+        try:
+            from .devfake_analysis import build
+            return build([(int(n), s) for n, s in sents], "정리 그림(visual)" in prompt)
+        except ImportError:
+            pass
     rows = []
     for n, s in sents:
         n = int(n)
@@ -70,7 +76,7 @@ def _analysis(prompt: str) -> dict:
         rows.append({
             "n": n, "tags": tags, "chips": ["[가짜] 구문"] + (["관계사"] if any(t["type"] == "grammar" for t in tags) else []),
             "ko": f"[가짜 해석] {n}번 문장의 우리말 해석입니다.",
-            "point": {"type": ["grammar", "reading", "topic"][n % 3], "text": "[가짜 포인트] 이 문장은 시험에 잘 나와. 핵심 구조를 확인해 두자."} if n % 3 == 1 else None,
+            "points": [{"type": ["grammar", "reading", "topic"][n % 3], "text": "[가짜 포인트] 이 문장은 시험에 잘 나와. 핵심 구조를 확인해 두자."}],
             "insertion": s.startswith("However"),
         })
     if "FAKE_FAIL" in prompt:
@@ -114,6 +120,9 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
         return _comprehension(prompt)
     if system and "지문 분석본" in system:
         return _analysis(prompt)
+    if system and "4컷 정리 그림" in system:
+        return {"visual": {"title": "[가짜] 한눈에 정리", "message": "[가짜] 한 줄 결론",
+                           "panels": [{"icon": i, "head": f"[가짜] {k + 1}단계", "text": "[가짜] 설명"} for k, i in enumerate(("book", "idea", "people", "check"))]}}
     if system and "시험지 이미지를 글자 그대로" in system:
         return _exam(prompt)
     if json_mode:

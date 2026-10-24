@@ -1,120 +1,150 @@
 {% extends "pdf/_base.html" %}
-{#  지문 분석본. opts.layout: "split" = 지문 7 : 주석 3 / "single" = 1단 (포인트는 문장 아래)  #}
+{#  지문 분석본 — 선생님이 주신 양식 기준.
+    왼쪽(7): 문장 + 단어 아래 작은 설명 + 회색 해석 상자 / 오른쪽(3): 문장별 포인트 카드
+    끝: 주제·흐름·배경지식 표 → (선택) 정리 그림 → 핵심 어휘 & 유의어·반의어
+    opts.layout == "single" 이면 포인트 카드를 문장 아래에 둡니다. #}
+{% import "pdf/_icons.html" as ic %}
 {% block style %}
   :root {
-    --g: #9a3324; --g-bg: #f6eed0;   /* 문법: 벽돌색 + 옅은 형광펜 */
-    --v: #2b4f7d;                    /* 어휘: 남색 */
-    --b: #6a3d7a;                    /* 문법+어휘: 자주 */
-    --hl: #f6eed0;
+    --navy: #1B2A5C;
+    --g: #D0312D;      /* 문법 */
+    --v: #1F5FC4;      /* 어휘 */
+    --b: #8E3BA8;      /* 문법+어휘 */
+    --c: #6B7280;      /* 연결어 */
+    --p: #12897A;      /* 병렬 */
+    --hl: #FFF3B0;     /* 형광펜 */
   }
   .passage { break-before: page; }
   .passage.first { break-before: avoid; }
-  .ptitle { font-size: 16pt; font-weight: 800; margin: 0 0 3pt; padding-bottom: 5pt; border-bottom: 1.6pt solid var(--brand); }
-  .ptitle .kr { font-size: 10pt; font-weight: 400; color: var(--ink-2); margin-left: 6pt; }
-  .meta { font-size: 8.5pt; color: var(--ink-3); margin: 3pt 0 6pt; }
-  .legend { font-size: 8pt; color: var(--ink-2); background: var(--fill); border-radius: 4pt; padding: 4pt 8pt; margin-bottom: 8pt; }
-  .legend span { margin-right: 10pt; }
+  .head { position: relative; padding-right: 54pt; }
+  .badge-no { position: absolute; right: 0; top: 4pt; background: var(--navy); color: #fff; font-size: 8.5pt; padding: 2pt 7pt; border-radius: 2pt; }
+  .title-en { font-size: 17pt; font-weight: 700; color: var(--navy); line-height: 1.35; margin: 0; }
+  .title-ko { font-size: 10pt; color: var(--ink-2); margin: 3pt 0 6pt; }
+  .target { font-size: 8.6pt; color: #C2185B; margin: 0 0 6pt; }
+  .legend { font-size: 8pt; color: var(--ink-2); margin: 0 0 7pt; }
+  .legend i { display: inline-block; width: 7pt; height: 7pt; border-radius: 1.5pt; vertical-align: -0.5pt; margin: 0 2pt 0 7pt; }
+  .legend i:first-child { margin-left: 0; }
+  .legend i.ln { height: 1.4pt; vertical-align: 2pt; width: 8pt; }
+  .rule { border: 0; border-top: 2.2pt solid var(--navy); margin: 0 0 4pt; }
 
-  .grammar { color: var(--g); font-weight: 700; background: var(--g-bg); border-radius: 2pt; }
-  .vocab { color: var(--v); font-weight: 700; }
-  .both { color: var(--b); font-weight: 700; }
-  .connective { background: var(--hl); text-decoration: underline; text-decoration-thickness: 1pt; }
-  .highlight { background: var(--hl); }
+  .cols { display: table; width: 100%; table-layout: fixed; }
+  .cols > .l { display: table-cell; width: 68%; vertical-align: top; padding-right: 12pt; }
+  .cols > .r { display: table-cell; width: 32%; vertical-align: top; padding-left: 9pt; border-left: 0.6pt solid var(--line); }
+  .single .cols > .l { width: 100%; padding-right: 0; }
 
-  .row { display: table; width: 100%; table-layout: fixed; border-bottom: 0.6pt solid var(--line-2); break-inside: avoid; }
-  .row > div { display: table-cell; vertical-align: top; padding: 7pt 0; }
-  .split .main { width: 70%; padding-right: 10pt; }
-  .split .side { width: 30%; }
-  .single .main { width: 100%; }
-  .num { font-weight: 800; margin-right: 4pt; color: var(--brand); }
-  .ins { font-size: 7.5pt; border: 0.6pt solid var(--ink-3); color: var(--ink-2); border-radius: 6pt; padding: 0 4pt; margin-left: 3pt; }
-  .en { font-size: 10.5pt; line-height: 1.6; }
-  .chips { margin-top: 3pt; }
-  .chip { display: inline-block; font-size: 7.6pt; background: #4a4a4a; color: #fff; border-radius: 7pt; padding: 0.5pt 6pt; margin: 1pt 3pt 1pt 0; }
-  .chip.voc { background: none; color: var(--v); border: 0.6pt solid #b9c6d8; }
-  .chip.voc.b { color: var(--b); border-color: #d2c3d9; }
-  .ko { margin-top: 4pt; padding: 4pt 7pt; background: var(--fill); border-radius: 3pt; font-size: 9.3pt; color: #333; }
+  .sent { margin: 9pt 0 12pt; break-inside: avoid; }
+  .en { font-size: 10.6pt; line-height: 2.1; }
+  .no { display: inline-block; width: 12pt; height: 12pt; line-height: 12pt; border-radius: 50%; background: var(--navy); color: #fff; font-size: 7.4pt; text-align: center; font-weight: 700; margin-right: 4pt; vertical-align: 1pt; }
+  .tp { display: inline-block; background: var(--navy); color: #fff; font-size: 7.4pt; font-weight: 700; padding: 0.5pt 4pt; border-radius: 2pt; margin-right: 4pt; vertical-align: 1pt; }
+  .topic-s { background: linear-gradient(transparent 22%, #FFF6C9 22%, #FFF6C9 78%, transparent 78%); }
+  /* 단어 + 아래 작은 설명: inline-table 은 첫 줄(단어)을 기준선으로 삼아 문장 줄에 그대로 앉고, 설명은 그 아래로 */
+  .w { display: inline-table; border-collapse: collapse; margin: 0 2pt; text-align: center; vertical-align: baseline; line-height: 1.25; }
+  .w .t { display: table-row; font-weight: 700; }
+  .w .lb { display: table-row; font-size: 6.8pt; font-weight: 700; color: var(--ink); white-space: nowrap; line-height: 1.15; }
+  .w.par .t { border-bottom: 1pt dotted currentColor; }
+  .w.grammar .t { color: var(--g); }
+  .w.vocab .t { color: var(--v); }
+  .w.both .t { color: var(--b); }
+  .w.parallel .t { color: var(--p); }
+  .w.connective .t { color: var(--ink); font-weight: 400; text-decoration: underline; text-decoration-color: var(--c); }
+  .w.highlight .t { background: var(--hl); color: var(--ink); font-weight: 400; }
+  .ins { font-size: 7pt; border: 0.6pt solid #7A4CC2; color: #7A4CC2; border-radius: 6pt; padding: 0 4pt; margin-left: 3pt; vertical-align: 1pt; }
+  .ko { margin-top: 5pt; padding: 6pt 9pt; background: #F3F4F6; border-left: 2.4pt solid #9CA3AF; font-size: 9.2pt; line-height: 1.65; color: #333; }
 
-  .pt { border: 0.7pt solid var(--line); border-radius: 4pt; padding: 5pt 7pt; font-size: 8.6pt; line-height: 1.5; background: #fff; }
-  .single .pt { margin-top: 5pt; }
-  .pt .lb { display: inline-block; font-weight: 700; font-size: 7.6pt; border-radius: 6pt; padding: 0.5pt 6pt; margin-bottom: 3pt; }
-  .t-grammar .lb { color: #9a3324; background: #f5e6e2; }
-  .t-reading .lb, .t-implication .lb { color: #2b4f7d; background: #e3eaf3; }
-  .t-topic .lb { color: #3d6b4f; background: #e4efe7; }
-  .t-blank .lb { color: #6a3d7a; background: #ece4f0; }
-  .t-insertion .lb { color: #7a5a1e; background: #f4ecd9; }
+  .card { border: 0.7pt solid #D7DBE3; border-radius: 3pt; padding: 6pt 8pt 7pt; margin: 9pt 0 0; font-size: 8.5pt; line-height: 1.6; break-inside: avoid; }
+  .card .lb { display: inline-block; color: #fff; font-size: 7.4pt; font-weight: 700; padding: 1pt 5pt; border-radius: 2pt; margin-bottom: 4pt; }
+  .k-reading .lb, .k-implication .lb { background: #2F6FD0; }
+  .k-grammar .lb { background: #D0312D; }
+  .k-topic .lb { background: var(--navy); }
+  .k-blank .lb { background: #E0892B; }
+  .k-insertion .lb { background: #7A4CC2; }
+  .single .card { margin: 5pt 0 0; }
 
-  .sum { margin-top: 12pt; break-inside: avoid; }
-  .sum table th { width: 16%; background: #3a3a3a; color: #fff; }
-  .bg { margin-top: 8pt; background: var(--fill); border-radius: 4pt; padding: 7pt 10pt; font-size: 9.2pt; line-height: 1.65; break-inside: avoid; }
-  .bg h3 { margin: 0 0 3pt; }
-  .sketch { margin-top: 10pt; break-inside: avoid; }
-  .sketch h3 { margin: 0 0 6pt; }
-  .step { display: inline-block; border: 1.5pt solid #555; border-radius: 10pt 12pt 9pt 13pt; padding: 5pt 10pt; text-align: center; margin: 3pt 0; background: #fffdf7; vertical-align: middle; }
-  .step b { display: block; font-size: 10.5pt; }
-  .step i { display: block; font-style: normal; font-size: 8pt; color: var(--ink-3); }
-  .arrow { display: inline-block; font-size: 13pt; color: #555; margin: 0 4pt; vertical-align: middle; }
-  .vt { margin-top: 10pt; }
-  .vt td:first-child { font-weight: 700; }
+  .sum { break-before: page; margin-top: 0; break-inside: avoid; border: 0.7pt solid #D7DBE3; border-radius: 3pt; overflow: hidden; }
+  .sum table { border: 0; }
+  .sum th { width: 13%; background: var(--navy); color: #fff; text-align: center; vertical-align: middle; border: 0; border-bottom: 0.6pt solid #2C3D73; font-size: 9pt; }
+  .sum td { border: 0; border-bottom: 0.6pt solid #E5E7EB; font-size: 9pt; line-height: 1.65; padding: 6pt 9pt; }
+  .sum tr:last-child td, .sum tr:last-child th { border-bottom: 0; }
+  h2.sec { font-size: 12pt; color: var(--navy); border-bottom: 2pt solid var(--navy); padding-bottom: 4pt; margin: 18pt 0 0; }
+  table.voc { border: 0; }
+  table.voc th { background: var(--navy); color: #fff; border: 0; padding: 5pt 7pt; }
+  table.voc td { border: 0; border-bottom: 0.6pt solid #E5E7EB; padding: 5pt 7pt; font-size: 9pt; }
+  table.voc td.w1 { font-weight: 700; color: var(--navy); }
+
+  /* 정리 그림 (4컷) */
+  .vis { margin-top: 16pt; break-inside: avoid; }
+  .vis .vt { font-size: 12pt; font-weight: 700; color: var(--navy); text-align: center; margin: 0 0 8pt; }
+  .vis .grid { display: table; width: 100%; table-layout: fixed; border-spacing: 6pt 0; }
+  .vis .pn { display: table-cell; vertical-align: top; border-radius: 6pt; padding: 9pt 8pt 10pt; text-align: center; }
+  .vis .pn .ic { width: 38pt; height: 38pt; margin: 0 auto 5pt; border-radius: 50%; background: #fff; display: block; }
+  .vis .pn .ic svg { width: 38pt; height: 38pt; }
+  .vis .pn b { display: block; font-size: 10pt; margin-bottom: 3pt; }
+  .vis .pn span { display: block; font-size: 8.4pt; line-height: 1.55; color: #333; }
+  .vis .pn .st { display: inline-block; font-size: 7pt; font-weight: 700; color: #fff; border-radius: 6pt; padding: 0 5pt; margin-bottom: 4pt; }
+  .vis .msg { margin-top: 8pt; text-align: center; font-size: 9.4pt; font-weight: 700; color: var(--navy); background: #EEF2FA; border-radius: 12pt; padding: 5pt 10pt; }
 {% endblock %}
+
+{% macro card(n, pt) %}<div class="card k-{{ pt.type }}"><span class="lb">{{ n }}번 {{ point_types.get(pt.type, "포인트") }}</span><br>{{ pt.text }}</div>{% endmacro %}
+
+{% macro sentence(s) %}
+  <div class="en {% if s.topic %}{% endif %}">{% if s.topic %}<span class="tp">주제문</span>{% endif %}<span class="no">{{ s.n }}</span>{% if s.topic %}<span class="topic-s">{% endif %}{% for seg in s.segments %}{% if seg.type %}<span class="w {{ seg.type }}{% if seg.par %} par{% endif %}"><span class="t">{{ seg.text }}</span>{% if seg.label %}<span class="lb">{{ seg.label }}</span>{% endif %}</span>{% else %}{{ seg.text }}{% endif %}{% endfor %}{% if s.topic %}</span>{% endif %}{% if s.insertion %}<span class="ins">문장삽입</span>{% endif %}</div>
+  <div class="ko">{{ s.ko }}</div>
+{% endmacro %}
 
 {% block body %}
 {% set layout = opts.layout %}
+{% set PANEL = [("#E8F0FC", "#2F6FD0"), ("#FDECEC", "#D0312D"), ("#E6F6F2", "#12897A"), ("#FFF2E2", "#E0892B")] %}
 {% for p in passages %}
-<div class="passage {% if loop.first %}first{% endif %}">
-  <div class="ptitle">{{ p.title_en or p.title or ("지문 " ~ loop.index) }}{% if p.title_ko %}<span class="kr">{{ p.title_ko }}</span>{% endif %}</div>
-  <div class="meta">지문 {{ loop.index }} · {{ p.sentences|length }}문장{% if p.level %} · {{ p.level }}{% endif %}</div>
-  <div class="legend">
-    <span class="grammar">문법</span><span class="vocab">어휘</span><span class="both">문법+어휘</span><span class="connective">연결어</span><span class="highlight">구조 강조</span>
+<div class="passage {% if loop.first %}first{% endif %} {{ layout }}">
+  <div class="head">
+    <span class="badge-no">지문 {{ loop.index }}</span>
+    <p class="title-en">{{ p.title_en or p.title or ("지문 " ~ loop.index) }}</p>
+    {% if p.title_ko %}<p class="title-ko">{{ p.title_ko }}</p>{% endif %}
+    {% if p.target %}<p class="target">목표 어법: {{ p.target }}</p>{% endif %}
+    <p class="legend"><i style="background:#D0312D"></i>문법 <i style="background:#1F5FC4"></i>어휘 <i style="background:#8E3BA8"></i>문법+어휘 <i class="ln" style="background:#6B7280"></i>연결어 <i style="background:#12897A"></i>병렬관계 <i style="background:#FFF3B0;border:0.5pt solid #E5D27A"></i>형광펜(주제문·목표 어법)</p>
   </div>
+  <hr class="rule">
 
-  <div class="{{ layout }}">
   {% for s in p.sentences %}
-    <div class="row">
-      <div class="main">
-        <div class="en"><span class="num">{{ s.n }}</span>{% for seg in s.segments %}{% if seg.type %}<span class="{{ seg.type }}">{{ seg.text }}</span>{% else %}{{ seg.text }}{% endif %}{% endfor %}{% if s.insertion %}<span class="ins">문장삽입</span>{% endif %}</div>
-        {% set vocs = s.segments|selectattr("type", "in", ["vocab", "both"])|selectattr("label")|list %}
-        {% if s.chips or vocs %}
-        <div class="chips">{% for c in s.chips %}<span class="chip">{{ c }}</span>{% endfor %}{% for v in vocs %}<span class="chip voc {{ 'b' if v.type == 'both' else '' }}">{{ v.text }} {{ v.label }}</span>{% endfor %}</div>
-        {% endif %}
-        <div class="ko">{{ s.ko }}</div>
-        {% if layout == "single" and s.point %}
-          <div class="pt t-{{ s.point.type }}"><span class="lb">{{ s.n }}번 {{ point_types[s.point.type] }}</span><br>{{ s.point.text }}</div>
-        {% endif %}
-      </div>
-      {% if layout == "split" %}
-      <div class="side">
-        {% if s.point %}<div class="pt t-{{ s.point.type }}"><span class="lb">{{ s.n }}번 {{ point_types[s.point.type] }}</span><br>{{ s.point.text }}</div>{% endif %}
-      </div>
-      {% endif %}
-    </div>
-  {% endfor %}
+  {% set pts = s.points if s.points is not none else ([s.point] if s.point else []) %}
+  <div class="cols">
+    <div class="l"><div class="sent">{{ sentence(s) }}
+      {% if layout == "single" %}{% for pt in pts %}{{ card(s.n, pt) }}{% endfor %}{% endif %}</div></div>
+    {% if layout != "single" %}<div class="r">{% for pt in pts %}{{ card(s.n, pt) }}{% endfor %}</div>{% endif %}
   </div>
+  {% endfor %}
 
   <div class="sum">
     <table>
       <tr><th>주제</th><td>{{ p.summary.topic }}</td></tr>
-      <tr><th>흐름</th><td>{{ p.summary.flow|map(attribute="ko")|join(" → ") }}</td></tr>
+      <tr><th>흐름</th><td>{% for st in p.summary.flow %}{{ st.ko }}{% if st.desc %}({{ st.desc }}){% endif %}{% if not loop.last %} → {% endif %}{% endfor %}</td></tr>
+      {% if opts.show_background and p.summary.background %}<tr><th>배경지식</th><td>{{ p.summary.background }}</td></tr>{% endif %}
     </table>
   </div>
 
-  {% if opts.show_background and p.summary.background %}
-  <div class="bg"><h3>관련 배경지식</h3>{{ p.summary.background }}</div>
-  {% endif %}
-
-  {% if opts.show_sketch and p.summary.flow %}
-  <div class="sketch"><h3>흐름 한눈에 보기</h3>
-    {% for st in p.summary.flow %}<span class="step" style="transform: rotate({{ [-1.2, 1, -0.7, 1.3, -1, 0.8][loop.index0 % 6] }}deg)"><b>{{ st.ko }}</b>{% if st.en %}<i>{{ st.en }}</i>{% endif %}</span>{% if not loop.last %}<span class="arrow">→</span>{% endif %}{% endfor %}
+  {% if opts.show_visual and p.visual %}
+  <div class="vis">
+    <p class="vt">{{ p.visual.title or "한눈에 정리" }}</p>
+    <div class="grid">
+      {% for pn in p.visual.panels %}{% set c = PANEL[loop.index0 % 4] %}
+      <div class="pn" style="background:{{ c[0] }}">
+        <span class="st" style="background:{{ c[1] }}">{{ loop.index }}</span>
+        <span class="ic">{{ ic.icon(pn.icon, c[1]) }}</span>
+        <b style="color:{{ c[1] }}">{{ pn.head }}</b>
+        <span>{{ pn.text }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% if p.visual.message %}<p class="msg">{{ p.visual.message }}</p>{% endif %}
   </div>
   {% endif %}
 
   {% if opts.show_vocab and p.vocab %}
-  <div class="vt"><h3>중요 어휘</h3>
-    <table>
-      <thead><tr><th style="width:22%">단어</th><th style="width:30%">의미</th><th style="width:28%">유의어</th><th>반의어</th></tr></thead>
-      <tbody>{% for v in p.vocab %}<tr><td>{{ v.word }}</td><td>{{ v.meaning }}</td><td>{{ v.syn }}</td><td>{{ v.ant }}</td></tr>{% endfor %}</tbody>
-    </table>
-  </div>
+  <h2 class="sec">핵심 어휘 &amp; 유의어·반의어</h2>
+  <table class="voc">
+    <thead><tr><th style="width:18%">단어</th><th style="width:40%">뜻</th><th style="width:21%">유의어</th><th>반의어</th></tr></thead>
+    <tbody>{% for v in p.vocab %}<tr><td class="w1">{{ v.word }}</td><td>{{ v.meaning }}</td><td>{{ v.syn or "-" }}</td><td>{{ v.ant or "-" }}</td></tr>{% endfor %}</tbody>
+  </table>
   {% endif %}
 </div>
 {% endfor %}

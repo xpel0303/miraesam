@@ -14,7 +14,7 @@
 {% macro brandmark(academy) %}
   <a class="brand" href="/">
     {{ art.logomark(30) }}
-    <span><strong>{{ APP_NAME }}</strong><span>{{ academy.name if academy and academy.name != APP_NAME else APP_SUB }}</span></span>
+    <span><strong>{{ APP_NAME }}</strong><span>{{ APP_SUB }}</span></span>
   </a>
 {% endmacro %}
 <div class="shell">

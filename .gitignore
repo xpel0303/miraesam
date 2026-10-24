@@ -6,3 +6,4 @@ local.db
 
 # 학교 시험지 원문(저작권) — 개발용 데이터는 저장소에 올리지 않음
 app/exam/fixtures/*.json
+app/devfake_analysis.py
