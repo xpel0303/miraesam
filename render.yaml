@@ -3,6 +3,7 @@ services:
     name: miraesam
     runtime: docker
     plan: free
+    region: singapore  # 한국에서 가장 가까운 지역 (Neon DB도 싱가포르)
     healthCheckPath: /healthz
     envVars:
       - key: SECRET_KEY
