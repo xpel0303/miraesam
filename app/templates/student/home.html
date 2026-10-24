@@ -41,5 +41,16 @@
     <p class="muted" style="margin:0">아직 받은 단어장이 없어요. 선생님이 내주면 여기에 보입니다.</p>
   {% endif %}
 </div>
+{% if lts %}
+<div class="student-card" style="margin-top:20px">
+  <h2>레벨테스트</h2>
+  <ul class="s-list">
+  {% for t in lts %}{% set d = lt_done.get(t.id) %}
+    <li><form method="post" action="/s/{{ code }}/lt/{{ t.id }}"><button type="submit" class="s-list-btn"><b>{{ t.title }}</b>
+      <span class="muted small">{% if d and d.submitted_at %}{{ d.submitted_at|kst("%m/%d") }}에 봤어요{% if t.show_result %} · 결과 보기{% endif %}{% elif d %}<b style="color:var(--brand)">푸는 중 · 이어서 풀기</b>{% else %}{{ t.sub or "" }}{% if t.minutes %} {{ t.minutes }}분{% endif %}{% endif %}</span></button></form></li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
 <p class="small muted" style="margin-top:16px">이 주소를 즐겨찾기 해 두면 다음에도 바로 들어올 수 있어요.</p>
 {% endblock %}

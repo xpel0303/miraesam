@@ -46,6 +46,7 @@ def session_scope():
 #   (표, 칸, SQL 자료형, 기본값)
 ADDED_COLUMNS = [
     ("exam_responses", "meta", "JSON", "'{}'"),  # 온라인 시험: 시작·제출 시각
+    ("academies", "lt_token", "VARCHAR(16)", "NULL"),  # 레벨테스트 공용 링크
 ]
 
 

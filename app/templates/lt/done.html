@@ -1,0 +1,17 @@
+{% extends "student/_base.html" %}
+{% from "lt/_report.html" import report %}
+{% block title %}레벨테스트 결과 · {{ APP_NAME }}{% endblock %}
+{% block body %}
+{% if rep %}
+  {{ report(rep, r, full=false) }}
+  <p class="actions no-print" style="margin-top:16px"><button class="btn ghost" type="button" onclick="window.print()">🖨 저장 / 인쇄</button>
+    {% if code %}<a class="btn ghost" href="/s/{{ code }}">처음으로</a>{% endif %}</p>
+{% else %}
+  <div class="student-card" style="text-align:center">
+    <img src="/static/mascot-book.svg" alt="" width="84" height="84">
+    <h1 style="font-size:1.35rem;margin:8px 0 6px">제출했어요!</h1>
+    <p class="muted" style="margin:0">{{ r.name }} 학생, 수고했어요. 결과는 선생님이 상담 때 자세히 알려 드릴게요.</p>
+    {% if code %}<p style="margin-top:16px"><a class="btn ghost" href="/s/{{ code }}">처음으로</a></p>{% endif %}
+  </div>
+{% endif %}
+{% endblock %}

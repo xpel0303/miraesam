@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}레벨테스트 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>레벨테스트</h1>
+  <form method="post" action="/leveltest/new"><button class="btn" type="submit">새 시험지</button></form></div>
+<p class="lead">재원생은 학생 화면(접속 코드)에서, 처음 오는 학생은 아래 공용 링크로 들어와 풀어요. 제출하면 바로 채점되고 레벨 리포트가 여기 모여요.</p>
+
+<section class="panel">
+  <h2>신규생 공용 링크</h2>
+  <div class="actions">
+    <input type="text" id="lt-link" value="{{ link }}" readonly style="flex:1;min-width:240px;font-family:ui-monospace,monospace" aria-label="공용 링크">
+    <button class="btn small" type="button" onclick="navigator.clipboard.writeText(document.getElementById('lt-link').value).then(()=>{this.textContent='복사했어요 ✓'})">복사</button>
+    <form method="post" action="/leveltest/link/reset" onsubmit="return confirm('링크를 새로 만들면 예전 링크는 더 이상 안 열려요. 바꿀까요?')"><button class="btn ghost small" type="submit">링크 바꾸기</button></form>
+  </div>
+  <p class="small muted" style="margin:8px 0 0">상담 문자에 이 링크를 보내면 학생이 이름·학교/학년만 적고 바로 볼 수 있어요. 재원생은 학생 화면 맨 아래 '레벨테스트'에서 봐요.</p>
+</section>
+
+<section class="panel">
+  <h2>시험지</h2>
+  {% if tests %}
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th>순서</th><th>시험지</th><th>문항</th><th>시간</th><th>상태</th><th>응시</th></tr></thead>
+    <tbody>{% for t in tests %}
+      <tr><td class="muted">{{ t.sort }}</td>
+        <td class="wrap"><a href="/leveltest/{{ t.id }}"><b>{{ t.title }}</b></a>{% if t.sub %} <span class="small muted">{{ t.sub }}</span>{% endif %}</td>
+        <td>{{ n_items[t.id] or "-" }}</td>
+        <td class="small">{{ (t.minutes ~ "분") if t.minutes else "제한 없음" }}</td>
+        <td>{% if t.active %}<span class="tag tag-on">학생에게 보임</span>{% elif not n_items[t.id] %}<span class="tag">문항 넣기 전</span>{% else %}<span class="tag">닫음</span>{% endif %}</td>
+        <td><a class="small" href="/leveltest?test_id={{ t.id }}#results">{{ counts.get(t.id, 0) }}명</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <p class="small muted" style="margin:0">아직 시험지가 없어요. <b>새 시험지</b>를 눌러 학년별 시험지를 만들어 주세요 (예: 초등 저학년, 중등 Type A).</p>
+  {% endif %}
+</section>
+
+<section class="panel" id="results">
+  <div class="panel-head"><h2>응시 결과</h2>
+    <form class="actions" method="get" action="/leveltest#results">
+      <select name="test_id" aria-label="시험지" style="width:auto"><option value="">전체 시험지</option>{% for t in tests %}<option value="{{ t.id }}" {% if test_id == t.id %}selected{% endif %}>{{ t.title }}</option>{% endfor %}</select>
+      <input type="text" name="q" value="{{ q }}" placeholder="이름 검색" style="width:140px" aria-label="이름 검색">
+      <button class="btn ghost small" type="submit">보기</button>
+    </form></div>
+  {% if results %}
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th>날짜</th><th>이름</th><th>학교·학년</th><th>시험지</th><th>점수</th><th>레벨</th><th></th></tr></thead>
+    <tbody>{% for r in results %}
+      <tr><td class="small muted">{{ r.started_at|kst }}</td>
+        <td><b>{{ r.name }}</b> {% if r.student_id %}<span class="tag" title="접속 코드로 응시한 재원생">재원생</span>{% else %}<span class="tag tag-new">신규</span>{% endif %}</td>
+        <td class="small wrap">{{ r.info }}</td>
+        <td class="small">{{ r.test.title if r.test else "" }}</td>
+        <td>{% if r.submitted_at %}<b>{{ r.score }}</b>점{% else %}<span class="muted small">푸는 중</span>{% endif %}</td>
+        <td>{% if r.submitted_at and r.report %}<span class="lv-pill" style="background:{{ r.report.band.color }}">{{ r.level }}</span>{% endif %}</td>
+        <td>{% if r.submitted_at %}<a class="small" href="/leveltest/r/{{ r.id }}">리포트</a>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}
+  <p class="small muted" style="margin:0">아직 응시한 학생이 없어요.</p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -15,8 +15,8 @@ from sqlalchemy.orm import Session, selectinload
 from ..db import get_db
 from ..homework import spec as hspec
 from ..online import build as obuild
-from ..models import (Academy, Exam, ExamClass, ExamResponse, Homework, HomeworkClass, HomeworkResult, QuizResult, Student, WordList,
-                      WordListClass)
+from ..models import (Academy, Exam, ExamClass, ExamResponse, Homework, HomeworkClass, HomeworkResult, LevelResult, LevelTest, QuizResult, Student,
+                      WordList, WordListClass)
 from ..reports import data as rdata, spec as rspec
 from ..vocab import spec
 from ..web import render
@@ -129,7 +129,9 @@ def student_home(code: str, request: Request, db: Session = Depends(get_db)):
     for r in db.execute(select(ExamResponse).where(ExamResponse.student_id == s.id)).scalars():
         m = r.meta or {}
         (going if m.get("started_at") and not m.get("submitted_at") else done).add(r.exam_id)
-    return render(request, "student/home.html", {"student": s, "academy": db.get(Academy, s.academy_id), "lists": lists, "best": best,
+    lts = list(db.execute(select(LevelTest).where(LevelTest.academy_id == s.academy_id, LevelTest.active.is_(True)).order_by(LevelTest.sort, LevelTest.id)).scalars())
+    lt_done = {r.test_id: r for r in db.execute(select(LevelResult).where(LevelResult.student_id == s.id).order_by(LevelResult.id)).scalars()}
+    return render(request, "student/home.html", {"student": s, "academy": db.get(Academy, s.academy_id), "lists": lists, "lts": lts, "lt_done": lt_done, "best": best,
                                                  "exams": exams, "done": done, "going": going, "online": {e.id for e in exams if obuild.is_online(e)}, "hws": hws, "hw_prog": hw_prog,
                                                  "today": hspec.today(), "code": s.access_code})
 

@@ -1,0 +1,64 @@
+{# 레벨테스트 리포트: rep = 제출할 때 저장한 리포트, r = 응시 기록 #}
+{% macro report(rep, r, full=true) %}
+<article class="lt-report">
+  <header class="lt-rep-head">
+    <img src="/static/logo-word.png" alt="미래샘 영어연구소">
+    <div><b>레벨테스트 결과</b><span>{{ rep.test or (r.test.title if r.test else "") }}</span></div>
+  </header>
+  <div class="lt-rep-meta">
+    <span>이름 <b>{{ r.name }}</b></span>
+    {% if r.info %}<span>학교·학년 <b>{{ r.info }}</b></span>{% endif %}
+    <span>응시일 <b>{{ (r.submitted_at or r.started_at)|kst("%Y-%m-%d") }}</b></span>
+  </div>
+
+  <div class="lt-score">
+    <div>
+      <p class="lt-label">TOTAL SCORE</p>
+      <p class="lt-score-num">{{ rep.score }}<small>점</small></p>
+      <div class="lt-track"><i style="width:{{ rep.score }}%"></i></div>
+      <p class="small muted" style="margin:6px 0 10px">{{ rep.total }}문항 중 {{ rep.correct }}개 정답</p>
+      <span class="lv-pill big" style="background:{{ rep.band.color }}">레벨 · {{ rep.band.label }}</span>
+    </div>
+    {# 반원 게이지: 레벨 구간 4색 + 바늘 #}
+    {% set bands = [(0, 40, "#D0504C"), (40, 60, "#E8923A"), (60, 85, "#3F9C80"), (85, 100, "#3D5AA8")] %}
+    <svg class="lt-gauge" viewBox="0 0 240 140" role="img" aria-label="{{ rep.score }}점, {{ rep.band.label }}">
+      {% for a, b, c in bands %}
+        <path d="M 20 120 A 100 100 0 0 1 220 120" pathLength="100" fill="none" stroke="{{ c }}" stroke-width="24"
+              stroke-dasharray="{{ b - a }} 100" stroke-dashoffset="{{ -a }}"/>
+      {% endfor %}
+      <g transform="rotate({{ -90 + 1.8 * rep.score }} 120 120)"><line x1="120" y1="120" x2="120" y2="42" stroke="#1F2740" stroke-width="4" stroke-linecap="round"/></g>
+      <circle cx="120" cy="120" r="8" fill="#1F2740"/>
+    </svg>
+  </div>
+
+  <h3>영역별 성취도</h3>
+  <div class="lt-cats">
+    {% for c in rep.cats %}
+    <div class="lt-cat">
+      <div class="lt-cat-row"><b>{{ c.name }}</b><div class="hbar"><i style="width:{{ c.pct }}%"></i></div><span><b>{{ c.pct }}%</b> <span class="muted small">{{ c.correct }}/{{ c.total }}</span></span></div>
+      <p class="small">{{ c.name }} 성취도는 <b>{{ c.pct }}%</b>로 <b>{{ c.band }}</b> 수준이에요. {{ c.narrative }}</p>
+      {% if c.detail and c.detail.type == "grammar" and c.detail.wrong %}
+        <p class="small" style="margin:0 0 4px"><b>다시 볼 문법</b></p>
+        <ul class="small lt-wrong">{% for w in c.detail.wrong %}<li>{{ w.skill }} <span class="muted">({{ w.nums|join(", ") }}번)</span></li>{% endfor %}</ul>
+      {% elif c.detail and c.detail.type == "reading" %}
+        {% if c.detail.wrong %}<p class="small" style="margin:0"><b>보충할 독해 유형</b> {{ c.detail.wrong|join(" · ") }}</p>{% endif %}
+        {% if c.detail.right %}<p class="small muted" style="margin:2px 0 0">잘한 유형: {{ c.detail.right|join(" · ") }}</p>{% endif %}
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if full %}
+  <h3>정오답표</h3>
+  <div class="table-wrap"><table class="list lt-items">
+    <thead><tr><th>#</th><th>영역</th><th></th><th>정답</th><th>쓴 답</th></tr></thead>
+    <tbody>{% for it in rep["items"] %}
+      <tr><td class="muted">{{ it.no }}</td><td class="small">{{ it.section }}</td>
+        <td>{% if not it.graded %}<span class="muted small">서술</span>{% elif it.ok %}<b class="ok">O</b>{% else %}<b class="no">X</b>{% endif %}</td>
+        <td class="small wrap">{{ it.answer }}</td><td class="small wrap">{{ it.given }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+  <footer class="lt-rep-foot">미래샘 영어연구소 · MIRAESAEM ENGLISH LAB</footer>
+</article>
+{% endmacro %}

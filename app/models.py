@@ -41,6 +41,7 @@ class Academy(Base):
     logo: Mapped[str | None] = mapped_column(Text, nullable=True)  # data URL
     brand_color: Mapped[str] = mapped_column(String(9), default="#1B2A5C")
     invite_code: Mapped[str] = mapped_column(String(12), unique=True, index=True)
+    lt_token: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)  # 레벨테스트 공용 링크 /lt/{lt_token}
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
     teachers: Mapped[list["Teacher"]] = relationship(back_populates="academy")
@@ -478,3 +479,55 @@ class Job(Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class LevelTest(Base):
+    """레벨테스트 시험지 한 개 (예: 초등 저학년, 중고등 Type A).
+
+    spec:   {sections: [{id, title, instruction, groups: [{part, note, passage, wordbank[], image,
+             questions: [{n, type: mc|mc_multi|fill|order|short, q, choices{A..E}, answer, skill, image, chunks[], joinChar, prompt}]}]}]}
+    images: {"이름": stored_file_id}  — 문항의 image 값이 이 이름을 가리킴
+    """
+
+    __tablename__ = "level_tests"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    title: Mapped[str] = mapped_column(String(80))
+    sub: Mapped[str] = mapped_column(String(120), default="")
+    sort: Mapped[int] = mapped_column(Integer, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, default=False)
+    show_result: Mapped[bool] = mapped_column(Boolean, default=True)
+    minutes: Mapped[int] = mapped_column(Integer, default=0)
+    spec: Mapped[dict] = mapped_column(JSON, default=dict)
+    audio_file_id: Mapped[int | None] = mapped_column(ForeignKey("stored_files.id"), nullable=True)
+    images: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class LevelResult(Base):
+    """레벨테스트 응시 한 번. key: 응시 화면 주소(/lt/r/{key})용 추측 불가 문자열.
+
+    student_id 가 있으면 재원생(접속 코드로 응시), 없으면 공용 링크로 들어온 신규 학생.
+    report: 제출할 때 계산해 둔 리포트 (나중에 문제를 고쳐도 그때 모습 그대로)
+    """
+
+    __tablename__ = "level_results"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    test_id: Mapped[int] = mapped_column(ForeignKey("level_tests.id", ondelete="CASCADE"), index=True)
+    student_id: Mapped[int | None] = mapped_column(ForeignKey("students.id", ondelete="SET NULL"), nullable=True, index=True)
+    key: Mapped[str] = mapped_column(String(24), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(40))
+    info: Mapped[str] = mapped_column(String(80), default="")  # 학교·학년 (학생이 적은 그대로)
+    answers: Mapped[dict] = mapped_column(JSON, default=dict)
+    report: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    level: Mapped[str] = mapped_column(String(30), default="")
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    test: Mapped["LevelTest"] = relationship()
+    student: Mapped["Student | None"] = relationship()

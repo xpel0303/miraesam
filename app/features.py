@@ -42,7 +42,7 @@ FEATURES: list[Feature] = [
     Feature("briefing", "설명회 자료", "시험 운영", "분석 문서를 골라 PowerPoint로", 3),
     # 학원 관리
     Feature("roster", "학생 명단", "학원 관리", "학교·반·학생 관리와 학생 접속 코드", 0, True, "/roster"),
-    Feature("leveltest", "레벨테스트", "학원 관리", "반배치고사 응시와 성적 리포트", 4),
+    Feature("leveltest", "레벨테스트", "학원 관리", "재원생·신규생 온라인 응시, 자동 채점, 레벨 리포트", 4, True, "/leveltest"),
     Feature("homework", "숙제", "학원 관리", "단어·OX 퀴즈, 시험지 답 입력, 자동 채점, 카톡 문구", 4, True, "/homework"),
 ]
 

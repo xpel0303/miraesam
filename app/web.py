@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
+from markupsafe import Markup, escape
 from sqlalchemy.orm import Session
 
 from .config import APP_NAME, APP_SUB, BASE_DIR
@@ -27,6 +28,15 @@ def _kst(dt, fmt="%m/%d %H:%M"):
 
 
 templates.env.filters["kst"] = _kst
+
+
+def _u(text) -> Markup:
+    """학생 화면용 글: 모두 이스케이프한 뒤 <u>…</u> 밑줄만 살리고, 줄바꿈은 <br>."""
+    t = str(escape(text or "")).replace("&lt;u&gt;", "<u>").replace("&lt;/u&gt;", "</u>")
+    return Markup(t.replace("\n", "<br>"))
+
+
+templates.env.filters["u"] = _u
 
 
 class LoginRequired(Exception):

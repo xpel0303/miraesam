@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "lt/_report.html" import report %}
+{% block title %}{{ r.name }} 레벨테스트 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="no-print">
+  <p class="small"><a href="/leveltest#results">레벨테스트 결과</a></p>
+  <div class="panel-head" style="margin-bottom:12px"><h1>{{ r.name }} <span class="small muted" style="font-weight:400">{{ r.test.title if r.test else "" }}</span></h1>
+    <div class="actions"><button class="btn" type="button" onclick="window.print()">🖨 PDF로 저장 / 인쇄</button>
+      <form method="post" action="/leveltest/r/{{ r.id }}/delete" onsubmit="return confirm('이 응시 결과를 지울까요?')"><button class="btn danger small" type="submit">지우기</button></form></div></div>
+  {% if r.student %}<p class="small muted">재원생 · {{ r.student.class_group.name if r.student.class_group else "반 없음" }} · 접속 코드로 응시</p>
+  {% else %}<p class="small muted">공용 링크로 응시한 신규생{% if r.info %} · {{ r.info }}{% endif %}</p>{% endif %}
+</div>
+{% if rep %}{{ report(rep, r) }}{% else %}<div class="panel"><p class="muted">아직 제출하지 않았어요.</p></div>{% endif %}
+{% if rep and rep.short %}
+<section class="panel no-print" style="margin-top:16px">
+  <h2>서술 답안 (채점 안 함)</h2>
+  {% for it in rep.short %}<p class="small"><b>{{ it.section }} {{ it.n }}번</b> {{ it.q }}<br><span style="white-space:pre-wrap">{{ it.given }}</span></p>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}

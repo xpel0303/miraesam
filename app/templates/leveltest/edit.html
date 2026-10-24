@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ t.title }} · 레벨테스트 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/leveltest">레벨테스트</a></p>
+<div class="panel-head" style="margin-bottom:4px"><h1>{{ t.title }}</h1>
+  {% if n_items %}<a class="btn ghost" href="/leveltest/{{ t.id }}/preview" target="_blank" rel="noopener">학생 화면 미리 보기</a>{% endif %}</div>
+<p class="lead">문항 {{ n_items }}개{% for name, n, au in sections %} · {{ name }} {{ n }}{% if au %} 🎧{% endif %}{% endfor %}</p>
+
+{% for e in errors %}<div class="flash error" role="alert">{{ e }}</div>{% endfor %}
+{% if missing %}<div class="flash small">아직 안 올린 그림: {{ missing|join(", ") }} — 아래 '그림'에서 같은 이름의 파일로 올려 주세요.</div>{% endif %}
+{% if needs_audio and not audio %}<div class="flash small">듣기 영역이 있는데 듣기 파일이 아직 없어요.</div>{% endif %}
+
+<form method="post" action="/leveltest/{{ t.id }}">
+  <section class="panel">
+    <div class="row" style="grid-template-columns: 2fr 2fr 1fr 1fr">
+      <div class="field"><label>시험지 이름</label><input type="text" name="title" value="{{ t.title }}" placeholder="예: 초등 저학년"></div>
+      <div class="field"><label>설명 <span class="hint">학생이 고를 때 보여요</span></label><input type="text" name="sub" value="{{ t.sub }}" placeholder="예: 초3~4 · 듣기 포함"></div>
+      <div class="field"><label>제한 시간(분)</label><input type="text" name="minutes" value="{{ t.minutes or '' }}" inputmode="numeric" placeholder="없음"></div>
+      <div class="field"><label>순서</label><input type="text" name="sort" value="{{ t.sort }}" inputmode="numeric"></div>
+    </div>
+    <label style="font-weight:400"><input type="checkbox" name="active" value="1" {% if t.active %}checked{% endif %}> 학생에게 보이기 (재원생 화면 + 공용 링크)</label>
+    <label style="font-weight:400"><input type="checkbox" name="show_result" value="1" {% if t.show_result %}checked{% endif %}> 제출하면 학생에게 점수·레벨 리포트 바로 보여 주기</label>
+  </section>
+
+  <section class="panel">
+    <h2>문항</h2>
+    <p class="small muted">새 시험지를 주시면 Claude가 이 칸에 넣어 드려요. 직접 고칠 때는 정답·보기 글자만 바꾸고 따옴표·쉼표·괄호는 그대로 두세요. 저장할 때 형식이 맞는지 검사해서, 틀리면 저장하지 않고 알려 줘요.</p>
+    <textarea name="spec" rows="18" spellcheck="false" style="font-family:ui-monospace,monospace;font-size:0.82rem;line-height:1.45" aria-label="문항 데이터">{{ spec_text }}</textarea>
+    <details style="margin-top:8px"><summary class="small"><b>형식 예시</b></summary>
+<pre class="small" style="white-space:pre-wrap;background:var(--fill);padding:10px;border-radius:10px">{"sections": [
+ {"id": "listening", "title": "Listening", "instruction": "음성을 듣고 답하세요.",
+  "groups": [{"part": "Part 1", "questions": [
+    {"n": 1, "type": "mc", "q": "What does the girl want?", "choices": {"A": "A pen", "B": "A book"}, "answer": "B"}]}]},
+ {"id": "grammar", "title": "Grammar",
+  "groups": [{"part": "Part 1", "questions": [
+    {"n": 1, "type": "fill", "skill": "be동사", "q": "She ___ a student.", "answer": "is"},
+    {"n": 2, "type": "order", "prompt": "단어를 배열하세요.", "chunks": ["I", "like", "apples"], "answer": "I like apples"},
+    {"n": 3, "type": "mc_multi", "q": "모두 고르시오.", "choices": {"A": "..", "B": "..", "C": ".."}, "answer": ["A", "C"]}]}]}]}</pre>
+      <p class="small muted">종류: mc 객관식 · mc_multi 모두 고르기 · fill 빈칸 쓰기 · order 배열 · short 채점 안 하는 서술. 영역 이름이 Listening이면 듣기 파일이 그 영역 위에 나와요. 그림은 "image": "kitchen" 처럼 이름으로.</p>
+    </details>
+  </section>
+  <div class="actions" style="margin-bottom:20px"><button class="btn" type="submit">저장</button></div>
+</form>
+
+<section class="panel" id="files">
+  <h2>듣기 파일</h2>
+  {% if audio %}<p class="small" style="margin:0 0 8px">🎧 {{ audio.filename }} <span class="muted">({{ (audio.data|length / 1024 / 1024)|round(1) }}MB)</span></p>
+    <audio controls preload="none" src="/lt/a/{{ t.id }}" style="width:100%;max-width:480px"></audio>{% endif %}
+  <form method="post" action="/leveltest/{{ t.id }}/audio" enctype="multipart/form-data" class="actions" style="margin-top:8px">
+    <input type="file" name="audio" accept="audio/*,.mp3,.m4a,.wav" aria-label="듣기 파일">
+    <button class="btn ghost small" type="submit">{{ "바꾸기" if audio else "올리기" }}</button>
+  </form>
+
+  <h2 style="margin-top:20px">그림</h2>
+  <p class="small muted">파일 이름이 그림 이름이에요. kitchen.png 를 올리면 문항의 "image": "kitchen" 자리에 들어가요. 여러 개 한 번에 골라도 돼요.</p>
+  {% if t.images %}<div class="lt-thumbs">{% for k, fid in t.images|dictsort %}
+    <figure><img src="/lt/f/{{ t.id }}/{{ k }}" alt="{{ k }}" loading="lazy"><figcaption>{{ k }}{% if k in extra %} <span class="muted">(안 쓰임)</span>{% endif %}</figcaption>
+      <form method="post" action="/leveltest/{{ t.id }}/images/{{ k }}/delete"><button class="btn ghost small" type="submit" aria-label="{{ k }} 지우기">지우기</button></form></figure>
+  {% endfor %}</div>{% endif %}
+  <form method="post" action="/leveltest/{{ t.id }}/images" enctype="multipart/form-data" class="actions" style="margin-top:8px">
+    <input type="file" name="images" accept="image/*" multiple aria-label="그림 파일">
+    <button class="btn ghost small" type="submit">그림 올리기</button>
+  </form>
+</section>
+
+<form method="post" action="/leveltest/{{ t.id }}/delete" onsubmit="return confirm('이 시험지와 응시 결과를 모두 지울까요?')"><button class="btn danger small" type="submit">시험지 지우기</button></form>
+{% endblock %}
