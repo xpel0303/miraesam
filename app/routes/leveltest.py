@@ -18,7 +18,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
-from ..leveltest import spec as lspec
+from ..leveltest import pack as lpack, spec as lspec
 from ..models import Academy, LevelResult, LevelTest, StoredFile, Student, Teacher
 from ..web import current_teacher, flash, render
 
@@ -77,6 +77,8 @@ def _viewer_teacher(request: Request, db: Session, academy_id: int) -> bool:
 @router.get("/leveltest")
 def index(request: Request, test_id: str = "", q: str = "", teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     academy = db.get(Academy, teacher.academy_id)
+    if lpack.needs_seed(db, teacher.academy_id):  # 새로 만든 학원 등: 기본 시험지가 아직 없으면 뒤에서 넣기
+        lpack.seed_builtin_background()
     tests = _tests(db, teacher.academy_id, active_only=False)
     rq = (select(LevelResult).options(selectinload(LevelResult.test), selectinload(LevelResult.student))
           .where(LevelResult.academy_id == teacher.academy_id))
@@ -138,58 +140,18 @@ async def import_zip(request: Request, teacher: Teacher = Depends(current_teache
         flash(request, "zip 파일이 아니에요.", "error")
         return _go("/leveltest")
     names = [n for n in z.namelist() if not n.endswith("/") and "__MACOSX" not in n]
-    roots = sorted({n.rsplit("test.json", 1)[0] for n in names if n.endswith("test.json")})
+    roots = lpack.roots_of(names)
     if not roots:
         flash(request, "꾸러미 안에 test.json 이 없어요.", "error")
         return _go("/leveltest")
     done, problems = [], []
     existing = {t.title: t for t in _tests(db, teacher.academy_id, active_only=False)}
     for root in roots:
-        try:
-            meta = json.loads(z.read(root + "test.json").decode("utf-8-sig"))
-            spec, errs = lspec.check(meta.get("spec") or {})
-        except (ValueError, KeyError) as e:
-            problems.append(f"{root or 'test.json'}: 읽을 수 없어요 ({e})")
-            continue
-        title = str(meta.get("title") or root.strip("/") or "레벨테스트")[:80]
-        if errs:
-            problems.append(f"{title}: " + " / ".join(errs[:3]))
-            continue
-        spec.pop("minutes", None)
-        t = existing.get(title)
-        if t is None:
-            t = LevelTest(academy_id=teacher.academy_id, title=title, images={}, spec={})
-            db.add(t)
-        t.sub = str(meta.get("sub") or "")[:120]
-        t.sort = int(meta.get("sort") or t.sort or 0)
-        t.minutes = int(meta.get("minutes") or 0)
-        t.show_result = bool(meta.get("show_result", True))
-        t.active = bool(meta.get("active", False))
-        t.spec = spec
-        db.flush()
-        old_ids = [x for x in [t.audio_file_id, *(t.images or {}).values()] if x]
-        t.audio_file_id, images = None, {}
-        for n in names:
-            if not n.startswith(root) or n == root + "test.json":
-                continue
-            rel = n[len(root):]
-            base, _, ext = rel.rpartition(".")
-            ext = "." + ext.lower()
-            if rel.startswith("images/") and ext in IMAGE_TYPES:
-                sf = StoredFile(academy_id=t.academy_id, filename=rel[7:][:200], mime=IMAGE_TYPES[ext], data=z.read(n))
-                db.add(sf)
-                db.flush()
-                images[base[7:]] = sf.id
-            elif "/" not in rel and ext in AUDIO_TYPES:
-                sf = StoredFile(academy_id=t.academy_id, filename=rel[:200], mime=AUDIO_TYPES[ext], data=z.read(n))
-                db.add(sf)
-                db.flush()
-                t.audio_file_id = sf.id
-        t.images = images
-        if old_ids:
-            db.execute(delete(StoredFile).where(StoredFile.id.in_(old_ids)))
-        missing = lspec.image_keys(spec) - set(images)
-        done.append(f"{title} {_n_items(t)}문항" + (" · 듣기" if t.audio_file_id else "") + (f" (그림 없음: {', '.join(sorted(missing))})" if missing else ""))
+        ok, problem = lpack.load_one(db, teacher.academy_id, root, names, z.read, existing)
+        if ok:
+            done.append(ok)
+        if problem:
+            problems.append(problem)
     db.commit()
     if done:
         flash(request, "올렸어요: " + ", ".join(done))

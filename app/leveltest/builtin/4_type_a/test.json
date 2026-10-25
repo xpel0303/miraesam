@@ -1,0 +1,945 @@
+{
+ "title": "중등 Type A",
+ "sub": "예비중1~중1 · 듣기 포함 · 60문항",
+ "sort": 4,
+ "minutes": 50,
+ "show_result": true,
+ "active": true,
+ "spec": {
+  "sections": [
+   {
+    "id": "listening",
+    "title": "Listening",
+    "instruction": "재생 버튼을 누르면 1번부터 순서대로 나와요. 한 번만 들려주니 잘 듣고 답하세요.",
+    "groups": [
+     {
+      "part": "Part 1 (1~10)",
+      "note": "",
+      "questions": [
+       {
+        "n": 1,
+        "type": "mc",
+        "q": "다음을 듣고, 남자가 하는 말의 목적으로 가장 적절한 것을 고르시오.",
+        "choices": {
+         "①": "교내 청소 일정을 공지하려고",
+         "②": "학교 시설 공사의 지연에 대해 사과하려고",
+         "③": "하교 시 교실 창문을 닫을 것을 요청하려고",
+         "④": "교내의 젖은 바닥을 걸을 때 조심하도록 당부하려고",
+         "⑤": "깨끗한 교실 환경 조성을 위한 아이디어를 공모하려고"
+        },
+        "answer": "④"
+       },
+       {
+        "n": 2,
+        "type": "mc",
+        "q": "대화를 듣고, 여자의 의견으로 가장 적절한 것을 고르시오.",
+        "choices": {
+         "①": "짧은 낮잠은 업무 효율을 높인다.",
+         "②": "야식은 숙면에 방해가 될 수 있다.",
+         "③": "사람마다 최적의 수면 시간이 다르다.",
+         "④": "베개를 바꾸면 숙면에 도움이 될 수 있다.",
+         "⑤": "숙면을 위해 침실을 서늘하게 하는 것이 좋다."
+        },
+        "answer": "④"
+       },
+       {
+        "n": 3,
+        "type": "mc",
+        "q": "대화를 듣고, 두 사람의 관계를 가장 잘 나타낸 것을 고르시오.",
+        "choices": {
+         "①": "파티 주최자 - 요리사",
+         "②": "슈퍼마켓 점원 - 손님",
+         "③": "배달 기사 - 음식점 주인",
+         "④": "영양학자 - 식품 제조업자",
+         "⑤": "인테리어 디자이너 - 의뢰인"
+        },
+        "answer": "①"
+       },
+       {
+        "n": 4,
+        "type": "mc",
+        "q": "대화를 듣고, 그림에서 대화의 내용과 일치하지 <u>않는</u> 것을 고르시오.",
+        "choices": {
+         "①": "",
+         "②": "",
+         "③": "",
+         "④": "",
+         "⑤": ""
+        },
+        "answer": "③",
+        "image": "a_q4"
+       },
+       {
+        "n": 5,
+        "type": "mc",
+        "q": "대화를 듣고, 남자가 할 일로 가장 적절한 것을 고르시오.",
+        "choices": {
+         "①": "영화 예매하기",
+         "②": "지갑 가져오기",
+         "③": "시간표 출력하기",
+         "④": "학생증 재발급받기",
+         "⑤": "영화 감상문 제출하기"
+        },
+        "answer": "④"
+       },
+       {
+        "n": 6,
+        "type": "mc",
+        "q": "대화를 듣고, 여자가 지불할 금액을 고르시오.",
+        "choices": {
+         "①": "$72",
+         "②": "$80",
+         "③": "$90",
+         "④": "$100",
+         "⑤": "$110"
+        },
+        "answer": "③"
+       },
+       {
+        "n": 7,
+        "type": "mc",
+        "q": "대화를 듣고, 남자가 보고서를 완성하지 <u>못한</u> 이유를 고르시오.",
+        "choices": {
+         "①": "실험을 다시 해서",
+         "②": "제출일을 착각해서",
+         "③": "주제가 변경되어서",
+         "④": "컴퓨터가 고장 나서",
+         "⑤": "심한 감기에 걸려서"
+        },
+        "answer": "①"
+       },
+       {
+        "n": 8,
+        "type": "mc",
+        "q": "대화를 듣고, Spring Virtual Run에 관해 언급되지 <u>않은</u> 것을 고르시오.",
+        "choices": {
+         "①": "달리는 거리",
+         "②": "참가 인원",
+         "③": "달리는 장소",
+         "④": "참가비",
+         "⑤": "기념품"
+        },
+        "answer": "②"
+       },
+       {
+        "n": 9,
+        "type": "mc",
+        "q": "Family Night at the Museum에 관한 다음 내용을 듣고, 일치하지 <u>않는</u> 것을 고르시오.",
+        "choices": {
+         "①": "박물관 정규 운영 시간 종료 후에 열린다.",
+         "②": "행성과 별 모형 아래에서 잠을 잔다.",
+         "③": "참가자들에게 침낭이 제공된다.",
+         "④": "6세부터 13세까지를 위한 프로그램이다.",
+         "⑤": "사전 등록 없이 현장에서 참가할 수 있다."
+        },
+        "answer": "⑤"
+       },
+       {
+        "n": 10,
+        "type": "mc",
+        "q": "다음 표를 보면서 대화를 듣고, 여자가 구매할 스마트 워치를 고르시오.\n\nSmart Watches\n①  Model A · 방수 × · 보증 2 years · $90\n②  Model B · 방수 ○ · 보증 3 years · $110\n③  Model C · 방수 ○ · 보증 1 year · $115\n④  Model D · 방수 × · 보증 2 years · $120\n⑤  Model E · 방수 ○ · 보증 4 years · $125",
+        "choices": {
+         "①": "Model A",
+         "②": "Model B",
+         "③": "Model C",
+         "④": "Model D",
+         "⑤": "Model E"
+        },
+        "answer": "②"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "vocabulary",
+    "title": "Vocabulary",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Choose and write the words. (11~12)",
+      "note": "",
+      "questions": [
+       {
+        "n": 11,
+        "type": "fill",
+        "q": "Students should be ______ for their own actions.",
+        "answer": "responsible"
+       },
+       {
+        "n": 12,
+        "type": "fill",
+        "q": "Her face looks ______, but I can't remember her name.",
+        "answer": "familiar"
+       }
+      ],
+      "wordbank": [
+       "available",
+       "responsible",
+       "familiar",
+       "necessary"
+      ]
+     },
+     {
+      "part": "Choose the closest meaning to the underlined word. (13~14)",
+      "note": "",
+      "questions": [
+       {
+        "n": 13,
+        "type": "mc",
+        "q": "The teacher asked us to <u>complete</u> the assignment by Friday.",
+        "choices": {
+         "①": "begin",
+         "②": "finish",
+         "③": "explain",
+         "④": "collect",
+         "⑤": "prepare"
+        },
+        "answer": "②"
+       },
+       {
+        "n": 14,
+        "type": "mc",
+        "q": "The instructions were too <u>complicated</u> for the children to understand.",
+        "choices": {
+         "①": "simple",
+         "②": "clear",
+         "③": "difficult",
+         "④": "useful",
+         "⑤": "interesting"
+        },
+        "answer": "③"
+       }
+      ]
+     },
+     {
+      "part": "Part 2",
+      "note": "",
+      "questions": [
+       {
+        "n": 15,
+        "type": "mc",
+        "q": "다음 영영풀이가 설명하는 단어로 알맞은 것은?\nthe ability to do something well because of training or practice",
+        "choices": {
+         "①": "knowledge",
+         "②": "experience",
+         "③": "skill",
+         "④": "effort",
+         "⑤": "talent"
+        },
+        "answer": "③"
+       },
+       {
+        "n": 16,
+        "type": "mc",
+        "q": "다음 짝지어진 단어의 관계가 같지 <u>않은</u> 것은?",
+        "choices": {
+         "①": "hot : cold = strong : weak",
+         "②": "decide : decision = explain : explanation",
+         "③": "quickly : slowly = carefully : carelessly",
+         "④": "create : destroy = build : construct",
+         "⑤": "danger : dangerous = fame : famous"
+        },
+        "answer": "④"
+       }
+      ]
+     },
+     {
+      "part": "주어진 단어의 뜻을 영어는 우리말로, 우리말은 영어로 쓰세요. (17~20)",
+      "note": "",
+      "questions": [
+       {
+        "n": 17,
+        "type": "fill",
+        "q": "perceive : ______",
+        "answer": [
+         "인지하다",
+         "지각하다",
+         "알아차리다",
+         "인식하다",
+         "감지하다",
+         "깨닫다"
+        ]
+       },
+       {
+        "n": 18,
+        "type": "fill",
+        "q": "various : ______",
+        "answer": [
+         "다양한",
+         "여러 가지의",
+         "여러가지의",
+         "갖가지의",
+         "여러"
+        ]
+       },
+       {
+        "n": 19,
+        "type": "fill",
+        "q": "생존하다 : ______",
+        "answer": "survive"
+       },
+       {
+        "n": 20,
+        "type": "fill",
+        "q": "추천하다 : ______",
+        "answer": "recommend"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "grammar",
+    "title": "Grammar",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 3 (21~45)",
+      "note": "",
+      "questions": [
+       {
+        "n": 21,
+        "type": "mc",
+        "q": "다음 중 어법상 옳은 문장은?",
+        "choices": {
+         "①": "My parents is very busy today.",
+         "②": "There are a beautiful park near my house.",
+         "③": "Each of the students is ready for the test.",
+         "④": "The weather are getting colder.",
+         "⑤": "My favorite subjects is English and science."
+        },
+        "answer": "③",
+        "skill": "주어와 be동사의 수 일치"
+       },
+       {
+        "n": 22,
+        "type": "mc",
+        "q": "다음 빈칸에 들어갈 be동사의 형태가 나머지와 <u>다른</u> 것은?",
+        "choices": {
+         "①": "My brother ______ a middle school student.",
+         "②": "The news ______ surprising to everyone.",
+         "③": "These shoes ______ too expensive for me.",
+         "④": "Mathematics ______ my favorite subject.",
+         "⑤": "There ______ a lot of water in the bottle."
+        },
+        "answer": "③",
+        "skill": "주어와 be동사의 수 일치"
+       },
+       {
+        "n": 23,
+        "type": "mc",
+        "q": "다음 문장을 의문문으로 바르게 바꾼 것은?\nThere were many people at the concert.",
+        "choices": {
+         "①": "Did there many people at the concert?",
+         "②": "Were there many people at the concert?",
+         "③": "Was there many people at the concert?",
+         "④": "Are there many people at the concert?",
+         "⑤": "Were many people there at the concert?"
+        },
+        "answer": "②",
+        "skill": "there is/are 의문문"
+       },
+       {
+        "n": 24,
+        "type": "mc",
+        "q": "다음 중 어법상 옳지 <u>않은</u> 문장은?",
+        "choices": {
+         "①": "I was tired after the long trip.",
+         "②": "There weren't any students in the classroom.",
+         "③": "My sister and I were at home yesterday.",
+         "④": "The information was very useful.",
+         "⑤": "Those answers are correct yesterday."
+        },
+        "answer": "⑤",
+        "skill": "be동사의 시제"
+       },
+       {
+        "n": 25,
+        "type": "mc",
+        "q": "다음 문장을 부정문으로 바르게 바꾼 것은?\nMy sister usually walks to school.",
+        "choices": {
+         "①": "My sister don't usually walk to school.",
+         "②": "My sister doesn't usually walks to school.",
+         "③": "My sister doesn't usually walk to school.",
+         "④": "My sister isn't usually walk to school.",
+         "⑤": "My sister not usually walks to school."
+        },
+        "answer": "③",
+        "skill": "일반동사 부정문"
+       },
+       {
+        "n": 26,
+        "type": "mc",
+        "q": "다음 대화의 빈칸에 알맞은 것은?\nA: ______ your brother ______ soccer every weekend?\nB: No, he doesn't. He prefers basketball.",
+        "choices": {
+         "①": "Do – plays",
+         "②": "Does – play",
+         "③": "Is – play",
+         "④": "Does – plays",
+         "⑤": "Did – plays"
+        },
+        "answer": "②",
+        "skill": "일반동사 의문문"
+       },
+       {
+        "n": 27,
+        "type": "mc",
+        "q": "다음 중 어법상 옳은 문장은?",
+        "choices": {
+         "①": "She didn't went to school yesterday.",
+         "②": "Does your father works on Sundays?",
+         "③": "They don't have enough time to finish the work.",
+         "④": "He doesn't knows how to swim.",
+         "⑤": "Did you watched the movie last night?"
+        },
+        "answer": "③",
+        "skill": "일반동사 부정문·의문문"
+       },
+       {
+        "n": 28,
+        "type": "mc",
+        "q": "다음 밑줄 친 부분 중 어법상 <u>틀린</u> 것은?",
+        "choices": {
+         "①": "My parents <u>don't like</u> spicy food.",
+         "②": "She <u>doesn't have</u> a bicycle.",
+         "③": "He <u>didn't finish</u> his homework.",
+         "④": "My brother <u>doesn't usually gets up</u> early.",
+         "⑤": "We <u>didn't know</u> the answer."
+        },
+        "answer": "④",
+        "skill": "일반동사 부정문"
+       },
+       {
+        "n": 29,
+        "type": "order",
+        "prompt": "다음 우리말과 같은 뜻이 되도록 단어를 바르게 배열하시오.\n너는 왜 어제 학교에 오지 않았니?",
+        "chunks": [
+         "you",
+         "why",
+         "come",
+         "didn't",
+         "to school",
+         "yesterday"
+        ],
+        "answer": "Why didn't you come to school yesterday?",
+        "joinChar": " ",
+        "skill": "의문사 의문문(부정)"
+       },
+       {
+        "n": 30,
+        "type": "mc",
+        "q": "다음 빈칸에 알맞은 것은?\nThe baby is sleeping, so please speak ______.",
+        "choices": {
+         "①": "quiet",
+         "②": "quietly",
+         "③": "quieter",
+         "④": "quietness",
+         "⑤": "more quiet"
+        },
+        "answer": "②",
+        "skill": "형용사와 부사"
+       },
+       {
+        "n": 31,
+        "type": "mc",
+        "q": "다음 중 어법상 옳은 문장은?",
+        "choices": {
+         "①": "She sings beautiful.",
+         "②": "The soup tastes deliciously.",
+         "③": "He drives very careful.",
+         "④": "The flowers smell wonderful.",
+         "⑤": "My brother runs quick."
+        },
+        "answer": "④",
+        "skill": "감각동사 + 형용사"
+       },
+       {
+        "n": 32,
+        "type": "mc",
+        "q": "다음 밑줄 친 단어의 쓰임이 나머지와 <u>다른</u> 것은?",
+        "choices": {
+         "①": "She is a <u>fast</u> runner.",
+         "②": "He gave me a <u>kind</u> smile.",
+         "③": "The test was <u>easy</u>.",
+         "④": "My father drives <u>carefully</u>.",
+         "⑤": "This is an <u>interesting</u> story."
+        },
+        "answer": "④",
+        "skill": "형용사와 부사"
+       },
+       {
+        "n": 33,
+        "type": "mc",
+        "q": "다음 빈칸 (A), (B)에 들어갈 말로 가장 적절한 것은?\nThe students worked (A) ______ to finish the project, and their teacher was (B) ______ with the results.",
+        "choices": {
+         "①": "hard – pleased",
+         "②": "hardly – pleased",
+         "③": "hard – pleasingly",
+         "④": "hardly – pleasing",
+         "⑤": "harder – pleasingly"
+        },
+        "answer": "①",
+        "skill": "형용사와 부사"
+       },
+       {
+        "n": 34,
+        "type": "mc",
+        "q": "다음 중 어법상 옳지 <u>않은</u> 문장은?",
+        "choices": {
+         "①": "The children looked happy after the game.",
+         "②": "She answered the question correctly.",
+         "③": "He arrived lately at the meeting.",
+         "④": "This cake smells delicious.",
+         "⑤": "My grandfather walks slowly."
+        },
+        "answer": "③",
+        "skill": "형용사와 부사"
+       },
+       {
+        "n": 35,
+        "type": "mc",
+        "q": "다음 빈칸에 알맞은 것은?\nThis book is ______ than the one I read last week.",
+        "choices": {
+         "①": "interesting",
+         "②": "more interesting",
+         "③": "most interesting",
+         "④": "interestinger",
+         "⑤": "the most interesting"
+        },
+        "answer": "②",
+        "skill": "비교급"
+       },
+       {
+        "n": 36,
+        "type": "mc",
+        "q": "다음 중 어법상 옳은 문장은?",
+        "choices": {
+         "①": "My brother is more tall than me.",
+         "②": "This is the most easiest question.",
+         "③": "She runs faster than her sister.",
+         "④": "Today is more colder than yesterday.",
+         "⑤": "He is the taller student in his class."
+        },
+        "answer": "③",
+        "skill": "비교급·최상급"
+       },
+       {
+        "n": 37,
+        "type": "mc",
+        "q": "다음 빈칸에 알맞은 것은?\nOf all the students in our class, Jenny speaks English ______.",
+        "choices": {
+         "①": "fluent",
+         "②": "more fluently",
+         "③": "the most fluent",
+         "④": "the most fluently",
+         "⑤": "fluently than"
+        },
+        "answer": "④",
+        "skill": "최상급(부사)"
+       },
+       {
+        "n": 38,
+        "type": "mc",
+        "q": "다음 중 어법상 옳지 <u>않은</u> 문장은?",
+        "choices": {
+         "①": "This bag is as heavy as that one.",
+         "②": "My house is bigger than yours.",
+         "③": "He is one of the tallest boys in his class.",
+         "④": "This problem is much more difficult than that one.",
+         "⑤": "She is the most smartest student in our school."
+        },
+        "answer": "⑤",
+        "skill": "비교급·최상급"
+       },
+       {
+        "n": 39,
+        "type": "order",
+        "prompt": "다음 우리말과 같은 뜻이 되도록 단어를 바르게 배열하시오.\n이 영화는 내가 예상했던 것보다 훨씬 더 재미있다.",
+        "chunks": [
+         "much",
+         "this movie",
+         "interesting",
+         "is",
+         "more",
+         "than",
+         "I expected"
+        ],
+        "answer": "This movie is much more interesting than I expected.",
+        "joinChar": " ",
+        "skill": "비교급 강조(much)"
+       },
+       {
+        "n": 40,
+        "type": "mc",
+        "q": "다음 빈칸에 알맞은 것은?\nMy dream is ______ a famous scientist.",
+        "choices": {
+         "①": "become",
+         "②": "becoming",
+         "③": "to becomes",
+         "④": "became",
+         "⑤": "becomes"
+        },
+        "answer": "②",
+        "skill": "동명사·to부정사(보어)"
+       },
+       {
+        "n": 41,
+        "type": "mc",
+        "q": "다음 밑줄 친 to부정사의 쓰임이 나머지와 <u>다른</u> 것은?",
+        "choices": {
+         "①": "I went to the library <u>to study</u> English.",
+         "②": "She saved money <u>to buy</u> a new bicycle.",
+         "③": "He exercises every day <u>to stay</u> healthy.",
+         "④": "I was surprised <u>to hear</u> the news.",
+         "⑤": "They left early <u>to catch</u> the first train."
+        },
+        "answer": "④",
+        "skill": "to부정사의 부사적 용법"
+       },
+       {
+        "n": 42,
+        "type": "mc",
+        "q": "다음 중 어법상 옳은 문장은?",
+        "choices": {
+         "①": "She wants becoming a doctor.",
+         "②": "He decided to join the soccer club.",
+         "③": "My mother made me to clean my room.",
+         "④": "I enjoy to read books in my free time.",
+         "⑤": "They suggested to go to the museum."
+        },
+        "answer": "②",
+        "skill": "to부정사·동명사를 목적어로 쓰는 동사"
+       },
+       {
+        "n": 43,
+        "type": "mc",
+        "q": "다음 빈칸에 알맞은 것은?\nThe box was too heavy for the little boy ______.",
+        "choices": {
+         "①": "carry",
+         "②": "carrying",
+         "③": "to carry",
+         "④": "carried",
+         "⑤": "carries"
+        },
+        "answer": "③",
+        "skill": "too ~ to"
+       },
+       {
+        "n": 44,
+        "type": "mc",
+        "q": "다음 중 밑줄 친 to부정사의 쓰임이 나머지와 <u>다른</u> 것은?",
+        "choices": {
+         "①": "I have a lot of homework <u>to finish</u>.",
+         "②": "She needs something <u>to drink</u>.",
+         "③": "He wants a chair <u>to sit on</u>.",
+         "④": "My brother went outside <u>to play soccer</u>.",
+         "⑤": "We have many places <u>to visit</u>."
+        },
+        "answer": "④",
+        "skill": "to부정사의 형용사적 용법"
+       },
+       {
+        "n": 45,
+        "type": "order",
+        "prompt": "다음 우리말과 같은 뜻이 되도록 단어를 바르게 배열하시오.\n그녀는 그 문제를 풀 만큼 충분히 똑똑하다.",
+        "chunks": [
+         "enough",
+         "she",
+         "solve",
+         "smart",
+         "is",
+         "to",
+         "the problem"
+        ],
+        "answer": "She is smart enough to solve the problem.",
+        "joinChar": " ",
+        "skill": "형용사 + enough to"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "reading",
+    "title": "Reading",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 4",
+      "note": "",
+      "questions": [
+       {
+        "n": 46,
+        "type": "mc",
+        "q": "다음 글에서 필자가 고민하고 있는 문제로 알맞은 것은?",
+        "choices": {
+         "①": "친구가 공부를 하지 않는 것",
+         "②": "친구가 새로운 학교로 전학 가는 것",
+         "③": "친구와의 관계가 점점 멀어지는 것",
+         "④": "친구가 자신의 비밀을 다른 사람에게 말하는 것",
+         "⑤": "친구가 자신에게 지나치게 의존하는 것"
+        },
+        "answer": "③"
+       }
+      ],
+      "passage": "Dear Advice Column,\nMy best friend and I have known each other for five years. Recently, however, she has started spending most of her time with a new group of friends. She rarely talks to me during lunch and sometimes ignores my messages. I don't want to lose our friendship, but I'm afraid that talking to her about my feelings might make things worse. What should I do?"
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 47,
+        "type": "mc",
+        "q": "다음 글의 내용과 일치하지 <u>않는</u> 것은?",
+        "choices": {
+         "①": "미래에는 슈퍼마켓을 방문하는 횟수가 줄어들 수 있다.",
+         "②": "스마트 냉장고가 부족한 식품을 확인할 수 있다.",
+         "③": "일부 음식은 로봇이 준비할 수도 있다.",
+         "④": "새로운 기술은 시간을 절약하는 데 도움이 될 수 있다.",
+         "⑤": "새로운 기술은 가족이 함께 식사할 기회를 반드시 늘릴 것이다."
+        },
+        "answer": "⑤"
+       }
+      ],
+      "passage": "In the future, people may not need to visit supermarkets as often as they do today. Smart refrigerators will be able to check which foods are running out and automatically order them online. Some meals may even be prepared by robots. Although these technologies could save time, some people worry that they might reduce opportunities for families to cook and eat together."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 48,
+        "type": "mc",
+        "q": "이 글의 분위기로 알맞은 것은?",
+        "choices": {
+         "①": "peaceful and relaxing",
+         "②": "exciting and cheerful",
+         "③": "nervous and urgent",
+         "④": "mysterious and frightening",
+         "⑤": "lonely and hopeless"
+        },
+        "answer": "③"
+       }
+      ],
+      "passage": "Emily checked her watch again. The train was supposed to arrive ten minutes ago, but there was still no sign of it. She had an important interview in less than an hour. As more people gathered on the platform, an announcement said that all trains would be delayed because of a technical problem. Emily took out her phone and quickly searched for another way to reach the office."
+     },
+     {
+      "part": "다음 글을 읽고 질문에 답하시오. (49~50)",
+      "note": "",
+      "questions": [
+       {
+        "n": 49,
+        "type": "mc",
+        "q": "위 글의 빈칸에 알맞은 것은?",
+        "choices": {
+         "①": "David prefers studying to exercising.",
+         "②": "David enjoys many different kinds of sports.",
+         "③": "David is the best basketball player at school.",
+         "④": "David doesn't like playing sports with others.",
+         "⑤": "David wants to become a professional swimmer."
+        },
+        "answer": "②"
+       },
+       {
+        "n": 50,
+        "type": "fill",
+        "q": "What is the word for \"to become better at something\"? (글에서 찾아 쓰세요)",
+        "answer": "improve"
+       }
+      ],
+      "passage": "David has always enjoyed playing sports. Although he isn't very good at basketball, he practices every afternoon because he wants to improve. On weekends, he plays tennis with his mother. Swimming, however, is his favorite sport because he feels comfortable in the water. His friends often invite him to play soccer after school, and he rarely refuses. ______________________."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 51,
+        "type": "mc",
+        "q": "Which is not true about the story?",
+        "choices": {
+         "①": "Perfumers create different kinds of fragrances.",
+         "②": "A good sense of smell is important for perfumers.",
+         "③": "Perfumers need both creativity and scientific knowledge.",
+         "④": "All modern perfumes are made only from natural ingredients.",
+         "⑤": "Creating a new fragrance can take a long time."
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "A perfumer is someone who creates different kinds of fragrances. To become a successful perfumer, a person needs an excellent sense of smell, creativity, and scientific knowledge. Perfumers must recognize hundreds of different smells and understand how they change when mixed together. Although natural ingredients are often used, many modern perfumes also contain materials created in laboratories. Developing a new fragrance can take several months or even years."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 52,
+        "type": "mc",
+        "q": "What is the next story about?",
+        "choices": {
+         "①": "The history of ancient mathematics",
+         "②": "The development of computers and their future possibilities",
+         "③": "The reasons people stopped using computers",
+         "④": "The differences between smartphones and televisions",
+         "⑤": "The importance of electricity in modern homes"
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "The first electronic computers were enormous machines that filled entire rooms. One famous example was ENIAC, which was developed in the United States in the 1940s. Although it could solve complicated mathematical problems much faster than humans, it required a great deal of electricity and space. Since then, computers have become smaller, faster, and more powerful. Today, even a smartphone can perform tasks that early computer engineers could hardly have imagined."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 53,
+        "type": "mc",
+        "q": "다음 글을 통해 알 수 있는 필자에 관한 사실은?",
+        "choices": {
+         "①": "필자는 최근에 새 강아지를 입양했다.",
+         "②": "필자는 기르던 반려동물을 잃었다.",
+         "③": "필자는 친구와 심하게 다투었다.",
+         "④": "필자는 가족과 함께 이사했다.",
+         "⑤": "필자는 반려동물을 다른 사람에게 보냈다."
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "Dear Max,\nIt's been almost a month since you passed away, but I still expect to see you waiting by the front door whenever I come home. Yesterday, I found your favorite toy under the sofa. It reminded me of all the afternoons we spent playing in the backyard. I planted a small tree near your grave so that I can remember you every time I look outside.\nI miss you so much.\nLove,\nJason"
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 54,
+        "type": "mc",
+        "q": "다음 글의 제목으로 알맞은 것은?",
+        "choices": {
+         "①": "Why Do Students Dislike School?",
+         "②": "What Do Students Learn at Clown School?",
+         "③": "How Did Traditional Schools Begin?",
+         "④": "Why Are Clowns Always Happy?",
+         "⑤": "Where Can Students Buy Costumes?"
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "Most people attend school to study subjects such as math, science, and history. However, some schools offer very unusual classes. At clown schools, students learn how to perform funny tricks, wear colorful costumes, and make audiences laugh. They also practice physical movements and facial expressions. Although being a clown may seem easy, it requires creativity, patience, and many hours of practice."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 55,
+        "type": "mc",
+        "q": "다음 이야기의 줄거리와 일치하지 <u>않는</u> 것은?",
+        "choices": {
+         "①": "필자는 7학년 역사 수업에서 작가의 꿈을 갖게 되었다.",
+         "②": "역사적 인물을 바탕으로 글을 쓰는 과제가 있었다.",
+         "③": "필자는 탐험가와 함께 여행하는 상황을 상상했다.",
+         "④": "필자는 좋은 성적을 받은 것이 가장 기뻤다.",
+         "⑤": "필자는 자신의 상상력으로 이야기를 만들어 냈다."
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "I still remember the moment I first realized that I wanted to become a writer. It happened during a history class when I was in seventh grade. Our teacher asked us to write a story based on a historical figure. Instead of simply describing the person's life, I imagined myself traveling with the explorer Jacques Cartier. I spent several days writing and rewriting my story. When I received an A, I was pleased, but what excited me most was not the grade. It was the realization that I had created something entirely from my own imagination."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 56,
+        "type": "mc",
+        "q": "다음 Yoyo 만들기의 내용과 일치하지 <u>않는</u> 것은?",
+        "choices": {
+         "①": "두 개의 플라스틱 병뚜껑이 필요하다.",
+         "②": "각 병뚜껑의 중앙에 작은 구멍을 만든다.",
+         "③": "실의 한쪽 끝을 나사 중앙에 묶는다.",
+         "④": "두 병뚜껑을 빈틈없이 단단히 붙인다.",
+         "⑤": "색종이를 원형으로 잘라 병뚜껑 양쪽에 붙인다."
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "How to Make Your Own Yoyo\n\n◈ What you need :\n· Two plastic bottle caps\n· One small screw\n· A piece of string\n· Colored paper\n· Scissors and glue\n\n◈ Instructions\n1. Make a small hole in the center of each bottle cap.\n2. Push the screw through the first cap.\n3. Tie one end of the string around the middle of the screw.\n4. Connect the second cap, leaving a small space between the two caps.\n5. Cut the colored paper into two circles and glue one circle onto the outside of each cap.",
+      "image": "a_yoyo"
+     },
+     {
+      "part": "[57-58] 다음 글을 읽고 질문에 답하시오.",
+      "note": "",
+      "questions": [
+       {
+        "n": 57,
+        "type": "mc",
+        "q": "윗글의 흐름으로 보아, 주어진 문장이 들어가기에 가장 적절한 곳을 고르시오.\n\nYou don't always have to travel far to discover something new.",
+        "choices": {
+         "①": "",
+         "②": "",
+         "③": "",
+         "④": "",
+         "⑤": ""
+        },
+        "answer": "②"
+       },
+       {
+        "n": 58,
+        "type": "mc",
+        "q": "윗글의 제목으로 가장 적절한 것을 고르시오.",
+        "choices": {
+         "①": "The Importance of Traveling Abroad",
+         "②": "Discovering Adventures Close to Home",
+         "③": "How to Become a Famous Explorer",
+         "④": "The History of Modern Transportation",
+         "⑤": "Why People Prefer Living in Cities"
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "Many people believe that traveling to another country is the best way to have an adventure. ( ① ) However, exciting discoveries can also be made close to home. ( ② ) For example, you might visit a local museum that you have never explored or learn about the history of an old building in your neighborhood. ( ③ ) You could also interview longtime residents to discover how your town has changed over the years. ( ④ ) These experiences may help you see familiar places from a completely different perspective. ( ⑤ ) Sometimes, the greatest adventures begin in the places we know best."
+     },
+     {
+      "part": "[59-60] 다음 글을 읽고 질문에 답하시오.",
+      "note": "",
+      "questions": [
+       {
+        "n": 59,
+        "type": "mc",
+        "q": "주어진 글 다음에 이어질 글의 순서로 가장 적절한 것을 고르시오.",
+        "choices": {
+         "①": "(A) – (B) – (C)",
+         "②": "(A) – (C) – (B)",
+         "③": "(B) – (A) – (C)",
+         "④": "(B) – (C) – (A)",
+         "⑤": "(C) – (A) – (B)"
+        },
+        "answer": "③"
+       },
+       {
+        "n": 60,
+        "type": "mc",
+        "q": "위 글의 교훈으로 가장 적절한 것은?",
+        "choices": {
+         "①": "Always share your food with others.",
+         "②": "Never trust anyone who asks for help.",
+         "③": "Hard work is the key to success.",
+         "④": "Be careful of people who use flattery to deceive you.",
+         "⑤": "It is better to work alone than with others."
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "One afternoon, a hungry crow found a piece of bread near a village.\n\n(A) A fox passing by noticed the bread in the crow's beak. Wanting it for himself, the fox began praising the crow's beautiful feathers and wonderful voice.\n\n(B) The crow picked up the bread and flew to a tall tree. He sat on a branch, planning to enjoy his meal without being disturbed.\n\n(C) Flattered by the fox's words, the crow opened his mouth to sing. At that moment, the bread fell to the ground, and the fox quickly grabbed it and ran away."
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,502 @@
+{
+ "title": "초등 저학년",
+ "sub": "API-AI (Starters) · 40문항",
+ "sort": 1,
+ "minutes": 0,
+ "show_result": true,
+ "active": true,
+ "spec": {
+  "sections": [
+   {
+    "id": "vocabulary",
+    "title": "Vocabulary",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 1 · Complete with a word from the box",
+      "note": "상자에서 알맞은 단어를 골라 빈칸에 쓰세요.",
+      "questions": [
+       {
+        "n": 1,
+        "type": "fill",
+        "q": "I go to ______ every morning.",
+        "answer": "school"
+       },
+       {
+        "n": 2,
+        "type": "fill",
+        "q": "There are four people in my ______.",
+        "answer": "family"
+       },
+       {
+        "n": 3,
+        "type": "fill",
+        "q": "I like to ______ soccer with my friends.",
+        "answer": "play"
+       },
+       {
+        "n": 4,
+        "type": "fill",
+        "q": "She can ______ an English book.",
+        "answer": "read"
+       },
+       {
+        "n": 5,
+        "type": "fill",
+        "q": "The boy is kicking a ______ in the park.",
+        "answer": "ball"
+       },
+       {
+        "n": 6,
+        "type": "fill",
+        "q": "There are two beds and a desk in my ______.",
+        "answer": "room"
+       },
+       {
+        "n": 7,
+        "type": "fill",
+        "q": "We ______ lunch at twelve o'clock.",
+        "answer": "eat"
+       },
+       {
+        "n": 8,
+        "type": "fill",
+        "q": "Tom is my best ______. We study together.",
+        "answer": "friend"
+       },
+       {
+        "n": 9,
+        "type": "fill",
+        "q": "I ride my ______ to the park on Sundays.",
+        "answer": "bike"
+       },
+       {
+        "n": 10,
+        "type": "fill",
+        "q": "I am very ______ because today is my birthday.",
+        "answer": "happy"
+       }
+      ],
+      "wordbank": [
+       "school",
+       "family",
+       "play",
+       "read",
+       "ball",
+       "room",
+       "eat",
+       "friend",
+       "bike",
+       "happy"
+      ]
+     },
+     {
+      "part": "Part 2 · Unscramble the letters",
+      "note": "",
+      "questions": [
+       {
+        "n": 11,
+        "type": "order",
+        "prompt": "그림을 보고 글자를 순서대로 눌러 단어를 완성하세요.",
+        "chunks": [
+         "e",
+         "g",
+         "n",
+         "o",
+         "r",
+         "a"
+        ],
+        "answer": "orange",
+        "joinChar": "",
+        "image": "s_orange"
+       },
+       {
+        "n": 12,
+        "type": "order",
+        "prompt": "그림을 보고 글자를 순서대로 눌러 단어를 완성하세요.",
+        "chunks": [
+         "w",
+         "r",
+         "e",
+         "t",
+         "i",
+         "n"
+        ],
+        "answer": "winter",
+        "joinChar": "",
+        "image": "s_winter"
+       },
+       {
+        "n": 13,
+        "type": "order",
+        "prompt": "그림을 보고 글자를 순서대로 눌러 단어를 완성하세요.",
+        "chunks": [
+         "h",
+         "b",
+         "a",
+         "c",
+         "e"
+        ],
+        "answer": "beach",
+        "joinChar": "",
+        "image": "s_beach"
+       },
+       {
+        "n": 14,
+        "type": "order",
+        "prompt": "그림을 보고 글자를 순서대로 눌러 단어를 완성하세요.",
+        "chunks": [
+         "e",
+         "r",
+         "c",
+         "t",
+         "h",
+         "a",
+         "e"
+        ],
+        "answer": "teacher",
+        "joinChar": "",
+        "image": "s_teacher"
+       },
+       {
+        "n": 15,
+        "type": "order",
+        "prompt": "그림을 보고 글자를 순서대로 눌러 단어를 완성하세요.",
+        "chunks": [
+         "r",
+         "i",
+         "f",
+         "d",
+         "e",
+         "n",
+         "s"
+        ],
+        "answer": "friends",
+        "joinChar": "",
+        "image": "s_friends"
+       },
+       {
+        "n": 16,
+        "type": "order",
+        "prompt": "그림을 보고 글자를 순서대로 눌러 단어를 완성하세요.",
+        "chunks": [
+         "h",
+         "c",
+         "k",
+         "e",
+         "c",
+         "i",
+         "n"
+        ],
+        "answer": "chicken",
+        "joinChar": "",
+        "image": "s_chicken"
+       }
+      ]
+     },
+     {
+      "part": "Part 3 · Read the clues. Write the animal.",
+      "note": "",
+      "questions": [
+       {
+        "n": 17,
+        "type": "fill",
+        "q": "I live in the ocean. I am a smart animal. I can swim fast and jump out of the water.\nI am a/an ______.",
+        "answer": "dolphin"
+       },
+       {
+        "n": 18,
+        "type": "fill",
+        "q": "I am a black and white bird. I cannot fly, but I can swim very well.\nI am a/an ______.",
+        "answer": "penguin"
+       },
+       {
+        "n": 19,
+        "type": "fill",
+        "q": "I have a long body and no legs. I move on the ground without walking.\nI am a/an ______.",
+        "answer": "snake"
+       },
+       {
+        "n": 20,
+        "type": "fill",
+        "q": "I am a small insect. I have colorful wings. I fly from flower to flower.\nI am a/an ______.",
+        "answer": "butterfly"
+       },
+       {
+        "n": 21,
+        "type": "fill",
+        "q": "I am a large farm animal. I eat grass and say \"moo.\" People get milk from me.\nI am a/an ______.",
+        "answer": "cow"
+       }
+      ],
+      "wordbank": [
+       "snake",
+       "butterfly",
+       "penguin",
+       "dolphin",
+       "cow"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "reading",
+    "title": "Reading",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 4 · Complete the passage",
+      "note": "상자에서 알맞은 단어를 골라 쓰세요.",
+      "questions": [
+       {
+        "n": 22,
+        "type": "fill",
+        "q": "(22) ______",
+        "answer": "wings"
+       },
+       {
+        "n": 23,
+        "type": "fill",
+        "q": "(23) ______",
+        "answer": "flowers"
+       },
+       {
+        "n": 24,
+        "type": "fill",
+        "q": "(24) ______",
+        "answer": "fly"
+       },
+       {
+        "n": 25,
+        "type": "fill",
+        "q": "(25) ______",
+        "answer": "garden"
+       },
+       {
+        "n": 26,
+        "type": "fill",
+        "q": "(26) ______",
+        "answer": "small"
+       }
+      ],
+      "passage": "Butterflies are beautiful insects. They have colorful (22) ______. They drink sweet nectar from (23) ______. They can (24) ______ from one place to another. You can often see them in a (25) ______. Some butterflies are very (26) ______, but others are big.",
+      "wordbank": [
+       "flowers",
+       "fly",
+       "garden",
+       "small",
+       "wings"
+      ]
+     },
+     {
+      "part": "Part 5 · A Visit to the Bakery",
+      "note": "",
+      "questions": [
+       {
+        "n": 27,
+        "type": "mc",
+        "q": "Where does Nina go?",
+        "choices": {
+         "A": "A bakery",
+         "B": "A library",
+         "C": "A hospital",
+         "D": "A zoo"
+        },
+        "answer": "A"
+       },
+       {
+        "n": 28,
+        "type": "mc",
+        "q": "What does her dad buy?",
+        "choices": {
+         "A": "A cake",
+         "B": "Some milk",
+         "C": "Bread",
+         "D": "Apples"
+        },
+        "answer": "C"
+       }
+      ],
+      "passage": "On Saturday morning, Nina goes to a bakery with her dad. The bakery sells bread, cakes, and cookies. Nina chooses two chocolate cookies. Her dad buys a loaf of bread. They walk home together."
+     },
+     {
+      "part": "Part 5 · A Rainy Afternoon",
+      "note": "",
+      "questions": [
+       {
+        "n": 29,
+        "type": "mc",
+        "q": "Why does Max stay home?",
+        "choices": {
+         "A": "It is hot",
+         "B": "It is raining",
+         "C": "He is sick",
+         "D": "It is snowing"
+        },
+        "answer": "B"
+       },
+       {
+        "n": 30,
+        "type": "mc",
+        "q": "Where do they read?",
+        "choices": {
+         "A": "On the sofa",
+         "B": "In the garden",
+         "C": "At school",
+         "D": "At the park"
+        },
+        "answer": "A"
+       },
+       {
+        "n": 31,
+        "type": "mc",
+        "q": "What does their mother make?",
+        "choices": {
+         "A": "Soup",
+         "B": "Lemonade",
+         "C": "Hot chocolate",
+         "D": "Tea"
+        },
+        "answer": "C"
+       }
+      ],
+      "passage": "It is raining outside, so Max stays at home. He puts his toy cars in a box and helps his sister clean their room. Later, they read a funny book on the sofa. Their mother makes hot chocolate for them."
+     },
+     {
+      "part": "Part 6 · Look at Picture A and Picture B",
+      "note": "",
+      "questions": [
+       {
+        "n": 32,
+        "type": "mc",
+        "q": "What is the boy doing in Picture A?",
+        "choices": {
+         "A": "He is riding a bicycle.",
+         "B": "He is playing soccer with a dog.",
+         "C": "He is reading a book on a bench."
+        },
+        "answer": "B"
+       },
+       {
+        "n": 33,
+        "type": "mc",
+        "q": "Which sentence correctly describes Picture B?",
+        "choices": {
+         "A": "A cat is sleeping on the bed.",
+         "B": "A dog is playing under the desk.",
+         "C": "A boy is studying at the desk."
+        },
+        "answer": "A"
+       },
+       {
+        "n": 34,
+        "type": "mc",
+        "q": "What can you find in BOTH pictures?",
+        "choices": {
+         "A": "A soccer ball",
+         "B": "A sleeping cat",
+         "C": "A girl reading a book"
+        },
+        "answer": "A"
+       },
+       {
+        "n": 35,
+        "type": "mc",
+        "q": "Which sentence is TRUE according to the pictures?",
+        "choices": {
+         "A": "The girl is reading a book in Picture A.",
+         "B": "The boy is playing basketball in Picture A.",
+         "C": "A dog is sleeping in Picture B."
+        },
+        "answer": "A"
+       },
+       {
+        "n": 36,
+        "type": "mc",
+        "q": "Which sentence is NOT TRUE according to the pictures?",
+        "choices": {
+         "A": "There are children playing at the playground in Picture A.",
+         "B": "There is a desk next to the bed in Picture B.",
+         "C": "A boy is reading a book under a tree in Picture A."
+        },
+        "answer": "C"
+       }
+      ],
+      "image": "s_pictures"
+     }
+    ]
+   },
+   {
+    "id": "writing",
+    "title": "Writing",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 9 · Put the words in the correct order",
+      "note": "",
+      "questions": [
+       {
+        "n": 37,
+        "type": "order",
+        "prompt": "단어를 순서대로 눌러 문장을 만드세요.",
+        "chunks": [
+         "many",
+         "can",
+         "You",
+         "flowers",
+         "see"
+        ],
+        "answer": "You can see many flowers.",
+        "joinChar": " "
+       },
+       {
+        "n": 38,
+        "type": "order",
+        "prompt": "단어를 순서대로 눌러 문장을 만드세요.",
+        "chunks": [
+         "get",
+         "I",
+         "bus",
+         "the",
+         "on"
+        ],
+        "answer": "I get on the bus.",
+        "joinChar": " "
+       },
+       {
+        "n": 39,
+        "type": "order",
+        "prompt": "단어를 순서대로 눌러 문장을 만드세요.",
+        "chunks": [
+         "pencil",
+         "a",
+         "She",
+         "have",
+         "does",
+         "not"
+        ],
+        "answer": "She does not have a pencil.",
+        "joinChar": " "
+       },
+       {
+        "n": 40,
+        "type": "order",
+        "prompt": "단어를 순서대로 눌러 문장을 만드세요.",
+        "chunks": [
+         "mom",
+         "for",
+         "My",
+         "cooks",
+         "us",
+         "dinner"
+        ],
+        "answer": "My mom cooks dinner for us.",
+        "joinChar": " "
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

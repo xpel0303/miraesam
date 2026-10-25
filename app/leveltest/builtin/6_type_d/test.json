@@ -1,0 +1,746 @@
+{
+ "title": "중고등 Type D",
+ "sub": "현중3~고1 · 50문항",
+ "sort": 6,
+ "minutes": 50,
+ "show_result": true,
+ "active": true,
+ "spec": {
+  "sections": [
+   {
+    "id": "vocabulary",
+    "title": "Vocabulary",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "[1-2] 밑줄 친 단어와 비슷한 뜻을 가진 것을 고르시오.",
+      "note": "",
+      "questions": [
+       {
+        "n": 1,
+        "type": "mc",
+        "q": "The government decided to <u>abolish</u> the outdated tax system.",
+        "choices": {
+         "①": "revise",
+         "②": "enforce",
+         "③": "eliminate",
+         "④": "announce",
+         "⑤": "review"
+        },
+        "answer": "③"
+       },
+       {
+        "n": 2,
+        "type": "mc",
+        "q": "The scientist's discovery had a <u>substantial</u> effect on modern medicine.",
+        "choices": {
+         "①": "minor",
+         "②": "sudden",
+         "③": "temporary",
+         "④": "unclear",
+         "⑤": "significant"
+        },
+        "answer": "⑤"
+       }
+      ]
+     },
+     {
+      "part": "[3-4] 영영풀이에 알맞은 단어를 고르시오.",
+      "note": "",
+      "questions": [
+       {
+        "n": 3,
+        "type": "mc",
+        "q": "to make something clear by giving examples, pictures, or explanations",
+        "choices": {
+         "①": "ignore",
+         "②": "postpone",
+         "③": "restrict",
+         "④": "illustrate",
+         "⑤": "resemble"
+        },
+        "answer": "④"
+       },
+       {
+        "n": 4,
+        "type": "mc",
+        "q": "a difficult situation in which you must choose between two equally unpleasant choices",
+        "choices": {
+         "①": "bargain",
+         "②": "dilemma",
+         "③": "scheme",
+         "④": "margin",
+         "⑤": "harvest"
+        },
+        "answer": "②"
+       }
+      ]
+     },
+     {
+      "part": "[5-6] 밑줄 친 부분의 유의어(synonym)를 보기에서 골라 쓰시오.",
+      "note": "",
+      "questions": [
+       {
+        "n": 5,
+        "type": "fill",
+        "q": "Fruit is <u>plentiful</u> in this region during the summer.",
+        "answer": "abundant"
+       },
+       {
+        "n": 6,
+        "type": "fill",
+        "q": "Trust is an <u>essential</u> element of any healthy relationship.",
+        "answer": "fundamental"
+       }
+      ],
+      "wordbank": [
+       "abundant",
+       "cautious",
+       "obvious",
+       "trivial",
+       "endure",
+       "lucrative",
+       "fundamental",
+       "urgent",
+       "persistent"
+      ]
+     },
+     {
+      "part": "[7-10] 우리말에 맞게 빈칸에 알맞은 단어를 보기에서 찾아 쓰세요.",
+      "note": "",
+      "questions": [
+       {
+        "n": 7,
+        "type": "fill",
+        "q": "그 소문은 시민들 사이에서 큰 논란을 불러일으켰다.\nThe rumor caused great [ ______ ] among citizens.",
+        "answer": "controversy"
+       },
+       {
+        "n": 8,
+        "type": "fill",
+        "q": "철새들은 겨울이 되면 따뜻한 지역으로 이동한다.\nMany birds [ ______ ] to warmer regions in winter.",
+        "answer": "migrate"
+       },
+       {
+        "n": 9,
+        "type": "fill",
+        "q": "회사는 고객들이 입은 손실을 보상하기로 했다.\nThe company agreed to [ ______ ] customers for their loss.",
+        "answer": "compensate"
+       },
+       {
+        "n": 10,
+        "type": "fill",
+        "q": "그 과학자는 자신의 가설을 실험으로 검증했다.\nThe scientist tested his [ ______ ] through experiments.",
+        "answer": "hypothesis"
+       }
+      ],
+      "wordbank": [
+       "tolerate",
+       "compensate",
+       "migrate",
+       "inevitable",
+       "negotiate",
+       "distribute",
+       "sustain",
+       "hypothesis",
+       "controversy"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "grammar",
+    "title": "Grammar",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Grammar (11~35)",
+      "note": "",
+      "questions": [
+       {
+        "n": 11,
+        "type": "mc",
+        "q": "다음 중 보기의 밑줄 친 부분과 쓰임이 같은 것을 고르시오.\nThey <u>have waited</u> for the bus since noon.",
+        "choices": {
+         "①": "She has just finished her homework.",
+         "②": "We have known each other for ten years.",
+         "③": "My uncle has visited Jeju three times.",
+         "④": "Tom has lost his phone again.",
+         "⑤": "I have never seen such a big cat."
+        },
+        "answer": "②",
+        "skill": "현재완료의 용법"
+       },
+       {
+        "n": 12,
+        "type": "fill",
+        "q": "다음 두 문장을 관계대명사를 이용하여 한 문장으로 바꾸시오.\n· The girl is my cousin.\n· Her bag was stolen yesterday.",
+        "answer": "The girl whose bag was stolen yesterday is my cousin.",
+        "skill": "소유격 관계대명사 whose"
+       },
+       {
+        "n": 13,
+        "type": "mc",
+        "q": "다음 중 어법상 옳은 것을 고르시오.",
+        "choices": {
+         "①": "She should studies harder for the exam.",
+         "②": "You had better to take an umbrella.",
+         "③": "He may be not at home right now.",
+         "④": "I would rather to stay home today.",
+         "⑤": "They must have been tired after the long trip."
+        },
+        "answer": "⑤",
+        "skill": "조동사"
+       },
+       {
+        "n": 14,
+        "type": "mc",
+        "q": "밑줄 친 부분 중 생략할 수 <u>없는</u> 것을 고르시오.\nThe café <u>(A)which</u> I visited yesterday is near my school. The woman <u>(B)who is</u> working there is a friend of my mother's. The café was crowded on a weekday, <u>(C)which</u> surprised me. The reason <u>(D)why</u> people like it is its cheap coffee. I think <u>(E)that</u> I will go there again.",
+        "choices": {
+         "①": "(A)",
+         "②": "(B)",
+         "③": "(C)",
+         "④": "(D)",
+         "⑤": "(E)"
+        },
+        "answer": "③",
+        "skill": "관계사의 생략"
+       },
+       {
+        "n": 15,
+        "type": "fill",
+        "q": "다음 문장을 주어진 말로 시작할 때 빈칸에 알맞은 말을 쓰시오.\nThey have not allowed us to enter the room yet.\n▶ We ______ the room yet.",
+        "answer": "have not been allowed to enter",
+        "skill": "5형식 수동태 + 현재완료"
+       },
+       {
+        "n": 16,
+        "type": "mc",
+        "q": "다음 중 간접의문문의 어순이 바르게 쓰인 문장을 고르시오.",
+        "choices": {
+         "①": "Do you know where does she live?",
+         "②": "I wonder what is he doing now.",
+         "③": "Nobody knows why did he leave early.",
+         "④": "Can you tell me when the train will arrive?",
+         "⑤": "I'd like to know how long does it take."
+        },
+        "answer": "④",
+        "skill": "간접의문문 어순"
+       },
+       {
+        "n": 17,
+        "type": "mc",
+        "q": "다음 두 문장이 같은 뜻이 되도록 할 때, 빈칸에 알맞은 말을 고르시오.\nNo other player on the team runs as fast as Minho.\n= Minho runs ______ any other player on the team.",
+        "choices": {
+         "①": "faster than",
+         "②": "as fast as",
+         "③": "not as fast as",
+         "④": "less fast than",
+         "⑤": "not faster than"
+        },
+        "answer": "①",
+        "skill": "최상급 의미의 비교 표현"
+       },
+       {
+        "n": 18,
+        "type": "fill",
+        "q": "두 문장의 의미가 같도록 빈칸에 알맞은 말을 쓰시오. (4단어)\nIt seems that she didn't notice the mistake.\n▶ She seems ______ the mistake.",
+        "answer": "not to have noticed",
+        "skill": "seem to + 완료부정사"
+       },
+       {
+        "n": 19,
+        "type": "mc",
+        "q": "다음 중 어법상 옳은 것의 개수는?\n• He suggested going out for dinner.\n• I look forward to see you soon.\n• She is used to get up early.\n• My mom told me not to waste time.\n• It is no use to cry over spilt milk.",
+        "choices": {
+         "①": "1개",
+         "②": "2개",
+         "③": "3개",
+         "④": "4개",
+         "⑤": "5개"
+        },
+        "answer": "②",
+        "skill": "동명사·to부정사 관용 표현"
+       },
+       {
+        "n": 20,
+        "type": "mc",
+        "q": "빈칸에 알맞은 말을 고르시오.\nIf she had listened to my advice, she ______ in trouble now.",
+        "choices": {
+         "①": "wouldn't be",
+         "②": "wouldn't have been",
+         "③": "won't be",
+         "④": "wasn't",
+         "⑤": "hadn't been"
+        },
+        "answer": "①",
+        "skill": "혼합 가정법"
+       },
+       {
+        "n": 21,
+        "type": "mc",
+        "q": "다음 문장을 수동태로 바르게 바꾼 것을 고르시오.",
+        "choices": {
+         "①": "The teacher asked us to be quiet. → We were asked be quiet by the teacher.",
+         "②": "She let her son play outside. → Her son was let to play outside by her.",
+         "③": "We saw the bird fly away. → The bird was seen flew away by us.",
+         "④": "People believe that he is honest. → He is believed to be honest.",
+         "⑤": "They looked after the kids. → The kids were looked by them."
+        },
+        "answer": "④",
+        "skill": "수동태 전환"
+       },
+       {
+        "n": 22,
+        "type": "mc",
+        "q": "다음 중 보기의 밑줄 친 부분과 의미가 같은 것은?\n<u>Having been injured in the match</u>, he couldn't play today.",
+        "choices": {
+         "①": "Because he had been injured in the match",
+         "②": "Although he had been injured in the match",
+         "③": "If he had been injured in the match",
+         "④": "When he was injured in the match",
+         "⑤": "Because he is injured in the match"
+        },
+        "answer": "①",
+        "skill": "완료 분사구문"
+       },
+       {
+        "n": 23,
+        "type": "mc",
+        "q": "다음 밑줄 친 부분이 어법상 <u>틀린</u> 것을 고르시오.",
+        "choices": {
+         "①": "<u>Whether</u> she will come to the party is not clear.",
+         "②": "This is <u>by far</u> the most useful book that I've ever read.",
+         "③": "She speaks Korean <u>as well as</u> English.",
+         "④": "<u>While</u> I was cooking, my sister set the table.",
+         "⑤": "It was <u>so</u> a cold day that we stayed home."
+        },
+        "answer": "⑤",
+        "skill": "such / so 어순"
+       },
+       {
+        "n": 24,
+        "type": "fill",
+        "q": "다음 문장을 가정법으로 알맞게 바꾸어 쓰시오.\nAs the road was icy, the accident happened.\n→ If ______, ______.",
+        "answer": [
+         "If the road hadn't been icy, the accident wouldn't have happened.",
+         "If the road had not been icy, the accident would not have happened."
+        ],
+        "skill": "가정법 과거완료"
+       },
+       {
+        "n": 25,
+        "type": "fill",
+        "q": "다음 문장에서 어법상 틀린 부분을 찾아 바르게 고쳐 쓰시오.  (예: 틀린 말 → 고친 말)\nThe reason how he left early was not clear.",
+        "answer": "how → why",
+        "skill": "관계부사 why"
+       },
+       {
+        "n": 26,
+        "type": "mc",
+        "q": "밑줄 친 (A), (B), (C)에 어법상 맞는 표현으로 가장 적절한 것은?\nThe Tomatina Festival is held in the Spanish town of Buñol every August. It began in 1945, (A) [when / where] a food fight broke out among young people during a parade. Today, about twenty thousand people gather in the town square, (B) [which / where] they throw tomatoes at one another for one hour. Safety rules are strict. (C) [Whoever / Whomever] joins the festival must squash the tomatoes before throwing them.",
+        "choices": {
+         "①": "when – which – Whoever",
+         "②": "where – where – Whoever",
+         "③": "when – where – Whoever",
+         "④": "when – where – Whomever",
+         "⑤": "where – which – Whomever"
+        },
+        "answer": "③",
+        "skill": "관계부사 / 복합관계대명사"
+       },
+       {
+        "n": 27,
+        "type": "mc",
+        "q": "빈칸 (A), (B)에 가장 적절한 것끼리 짝지은 것은?\nMany students believe that listening to music helps them concentrate. However, in a recent study, the students ___(A)___ to study in silence scored higher than those who listened to music. ___(B)___ about their feelings afterward, both groups said that they had felt equally comfortable.",
+        "choices": {
+         "①": "who told …… Asking",
+         "②": "who were told …… Asked",
+         "③": "were told …… Asked",
+         "④": "who were told …… Asking",
+         "⑤": "telling …… Having asked"
+        },
+        "answer": "②",
+        "skill": "수동 관계절 / 수동 분사구문"
+       },
+       {
+        "n": 28,
+        "type": "mc",
+        "q": "밑줄 친 (A), (B), (C)에 어법상 맞는 표현으로 가장 적절한 것은?\nMany students stay up late to study or play games. (A) [Few / Little] of them realize how seriously this habit can affect their health. Rarely (B) [do they / they do] connect their headaches and low grades with poor sleep. Doctors warn that (C) [lack / lacking] of sleep can weaken the brain's ability to remember new information.",
+        "choices": {
+         "①": "Few – they do – lack",
+         "②": "Few – do they – lacking",
+         "③": "Little – do they – lack",
+         "④": "Few – do they – lack",
+         "⑤": "Little – they do – lacking"
+        },
+        "answer": "④",
+        "skill": "부정어 도치"
+       },
+       {
+        "n": 29,
+        "type": "fill",
+        "q": "다음 직접화법 문장을 간접화법으로 바꿔 쓰시오. (that절을 사용할 것)\nTom said to me, \"I will help you with your homework tomorrow.\"\n→ Tom told me that ______.",
+        "answer": [
+         "he would help me with my homework the next day",
+         "he would help me with my homework the following day"
+        ],
+        "skill": "간접화법"
+       },
+       {
+        "n": 30,
+        "type": "fill",
+        "q": "우리말과 같은 뜻이 되도록 주어진 단어를 이용하여 문장을 완성하시오. (remember, put, where, 8단어)\n나는 내가 열쇠를 어디에 두었는지 기억이 나지 않는다.\nI ______ my keys.",
+        "answer": [
+         "can't remember where I put",
+         "cannot remember where I put",
+         "don't remember where I put"
+        ],
+        "skill": "간접의문문"
+       },
+       {
+        "n": 31,
+        "type": "mc",
+        "q": "다음 중 어법상 가장 적절한 표현을 고르시오.\nNot only the students but also the teacher [ is / are ] excited about the field trip.",
+        "choices": {
+         "①": "is",
+         "②": "are"
+        },
+        "answer": "①",
+        "skill": "상관접속사 수 일치"
+       },
+       {
+        "n": 32,
+        "type": "mc",
+        "q": "다음 중 어법상 가장 적절한 표현을 고르시오.\nOnly after the test was over [ did he realize / he realized ] his mistake.",
+        "choices": {
+         "①": "did he realize",
+         "②": "he realized"
+        },
+        "answer": "①",
+        "skill": "Only 부사구 도치"
+       },
+       {
+        "n": 33,
+        "type": "mc",
+        "q": "다음 중 어법상 가장 적절한 표현을 고르시오.\nShe asked me [ where I had been / where had I been ].",
+        "choices": {
+         "①": "where I had been",
+         "②": "where had I been"
+        },
+        "answer": "①",
+        "skill": "간접의문문 어순"
+       },
+       {
+        "n": 34,
+        "type": "fill",
+        "q": "다음 문장 중 어법상 틀린 부분을 고쳐 쓰시오.  (예: 틀린 말 → 고친 말)\nShe laid the baby gently on the bed and then laid down beside him to rest.",
+        "answer": [
+         "laid → lay",
+         "laid down → lay down"
+        ],
+        "skill": "lay / lie"
+       },
+       {
+        "n": 35,
+        "type": "fill",
+        "q": "다음 문장 중 어법상 틀린 부분을 고쳐 쓰시오.  (예: 틀린 말 → 고친 말)\nThe professor explained us the theory so clearly that everyone understood it.",
+        "answer": [
+         "explained us the theory → explained the theory to us",
+         "explained us → explained the theory to us",
+         "us the theory → the theory to us"
+        ],
+        "skill": "explain(3형식 동사)"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "reading",
+    "title": "Reading",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 36,
+        "type": "mc",
+        "q": "다음 글의 제목으로 가장 적절한 것을 고르시오.",
+        "choices": {
+         "①": "Why Cities Should Ban Empty Lots",
+         "②": "Community Gardens: More Than Just Fresh Food",
+         "③": "How to Grow Vegetables Without Water",
+         "④": "The Hidden Costs of Urban Farming",
+         "⑤": "Teaching Children to Cook Healthy Meals"
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "In many large cities, empty lots that once collected trash are being turned into community gardens. Neighbors who had never spoken to each other now work side by side, planting vegetables and sharing tools. Studies show that these gardens do more than provide fresh food. People who garden together report lower stress and a stronger sense of belonging to their neighborhood. Children learn where their food comes from, and older residents pass on knowledge that might otherwise be lost. Some gardens even donate part of their harvest to local food banks. City officials have noticed another benefit: areas with active gardens tend to have less crime, probably because more people are out on the streets caring for the space. Of course, gardens need time, water, and volunteers to survive. Still, the results suggest that a small piece of land can help build a stronger community."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 37,
+        "type": "mc",
+        "q": "다음 글의 요지로 가장 적절한 것은?",
+        "choices": {
+         "①": "의지력을 기르는 훈련이 습관 형성의 첫 단계이다.",
+         "②": "성공한 사람들은 대체로 실패에서 더 많은 것을 배운다.",
+         "③": "스마트폰 사용 시간을 줄이면 학업 성취도가 높아진다.",
+         "④": "좋은 습관을 들이려면 의지에 의존하기보다 주변 환경을 바꾸는 것이 효과적이다.",
+         "⑤": "건강한 식습관은 규칙적인 운동과 함께할 때 유지된다."
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "People often blame a lack of willpower when they fail to build good habits. But researchers suggest that the real problem is usually the environment, not the person. If cookies are on the kitchen counter, you will probably eat them, no matter how strongly you decided to eat healthier. If your phone is next to your bed, checking it will feel like the easiest thing to do. Successful people are not always more disciplined; instead, they tend to arrange their surroundings so that the right choice becomes the easy choice. A student who wants to study more can keep only the textbook on the desk and leave the phone in another room. Someone who wants to eat more fruit can put it in a bowl at eye level. Small changes like these reduce the need for self-control, which is a limited resource. So rather than fighting yourself every day, it is wiser to redesign the place where you live and work."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 38,
+        "type": "mc",
+        "q": "다음 글의 제목으로 가장 적절한 것은?",
+        "choices": {
+         "①": "Boredom: A Hidden Source of Creativity",
+         "②": "Why Modern Life Makes Us Bored",
+         "③": "Ways to Fill Your Free Time",
+         "④": "The Dangers of Doing Nothing",
+         "⑤": "Copying Numbers Improves Memory"
+        },
+        "answer": "①"
+       }
+      ],
+      "passage": "Most of us try to escape boredom as quickly as possible by reaching for a phone or turning on the TV. However, psychologists have found that boredom may actually help the mind. When nothing around us demands attention, the brain begins to wander, connecting ideas that seem unrelated. In one experiment, people who had completed a dull task, such as copying phone numbers, came up with more creative uses for ordinary objects than those who had not. Many writers and inventors also say that their best ideas arrived during quiet, empty moments, like a long walk or a boring train ride. Of course, constant boredom is not healthy. But in a world full of notifications, a little empty time may be exactly what a creative mind needs."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 39,
+        "type": "mc",
+        "q": "글의 흐름으로 보아, 주어진 문장이 들어가기에 가장 적절한 곳을 고르시오.\n\nThis is because cities have a wide variety of plants that bloom at different times of the year.",
+        "choices": {
+         "①": "",
+         "②": "",
+         "③": "",
+         "④": "",
+         "⑤": ""
+        },
+        "answer": "③"
+       }
+      ],
+      "passage": "Beekeeping is no longer limited to the countryside. ( ① ) In recent years, rooftop hives have appeared in cities such as Paris, New York, and Seoul. ( ② ) Surprisingly, city bees often produce more honey than country bees. ( ③ ) Farms usually grow a single crop that flowers for only a few weeks, and the fields are often sprayed with pesticides. ( ④ ) Urban beekeepers, however, must be careful about where they place their hives. ( ⑤ ) Hives that are too close to busy streets can disturb pedestrians."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 40,
+        "type": "mc",
+        "q": "다음 도표의 내용과 일치하지 <u>않는</u> 것은?",
+        "choices": {
+         "①": "",
+         "②": "",
+         "③": "",
+         "④": "",
+         "⑤": ""
+        },
+        "answer": "⑤"
+       }
+      ],
+      "passage": "The above graph shows the reasons why teenagers in a country use social media in 2018 and 2023 when they were allowed to select up to three choices. ① Compared to 2018, in 2023 the percentage increased in every category except friends. ② In both years, keeping in touch with friends was the most common reason. ③ In 2018, news was chosen by a larger percentage of teenagers than learning, but the situation reversed in 2023. ④ The percentage of teenagers choosing creative sharing in 2023 was less than a third of those choosing friends. ⑤ The percentage point gap between 2018 and 2023 was largest in learning and smallest in creative sharing.",
+      "image": "d_graph"
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 41,
+        "type": "mc",
+        "q": "다음 글의 빈칸에 들어갈 말로 가장 적절한 것은?",
+        "choices": {
+         "①": "Look before you leap",
+         "②": "Two heads are better than one",
+         "③": "Better late than never",
+         "④": "Out of sight, out of mind",
+         "⑤": "Practice makes perfect"
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "When facing a difficult problem, many of us prefer to work alone because we think it is faster. However, research on problem solving shows that groups often reach better solutions than even the smartest individual in them. Each member brings different experiences and ways of thinking, so mistakes that one person misses can be spotted by another. In one study, teams that included people from various backgrounds came up with more creative answers than teams of similar people. Of course, a group works well only when its members listen to one another. But when they do, the results speak for themselves. That is why the old saying, \"______________________,\" continues to be true."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 42,
+        "type": "mc",
+        "q": "다음 글의 빈칸에 들어갈 말로 가장 적절한 것은?",
+        "choices": {
+         "①": "reconstruct",
+         "②": "copy",
+         "③": "delete",
+         "④": "postpone",
+         "⑤": "predict"
+        },
+        "answer": "①"
+       }
+      ],
+      "passage": "Many people imagine that memory works like a video camera that records events and plays them back exactly as they happened. In fact, memory works more like a storyteller. Each time we remember an event, we do not simply replay it; instead, we ______________ it from pieces of information stored in different parts of the brain. During this process, missing details are filled in by guesses, and new information can sneak in. This is why two people who experienced the same event often remember it differently, and why we can be completely sure about a memory that is partly wrong."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 43,
+        "type": "mc",
+        "q": "주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?",
+        "choices": {
+         "①": "(A) – (C) – (B)",
+         "②": "(B) – (A) – (C)",
+         "③": "(B) – (C) – (A)",
+         "④": "(C) – (A) – (B)",
+         "⑤": "(C) – (B) – (A)"
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "Many people believe that talent alone decides who becomes a great musician. However, a famous study suggests that the truth is more complicated.\n\n(A) The results were clear. By the age of twenty, the top violinists had practiced about 10,000 hours, far more than the other groups.\n\n(B) This does not mean that talent is meaningless. It does show, however, that without long and focused practice, talent alone is rarely enough.\n\n(C) Psychologist Anders Ericsson and his colleagues compared violin students at a music academy in Berlin. They divided the students into groups according to their level, from the best to the average, and then asked each group how many hours they had practiced."
+     },
+     {
+      "part": "[44-45] 다음 글을 읽고 물음에 답하시오.",
+      "note": "",
+      "questions": [
+       {
+        "n": 44,
+        "type": "mc",
+        "q": "글의 제목으로 가장 적절한 것은?",
+        "choices": {
+         "①": "Why Bakeries Need More Workers",
+         "②": "Save Money by Counting Carefully",
+         "③": "Honesty Matters, Even When No One Is Watching",
+         "④": "How to Handle Customers in Winter",
+         "⑤": "A Boss's Secret to Success"
+        },
+        "answer": "③"
+       },
+       {
+        "n": 45,
+        "type": "mc",
+        "q": "글의 내용과 일치하지 <u>않는</u> 것은?",
+        "choices": {
+         "①": "빵 한 덩이의 값은 4,000원이다.",
+         "②": "노인은 지폐 두 장이 붙은 채로 돈을 냈다.",
+         "③": "지우는 노인에게 거스름돈으로 6,000원을 주었다.",
+         "④": "사장은 여분의 돈을 가져도 된다고 말했다.",
+         "⑤": "지우는 노인에게 돈을 돌려주지 않았다."
+        },
+        "answer": "⑤"
+       }
+      ],
+      "passage": "Last winter, my friend Jiwoo worked part-time at a small bakery. One snowy evening, an elderly man bought a loaf of bread for 4,000 won and handed her what looked like a single 10,000-won bill. Jiwoo gave him 6,000 won in change, and he left. When she tidied the cash drawer, she found that the bill was really two bills stuck together; the man had paid 20,000 won by mistake. Her boss, who was counting the day's sales, said, \"Nobody saw it. You can keep the extra 10,000 won.\" But Jiwoo shook her head, put on her coat, and ran into the snow. She found the man waiting at the bus stop and gave him the money back. He smiled and said, \"Thank you. I was too tired to notice.\" When she returned, her boss said nothing, but he handed her a warm cup of milk."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 46,
+        "type": "mc",
+        "q": "주어진 문장이 들어가기에 가장 적절한 곳은?\n\nAs a result, many of them end up on roads instead of in the water.",
+        "choices": {
+         "①": "",
+         "②": "",
+         "③": "",
+         "④": "",
+         "⑤": ""
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "Sea turtles hatch at night on sandy beaches and must reach the ocean on their own. ( ① ) By instinct, they crawl toward the brightest horizon, which, under natural conditions, is the open sea reflecting moonlight and starlight. ( ② ) Today, however, bright lights from hotels, streets, and houses often shine on the beaches. ( ③ ) The hatchlings mistake these lights for the sea and move in the wrong direction. ( ④ ) Many die from exhaustion, from dehydration, or under the wheels of cars. ( ⑤ ) Some coastal towns have therefore asked residents to switch off outdoor lights during the hatching season."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 47,
+        "type": "mc",
+        "q": "다음 글의 밑줄 친 부분 중, 문맥상 낱말의 쓰임이 적절하지 <u>않은</u> 것은?",
+        "choices": {
+         "①": "ⓐ",
+         "②": "ⓑ",
+         "③": "ⓒ",
+         "④": "ⓓ",
+         "⑤": "ⓔ"
+        },
+        "answer": "③"
+       }
+      ],
+      "passage": "There are many simple ways to reduce the water we use at home. First, turning off the tap while you brush your teeth can <u>ⓐsave</u> dozens of liters every day. Second, repair leaking pipes quickly, because even a small leak can <u>ⓑwaste</u> thousands of liters a year. Taking short showers instead of long baths is also <u>ⓒineffective</u>. Another tip is to run the washing machine only when it is full, which helps <u>ⓓreduce</u> the amount of water used per load. Finally, collecting rainwater for your garden is a smart way to <u>ⓔprotect</u> clean drinking water."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 48,
+        "type": "mc",
+        "q": "다음 글의 내용을 한 문장으로 요약하고자 한다. 빈칸 (A), (B)에 들어갈 말로 가장 적절한 것은?\n\nPraising children for their (A) ______ rather than their (B) ______ helps them take on challenges with confidence.",
+        "choices": {
+         "①": "talent …… grades",
+         "②": "effort …… intelligence",
+         "③": "intelligence …… effort",
+         "④": "results …… process",
+         "⑤": "attitude …… appearance"
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "Parents and teachers often praise children by saying, \"You're so smart!\" It sounds kind, but research suggests it may backfire. In one well-known experiment, fifth graders solved easy puzzles and were praised either for their intelligence or for their effort. When offered a choice between a harder task and an easier one, most of the children praised for intelligence chose the easier task. They seemed afraid that failure would prove they were not smart after all. In contrast, the majority of the children praised for effort chose the harder task, because they believed that struggling was part of learning. Later, when given difficult problems, the effort group kept trying longer and enjoyed the work more. The results suggest that how we praise children shapes how they face challenges."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 49,
+        "type": "short",
+        "q": "다음 글을 읽고, 정보 과잉으로 인한 압박감에 대처하는 방법을 찾아서 우리말로 쓰시오. (선생님이 채점해요)"
+       }
+      ],
+      "passage": "We live in an age of endless information, and it is easy to feel overwhelmed. A useful way of coping is to decide in advance what you really need to know. For example, if you are preparing a presentation on climate change, you do not have to read every article online. Instead, choose two or three trusted sources and set a time limit for your research. When the time is up, stop searching and start organizing what you have found. This habit protects your attention and keeps you from drifting from link to link. As a result, you save time and make clearer decisions."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 50,
+        "type": "short",
+        "q": "다음 글의 요지를 우리말 20자 내외로 쓰시오.\n<조건> cost, decision의 우리말 의미가 포함되어야 함 (선생님이 채점해요)"
+       }
+      ],
+      "passage": "Imagine you buy a movie ticket for 12,000 won, but ten minutes into the film you realize it is terrible. Should you stay? Many people do, saying, \"I already paid for it.\" This is known as the sunk cost effect: we continue an action simply because we have already spent money, time, or effort on it, even when quitting would be wiser. The money is gone either way, so the only sensible question is whether the next two hours will be enjoyable. Companies fall into the same trap when they keep funding a failing project because they have already invested millions. Governments do so as well. Economists advise that decisions should be based on future costs and benefits, not on what has already been spent."
+     }
+    ]
+   }
+  ]
+ }
+}

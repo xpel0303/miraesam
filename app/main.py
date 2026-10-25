@@ -17,6 +17,8 @@ from .web import LoginRequired, render
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    from .leveltest.pack import seed_builtin_background
+    seed_builtin_background()  # 사이트에 들어 있는 레벨테스트 시험지를 학원마다 넣기
     start_workers()
     yield
     stop_workers()

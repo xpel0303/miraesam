@@ -1,0 +1,790 @@
+{
+ "title": "초등 3-4학년",
+ "sub": "AI-APA (Movers) · 듣기 포함 · 58문항",
+ "sort": 2,
+ "minutes": 0,
+ "show_result": true,
+ "active": true,
+ "spec": {
+  "sections": [
+   {
+    "id": "listening",
+    "title": "Listening",
+    "instruction": "재생 버튼을 누르면 1번부터 순서대로 나와요. 한 번만 들려주니 잘 듣고 답하세요.",
+    "groups": [
+     {
+      "part": "Part 1 · Listen to each conversation and choose the best answer. (1~4)",
+      "note": "",
+      "questions": [
+       {
+        "n": 1,
+        "type": "mc",
+        "q": "Which job does Antoine's mom NOT suggest?",
+        "choices": {
+         "A": "",
+         "B": "",
+         "C": ""
+        },
+        "answer": "B",
+        "image": "m_q1"
+       },
+       {
+        "n": 2,
+        "type": "mc",
+        "q": "What is wrong with Rebecca?",
+        "choices": {
+         "A": "",
+         "B": "",
+         "C": ""
+        },
+        "answer": "C",
+        "image": "m_q2"
+       },
+       {
+        "n": 3,
+        "type": "mc",
+        "q": "What will Tia likely do in fifteen minutes?",
+        "choices": {
+         "A": "She will call Devon back.",
+         "B": "She will leave a message.",
+         "C": "She will text her number to Devon."
+        },
+        "answer": "A"
+       },
+       {
+        "n": 4,
+        "type": "mc",
+        "q": "What does the girl decide to order?",
+        "choices": {
+         "A": "a medium soda",
+         "B": "a slice of pizza",
+         "C": "a pepperoni pizza"
+        },
+        "answer": "B"
+       }
+      ]
+     },
+     {
+      "part": "Listen and choose the correct answer. (5~6)",
+      "note": "",
+      "questions": [
+       {
+        "n": 5,
+        "type": "mc",
+        "q": "Which job booth will Peppa and Jared visit together?",
+        "choices": {
+         "A": "the architect booth",
+         "B": "the pet trainer booth",
+         "C": "the computer programmer booth"
+        },
+        "answer": "B"
+       },
+       {
+        "n": 6,
+        "type": "mc",
+        "q": "What does Peppa want to be in the future?",
+        "choices": {
+         "A": "an architect",
+         "B": "a pet trainer",
+         "C": "a computer programmer"
+        },
+        "answer": "A"
+       }
+      ]
+     },
+     {
+      "part": "Listen and choose the correct answer. (7~8)",
+      "note": "",
+      "questions": [
+       {
+        "n": 7,
+        "type": "mc",
+        "q": "Which is NOT something Audrey is good at?",
+        "choices": {
+         "A": "writing stories",
+         "B": "taking photos",
+         "C": "baking pies"
+        },
+        "answer": "B"
+       },
+       {
+        "n": 8,
+        "type": "mc",
+        "q": "Who does Audrey draw cartoons for?",
+        "choices": {
+         "A": "her parents",
+         "B": "the school newspaper",
+         "C": "her sister"
+        },
+        "answer": "C"
+       }
+      ]
+     },
+     {
+      "part": "Listen and choose the correct answer. (9~10)",
+      "note": "",
+      "questions": [
+       {
+        "n": 9,
+        "type": "mc",
+        "q": "Who will decorate the classroom for the party?",
+        "choices": {
+         "A": "Stanley",
+         "B": "Ms. Briggs",
+         "C": "Mario"
+        },
+        "answer": "A"
+       },
+       {
+        "n": 10,
+        "type": "mc",
+        "q": "What will Brenda do for the party?",
+        "choices": {
+         "A": "decorate the classroom",
+         "B": "buy soda and juice",
+         "C": "play music on the piano"
+        },
+        "answer": "C"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "vocabulary",
+    "title": "Vocabulary",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 2 · Choose the word that matches each definition. (11~15)",
+      "note": "",
+      "questions": [
+       {
+        "n": 11,
+        "type": "mc",
+        "q": "a person who goes to see a person or place",
+        "choices": {
+         "A": "visitor",
+         "B": "artist",
+         "C": "driver",
+         "D": "farmer"
+        },
+        "answer": "A"
+       },
+       {
+        "n": 12,
+        "type": "mc",
+        "q": "feeling unhappy because you have nothing to do",
+        "choices": {
+         "A": "brave",
+         "B": "bored",
+         "C": "proud",
+         "D": "careful"
+        },
+        "answer": "B"
+       },
+       {
+        "n": 13,
+        "type": "mc",
+        "q": "to fix something that is broken",
+        "choices": {
+         "A": "repair",
+         "B": "follow",
+         "C": "collect",
+         "D": "whisper"
+        },
+        "answer": "A"
+       },
+       {
+        "n": 14,
+        "type": "mc",
+        "q": "very large in size",
+        "choices": {
+         "A": "empty",
+         "B": "gentle",
+         "C": "huge",
+         "D": "quiet"
+        },
+        "answer": "C"
+       },
+       {
+        "n": 15,
+        "type": "mc",
+        "q": "to get to a place",
+        "choices": {
+         "A": "reach",
+         "B": "borrow",
+         "C": "decide",
+         "D": "forget"
+        },
+        "answer": "A"
+       }
+      ]
+     },
+     {
+      "part": "Complete each sentence using one word from the box. (16~20)",
+      "note": "",
+      "questions": [
+       {
+        "n": 16,
+        "type": "fill",
+        "q": "I have a ______, so I need to rest in a quiet room.",
+        "answer": "headache"
+       },
+       {
+        "n": 17,
+        "type": "fill",
+        "q": "We use our ______ to hold a pencil.",
+        "answer": "fingers"
+       },
+       {
+        "n": 18,
+        "type": "fill",
+        "q": "The heavy backpack hurt my ______ because I carried it on one side.",
+        "answer": "shoulder"
+       },
+       {
+        "n": 19,
+        "type": "fill",
+        "q": "My ______ hurts when I swallow.",
+        "answer": "throat"
+       },
+       {
+        "n": 20,
+        "type": "fill",
+        "q": "Alex fell while running and hurt his ______.",
+        "answer": "knee"
+       }
+      ],
+      "wordbank": [
+       "shoulder",
+       "headache",
+       "knee",
+       "fingers",
+       "throat"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "reading",
+    "title": "Reading",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 3 · The Community Garden",
+      "note": "",
+      "questions": [
+       {
+        "n": 21,
+        "type": "mc",
+        "q": "What does Daniel do at the garden?",
+        "choices": {
+         "A": "He waters plants.",
+         "B": "He feeds birds.",
+         "C": "He sells flowers."
+        },
+        "answer": "A"
+       },
+       {
+        "n": 22,
+        "type": "mc",
+        "q": "How many tomatoes did he pick last week?",
+        "choices": {
+         "A": "Two",
+         "B": "Three",
+         "C": "Five"
+        },
+        "answer": "B"
+       }
+      ],
+      "passage": "Every Saturday, Daniel visits the community garden with his father. They water the tomatoes and pull out small weeds. Daniel likes to check how tall the plants have grown. Last week, he picked three ripe tomatoes and gave them to his neighbor."
+     },
+     {
+      "part": "Part 3 · Playing with Blocks",
+      "note": "",
+      "questions": [
+       {
+        "n": 23,
+        "type": "mc",
+        "q": "Why did the children stay inside?",
+        "choices": {
+         "A": "It was windy.",
+         "B": "It was raining.",
+         "C": "It was snowing."
+        },
+        "answer": "B"
+       },
+       {
+        "n": 24,
+        "type": "mc",
+        "q": "What did they give their sister?",
+        "choices": {
+         "A": "Blue blocks",
+         "B": "A toy car",
+         "C": "A small bridge"
+        },
+        "answer": "A"
+       }
+      ],
+      "passage": "On rainy days, Maya and her brother stay inside and build things with colorful blocks. Yesterday, they made a tall tower and a small bridge. Their little sister wanted to help, so they gave her the blue blocks. Everyone had fun playing together."
+     },
+     {
+      "part": "Part 4 · Informative Reading (25~27)",
+      "note": "",
+      "questions": [
+       {
+        "n": 25,
+        "type": "mc",
+        "q": "What should students bring to the art workshop?",
+        "choices": {
+         "A": "An old shirt",
+         "B": "A lunch box",
+         "C": "Sports shoes",
+         "D": "A camera"
+        },
+        "answer": "A"
+       },
+       {
+        "n": 26,
+        "type": "mc",
+        "q": "When is the nature walk?",
+        "choices": {
+         "A": "April 8",
+         "B": "April 10",
+         "C": "April 12",
+         "D": "April 15"
+        },
+        "answer": "B"
+       },
+       {
+        "n": 27,
+        "type": "mc",
+        "q": "Where is the music show?",
+        "choices": {
+         "A": "In the garden",
+         "B": "At the school gate",
+         "C": "In the hall",
+         "D": "In the library"
+        },
+        "answer": "C"
+       }
+      ],
+      "passage": "SPRING ACTIVITY WEEK AT SCHOOL\n\nApril 8: Art Workshop\nPaint pictures in the art room at 10:00 a.m. Bring an old shirt.\n\nApril 10: Nature Walk\nMeet at the school gate at 9:30 a.m. Wear comfortable shoes and bring water.\n\nApril 12: Music Show\nListen to the school band in the hall at 2:00 p.m. Families are welcome."
+     },
+     {
+      "part": "Read the table carefully. (28~30)",
+      "note": "",
+      "questions": [
+       {
+        "n": 28,
+        "type": "mc",
+        "q": "Which is the most common way for students to travel to school?",
+        "choices": {
+         "A": "By car",
+         "B": "On foot",
+         "C": "By bicycle"
+        },
+        "answer": "B"
+       },
+       {
+        "n": 29,
+        "type": "mc",
+        "q": "How many students go by school bus?",
+        "choices": {
+         "A": "20",
+         "B": "30",
+         "C": "35"
+        },
+        "answer": "B"
+       },
+       {
+        "n": 30,
+        "type": "mc",
+        "q": "What does the table tell us?",
+        "choices": {
+         "A": "How students travel to school",
+         "B": "What students eat for lunch",
+         "C": "When students finish school"
+        },
+        "answer": "A"
+       }
+      ],
+      "passage": "How Students Travel to School (100 Students)\n\nWalking — 35\nSchool bus — 30\nCar — 20\nBicycle — 10\nSubway — 5\nTotal — 100"
+     },
+     {
+      "part": "Part 5 · Grace and the Night Sky",
+      "note": "",
+      "questions": [
+       {
+        "n": 31,
+        "type": "mc",
+        "q": "Why did Grace borrow books from the library?",
+        "choices": {
+         "A": "To learn the names of things in the sky",
+         "B": "To find a new science club",
+         "C": "To read stories about her grandfather"
+        },
+        "answer": "A"
+       },
+       {
+        "n": 32,
+        "type": "mc",
+        "q": "What does Grace hope to become?",
+        "choices": {
+         "A": "A singer",
+         "B": "A scientist",
+         "C": "An artist"
+        },
+        "answer": "B"
+       }
+      ],
+      "passage": "When Grace was ten, she became interested in the stars. Her grandfather gave her a small telescope for her birthday. Every clear evening, she took it into the backyard to look at the moon and bright planets.\nAt first, she did not know their names, so she borrowed books from the library and made notes. Later, Grace joined a science club at school. She shared her drawings of the night sky with other children.\nShe hopes to become a scientist one day and learn more about space."
+     },
+     {
+      "part": "Part 6 · Find Answers in the Article (33~36)",
+      "note": "글에서 한 단어를 찾아 쓰세요.",
+      "questions": [
+       {
+        "n": 33,
+        "type": "fill",
+        "q": "Chloe goes to the library every ______ afternoon.",
+        "answer": "Wednesday"
+       },
+       {
+        "n": 34,
+        "type": "fill",
+        "q": "The library is next to a large ______.",
+        "answer": "playground"
+       },
+       {
+        "n": 35,
+        "type": "fill",
+        "q": "Chloe usually chooses books about ______.",
+        "answer": "animals"
+       },
+       {
+        "n": 36,
+        "type": "fill",
+        "q": "Before going home, Chloe borrows ______ books.",
+        "answer": [
+         "two",
+         "2"
+        ]
+       }
+      ],
+      "passage": "A Visit to the Library\n\nEvery Wednesday afternoon, Chloe goes to the town library with her older brother. The library is next to a large playground. Chloe usually chooses books about animals, while her brother enjoys books about science.\nThey sit at a table near the window and read quietly for an hour. Before going home, Chloe borrows two books. On the way back, they sometimes stop at a bakery to buy bread for their family."
+     },
+     {
+      "part": "Part 7 · The School Garden Project (37~41)",
+      "note": "",
+      "questions": [
+       {
+        "n": 37,
+        "type": "mc",
+        "q": "Where did Oliver and his classmates start their garden?",
+        "choices": {
+         "A": "In front of the school library",
+         "B": "Behind their school",
+         "C": "Near the school cafeteria"
+        },
+        "answer": "B"
+       },
+       {
+        "n": 38,
+        "type": "mc",
+        "q": "What was Oliver's job in the garden?",
+        "choices": {
+         "A": "Planting the seeds",
+         "B": "Picking the vegetables",
+         "C": "Watering the plants"
+        },
+        "answer": "C"
+       },
+       {
+        "n": 39,
+        "type": "mc",
+        "q": "Why did some students feel disappointed at first?",
+        "choices": {
+         "A": "The plants did not seem to grow.",
+         "B": "They did not have enough seeds.",
+         "C": "Their teacher asked them to stop working."
+        },
+        "answer": "A"
+       },
+       {
+        "n": 40,
+        "type": "mc",
+        "q": "What happened after two weeks?",
+        "choices": {
+         "A": "The students picked all the vegetables.",
+         "B": "Small green leaves began to appear.",
+         "C": "The students started a new garden."
+        },
+        "answer": "B"
+       },
+       {
+        "n": 41,
+        "type": "mc",
+        "q": "Which sentence is TRUE according to the passage?",
+        "choices": {
+         "A": "Lucy watered the plants every morning.",
+         "B": "The students sold their vegetables at a market.",
+         "C": "The students decided to share their vegetables with the school cafeteria."
+        },
+        "answer": "C"
+       }
+      ],
+      "passage": "Last month, Oliver and his classmates started a small garden behind their school. Their teacher, Mrs. Brown, gave each student a different job. Oliver was responsible for watering the plants, while his friend Lucy helped plant the seeds.\nEvery morning, the students checked the garden before their lessons began. At first, nothing seemed to grow, and some students felt disappointed. However, Mrs. Brown told them to be patient. After two weeks, small green leaves began to appear.\nBy the end of the month, the students had grown several vegetables, including carrots and tomatoes. They were proud of their hard work and decided to share the vegetables with the school cafeteria."
+     },
+     {
+      "part": "Part 8 · Completing the Passage (42~45)",
+      "note": "상자에서 알맞은 단어를 골라 쓰세요. 한 단어는 한 번만 써요.",
+      "questions": [
+       {
+        "n": 42,
+        "type": "fill",
+        "q": "(42) ______",
+        "answer": "exciting"
+       },
+       {
+        "n": 43,
+        "type": "fill",
+        "q": "(43) ______",
+        "answer": "took"
+       },
+       {
+        "n": 44,
+        "type": "fill",
+        "q": "(44) ______",
+        "answer": "pictures"
+       },
+       {
+        "n": 45,
+        "type": "fill",
+        "q": "(45) ______",
+        "answer": "watched"
+       }
+      ],
+      "passage": "A Day at the Science Museum\n\nLast Saturday, Daniel and his family visited a science museum in the city. The museum was full of (42) ______ things to see and learn.\nWhen they arrived, Daniel saw a large model of a spaceship near the entrance. His younger sister was surprised because it looked so real. Daniel's father (43) ______ a map of the museum from the information desk to help them find different exhibitions.\nFirst, they visited a room about space. Daniel learned about planets and stars. He also took many (44) ______ with his camera to show his friends at school.\nAt lunchtime, the family went to a small café inside the museum. Daniel's mother bought sandwiches and juice for everyone. After eating, they watched a short science show.\nBefore leaving, Daniel (45) ______ a video about how robots work. He enjoyed learning new things and hoped to visit the museum again soon.",
+      "wordbank": [
+       "exciting",
+       "carried",
+       "visitors",
+       "bought",
+       "quietly",
+       "built",
+       "took",
+       "delicious",
+       "watched",
+       "pictures"
+      ]
+     }
+    ]
+   },
+   {
+    "id": "grammar",
+    "title": "Grammar",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 9 · Choose the best answer. (46~55)",
+      "note": "",
+      "questions": [
+       {
+        "n": 46,
+        "type": "mc",
+        "q": "Choose the correct be verb.\nMy brother ______ eight years old.",
+        "choices": {
+         "A": "am",
+         "B": "is",
+         "C": "are",
+         "D": "be"
+        },
+        "answer": "B",
+        "skill": "be동사"
+       },
+       {
+        "n": 47,
+        "type": "mc",
+        "q": "Choose the correct be verb.\nThe children ______ in the classroom.",
+        "choices": {
+         "A": "am",
+         "B": "is",
+         "C": "are",
+         "D": "be"
+        },
+        "answer": "C",
+        "skill": "be동사"
+       },
+       {
+        "n": 48,
+        "type": "mc",
+        "q": "Choose the correct question.\nHe is a student.",
+        "choices": {
+         "A": "Does he a student?",
+         "B": "He is a student?",
+         "C": "Are he a student?",
+         "D": "Is he a student?"
+        },
+        "answer": "D",
+        "skill": "be동사 의문문"
+       },
+       {
+        "n": 49,
+        "type": "mc",
+        "q": "Choose the correct article.\nI have ______ orange in my bag.",
+        "choices": {
+         "A": "a",
+         "B": "an",
+         "C": "the"
+        },
+        "answer": "B",
+        "skill": "관사 a / an"
+       },
+       {
+        "n": 50,
+        "type": "mc",
+        "q": "Choose the correct plural form of \"child.\"",
+        "choices": {
+         "A": "childs",
+         "B": "children",
+         "C": "childes",
+         "D": "childrens"
+        },
+        "answer": "B",
+        "skill": "명사의 복수형"
+       },
+       {
+        "n": 51,
+        "type": "mc",
+        "q": "Choose the correct plural form of \"mouse.\"",
+        "choices": {
+         "A": "mouses",
+         "B": "mousess",
+         "C": "mice",
+         "D": "mises"
+        },
+        "answer": "C",
+        "skill": "명사의 복수형"
+       },
+       {
+        "n": 52,
+        "type": "mc",
+        "q": "Which word is a noun in the sentence?\nThe young boy runs quickly.",
+        "choices": {
+         "A": "young",
+         "B": "runs",
+         "C": "quickly",
+         "D": "boy"
+        },
+        "answer": "D",
+        "skill": "품사 구분"
+       },
+       {
+        "n": 53,
+        "type": "mc",
+        "q": "Choose the correct preposition.\nThe toys are ______ the box. You must open the box to get them.",
+        "choices": {
+         "A": "on",
+         "B": "in",
+         "C": "under",
+         "D": "at"
+        },
+        "answer": "B",
+        "skill": "장소 전치사"
+       },
+       {
+        "n": 54,
+        "type": "mc",
+        "q": "Choose the correct preposition.\nThe book is ______ the desk. You can see it on the top of the desk.",
+        "choices": {
+         "A": "under",
+         "B": "in",
+         "C": "on"
+        },
+        "answer": "C",
+        "skill": "장소 전치사"
+       },
+       {
+        "n": 55,
+        "type": "mc",
+        "q": "Choose the correct preposition.\nThe teacher puts a picture ______ the wall.",
+        "choices": {
+         "A": "in",
+         "B": "under",
+         "C": "on"
+        },
+        "answer": "C",
+        "skill": "장소 전치사"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "writing",
+    "title": "Writing",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 10 · Unscramble the words (56~58)",
+      "note": "조각을 순서대로 눌러 문장을 만드세요.",
+      "questions": [
+       {
+        "n": 56,
+        "type": "order",
+        "prompt": "엠마는 매일 아침 남동생과 함께 학교에 걸어갑니다.",
+        "chunks": [
+         "every morning",
+         "walks",
+         "to school",
+         "Emma",
+         "with her younger brother"
+        ],
+        "answer": [
+         "Emma walks to school with her younger brother every morning.",
+         "Emma walks to school every morning with her younger brother.",
+         "Every morning Emma walks to school with her younger brother."
+        ],
+        "joinChar": " "
+       },
+       {
+        "n": 57,
+        "type": "order",
+        "prompt": "아이들은 어제 오후에 공원에서 놀고 있었습니다.",
+        "chunks": [
+         "were",
+         "playing",
+         "the children",
+         "in the park",
+         "yesterday afternoon"
+        ],
+        "answer": [
+         "The children were playing in the park yesterday afternoon.",
+         "Yesterday afternoon the children were playing in the park."
+        ],
+        "joinChar": " "
+       },
+       {
+        "n": 58,
+        "type": "order",
+        "prompt": "우리는 비가 오고 있었기 때문에 집에 머물렀습니다.  We ______",
+        "chunks": [
+         "stayed",
+         "because",
+         "it was raining",
+         "at home"
+        ],
+        "answer": [
+         "stayed at home because it was raining."
+        ],
+        "joinChar": " "
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

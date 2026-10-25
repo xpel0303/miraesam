@@ -1,0 +1,831 @@
+{
+ "title": "중등 Type C",
+ "sub": "현중2~중3 · 55문항",
+ "sort": 5,
+ "minutes": 50,
+ "show_result": true,
+ "active": true,
+ "spec": {
+  "sections": [
+   {
+    "id": "vocabulary",
+    "title": "Vocabulary",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "[1-5] 다음 영영풀이에 알맞은 어휘를 <보기>에서 찾아 쓰시오.",
+      "note": "",
+      "questions": [
+       {
+        "n": 1,
+        "type": "fill",
+        "q": "[ ______ ] : one of the foods that you mix together to make a particular dish",
+        "answer": "ingredient"
+       },
+       {
+        "n": 2,
+        "type": "fill",
+        "q": "[ ______ ] : wanting to know or learn about something",
+        "answer": "curious"
+       },
+       {
+        "n": 3,
+        "type": "fill",
+        "q": "[ ______ ] : a movement, sound, or light that gives information or a warning",
+        "answer": "signal"
+       },
+       {
+        "n": 4,
+        "type": "fill",
+        "q": "[ ______ ] : to succeed in doing something after trying hard",
+        "answer": "achieve"
+       },
+       {
+        "n": 5,
+        "type": "fill",
+        "q": "[ ______ ] : to ask someone to come to a party or an event",
+        "answer": "invite"
+       }
+      ],
+      "wordbank": [
+       "achieve",
+       "curious",
+       "invite",
+       "signal",
+       "ingredient"
+      ]
+     },
+     {
+      "part": "[6-8] 문장의 빈칸에 알맞은 단어를 보기에서 찾아 쓰세요. (필요하면 형태를 고치시오.)",
+      "note": "",
+      "questions": [
+       {
+        "n": 6,
+        "type": "fill",
+        "q": "We ( ______ ) the classroom with balloons and paper stars yesterday, so it looks like a party room.",
+        "answer": "decorated"
+       },
+       {
+        "n": 7,
+        "type": "fill",
+        "q": "I bought a small wooden bird as a ( ______ ) of my trip to Jeju Island.",
+        "answer": "souvenir"
+       },
+       {
+        "n": 8,
+        "type": "fill",
+        "q": "You can trust Minho because he is a very ( ______ ) friend who always keeps his promises.",
+        "answer": "reliable"
+       }
+      ],
+      "wordbank": [
+       "harvest",
+       "souvenir",
+       "reliable",
+       "decorate",
+       "ordinary"
+      ]
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 9,
+        "type": "mc",
+        "q": "다음 영영풀이 중 <u>틀린</u> 것을 <u>모두</u> 골라 묶은 것은?\nⓐ improve : to become or to make something better\nⓑ guide : a person who shows tourists the way and gives them information\nⓒ prepare : to make something ready for use\nⓓ rarely : very often or in many cases\nⓔ borrow : to give something to someone for a short time and expect it back\nⓕ explore : to travel around a place in order to learn about it",
+        "choices": {
+         "①": "ⓐ, ⓓ",
+         "②": "ⓓ, ⓔ",
+         "③": "ⓑ, ⓓ, ⓕ",
+         "④": "ⓒ, ⓔ",
+         "⑤": "ⓐ, ⓔ, ⓕ"
+        },
+        "answer": "②"
+       },
+       {
+        "n": 10,
+        "type": "mc",
+        "q": "밑줄 친 단어의 쓰임이 옳지 <u>않은</u> 것은?",
+        "choices": {
+         "①": "The firefighters took quick <u>action</u> to save the building.",
+         "②": "My grandfather is still very <u>active</u> at the age of 80.",
+         "③": "She wants to be a famous <u>actor</u> in the future.",
+         "④": "Reading is a good indoor <u>activity</u> on rainy days.",
+         "⑤": "The students worked <u>active</u> to clean the park."
+        },
+        "answer": "⑤"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "grammar",
+    "title": "Grammar",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "Part 2 (11~40)",
+      "note": "",
+      "questions": [
+       {
+        "n": 11,
+        "type": "mc",
+        "q": "아래에서 밑줄 친 it과 쓰임이 <u>다른</u> 하나는?\nSometimes <u>it</u> is hard to say sorry to your best friend.",
+        "choices": {
+         "①": "<u>It</u> is raining heavily outside, so take an umbrella.",
+         "②": "<u>It</u> is exciting to travel to a new country.",
+         "③": "<u>It</u> is not good to skip breakfast every day.",
+         "④": "Was <u>it</u> easy to find the post office?",
+         "⑤": "<u>It</u> is important to keep your promises."
+        },
+        "answer": "①",
+        "skill": "가주어 it vs 비인칭 주어"
+       },
+       {
+        "n": 12,
+        "type": "mc",
+        "q": "빈칸에 들어갈 말이 순서대로 바르게 짝지어진 것은?\nAnn has two sisters. ⓐ______ is a doctor, and ⓑ______ is a teacher.",
+        "choices": {
+         "①": "Another - one",
+         "②": "One - another",
+         "③": "The other - one",
+         "④": "One - the other",
+         "⑤": "Another - the other"
+        },
+        "answer": "④",
+        "skill": "부정대명사 one / the other"
+       },
+       {
+        "n": 13,
+        "type": "mc",
+        "q": "다음 중 문장의 구조가 [보기]와 <u>다른</u> 것을 고르시오.\n[보기] She <u>wrote</u> a <u>letter</u>. (주어 + 동사 + 목적어)",
+        "choices": {
+         "①": "My uncle drives a taxi.",
+         "②": "We watched a funny movie last night.",
+         "③": "Mina cleaned her room yesterday.",
+         "④": "He often reads comic books after dinner.",
+         "⑤": "The concert starts at seven."
+        },
+        "answer": "⑤",
+        "skill": "문장의 형식"
+       },
+       {
+        "n": 14,
+        "type": "mc",
+        "q": "다음 중 목적어가 <u>두 개</u>인 문장을 고르시오.",
+        "choices": {
+         "①": "The news made us sad.",
+         "②": "Dad told me to wash the dishes.",
+         "③": "My aunt made me a scarf.",
+         "④": "I found the book interesting.",
+         "⑤": "We call the puppy Coco."
+        },
+        "answer": "③",
+        "skill": "4형식(수여동사)"
+       },
+       {
+        "n": 15,
+        "type": "mc",
+        "q": "다음 문장에서 <u>본동사</u>를 고르시오.\nThe girl who sits next to me loves K-pop music.",
+        "choices": {
+         "①": "loves",
+         "②": "The girl",
+         "③": "sits",
+         "④": "next",
+         "⑤": "me"
+        },
+        "answer": "①",
+        "skill": "본동사 찾기"
+       },
+       {
+        "n": 16,
+        "type": "mc",
+        "q": "다음 문장에서 <u>본동사</u>를 고르시오.\nThe cookies baked by my grandmother taste really sweet.",
+        "choices": {
+         "①": "The cookies",
+         "②": "baked",
+         "③": "by",
+         "④": "taste",
+         "⑤": "sweet"
+        },
+        "answer": "④",
+        "skill": "본동사 찾기"
+       },
+       {
+        "n": 17,
+        "type": "mc",
+        "q": "다음 중 빈칸에 들어갈 말이 보기와 <u>다른</u> 것은?\n<보기> My mom made a sandwich ______ me.",
+        "choices": {
+         "①": "He showed his photos ______ us.",
+         "②": "She cooked dinner ______ her family.",
+         "③": "Dad found a nice seat ______ me.",
+         "④": "I bought a gift ______ my teacher.",
+         "⑤": "Can you get some water ______ me?"
+        },
+        "answer": "①",
+        "skill": "4형식 → 3형식 전환 전치사"
+       },
+       {
+        "n": 18,
+        "type": "mc",
+        "q": "전치사가 <u>잘못</u> 사용된 문장을 고르시오.",
+        "choices": {
+         "①": "My brother gave me his old bike. = My brother gave his old bike to me.",
+         "②": "Mom bought me a new bag. = Mom bought a new bag for me.",
+         "③": "She teaches us English. = She teaches English to us.",
+         "④": "I'll lend you my umbrella. = I'll lend my umbrella for you.",
+         "⑤": "He sent her flowers. = He sent flowers to her."
+        },
+        "answer": "④",
+        "skill": "4형식 → 3형식 전환 전치사"
+       },
+       {
+        "n": 19,
+        "type": "mc",
+        "q": "시제의 쓰임이 <u>잘못된</u> 것을 고르시오.",
+        "choices": {
+         "①": "I <u>have lived</u> in Daegu since I was born.",
+         "②": "She <u>has visited</u> Busan three times.",
+         "③": "We <u>have known</u> each other for ten years.",
+         "④": "They <u>went</u> to the zoo last Sunday.",
+         "⑤": "He <u>has finished</u> his homework yesterday."
+        },
+        "answer": "⑤",
+        "skill": "현재완료와 과거"
+       },
+       {
+        "n": 20,
+        "type": "fill",
+        "q": "다음 <보기>에서 알맞은 말을 골라 형태를 바꾸어 문장을 완성하시오.\n<보기> study / fly / carry / watch / play\nMy little brother ______ cartoons every evening.",
+        "answer": "watches",
+        "skill": "3인칭 단수 현재형"
+       },
+       {
+        "n": 21,
+        "type": "mc",
+        "q": "밑줄 친 부분의 쓰임이 <u>다른</u> 하나는?",
+        "choices": {
+         "①": "Are you <u>making</u> dinner now?",
+         "②": "He is <u>waiting</u> for the bus.",
+         "③": "My hobby is <u>taking</u> pictures.",
+         "④": "They were <u>singing</u> on the stage.",
+         "⑤": "It is <u>snowing</u> outside."
+        },
+        "answer": "③",
+        "skill": "진행형 vs 동명사"
+       },
+       {
+        "n": 22,
+        "type": "mc",
+        "q": "다음 중 글의 흐름상 빈칸에 가장 알맞은 표현을 고르시오.\nOur school library looks very different these days. A new reading room ______ next to the main hall, and students can now read in a quiet place.",
+        "choices": {
+         "①": "has built",
+         "②": "has been built",
+         "③": "have built",
+         "④": "have been built",
+         "⑤": "is building"
+        },
+        "answer": "②",
+        "skill": "현재완료 수동태"
+       },
+       {
+        "n": 23,
+        "type": "mc",
+        "q": "다음 두 문장의 뜻이 같도록 빈칸에 알맞은 말을 고르시오.\nThe soup was so hot that I couldn't eat it.\n= The soup was ______ for me to eat.",
+        "choices": {
+         "①": "hot enough",
+         "②": "enough hot",
+         "③": "too hot",
+         "④": "so hot",
+         "⑤": "not hot"
+        },
+        "answer": "③",
+        "skill": "so ~ that ↔ too ~ to"
+       },
+       {
+        "n": 24,
+        "type": "fill",
+        "q": "다음 문장의 괄호 안의 동사를 바른 형태로 바꾸어 쓰시오.\nThe windows ______ (break) by the strong wind last night.",
+        "answer": "were broken",
+        "skill": "과거 수동태"
+       },
+       {
+        "n": 25,
+        "type": "mc",
+        "q": "다음 빈칸에 차례대로 들어갈 말을 바르게 연결한 것은?\n• The boy ______ is playing the guitar on the stage is my cousin.\n• I can't remember ______ she told me yesterday.",
+        "choices": {
+         "①": "which - what",
+         "②": "who - what",
+         "③": "what - who",
+         "④": "whose - that",
+         "⑤": "who - which"
+        },
+        "answer": "②",
+        "skill": "관계대명사 who / what"
+       },
+       {
+        "n": 26,
+        "type": "mc",
+        "q": "<u>that</u>의 쓰임이 나머지와 <u>다른</u> 것은?",
+        "choices": {
+         "①": "Everyone knows <u>that</u> the earth is round.",
+         "②": "This is the bag <u>that</u> I lost last week.",
+         "③": "The girl <u>that</u> is wearing a red coat is my sister.",
+         "④": "I have a friend <u>that</u> lives in Canada.",
+         "⑤": "He is the singer <u>that</u> all teenagers love."
+        },
+        "answer": "①",
+        "skill": "접속사 that vs 관계대명사 that"
+       },
+       {
+        "n": 27,
+        "type": "fill",
+        "q": "주어진 말을 이용하여 우리말과 뜻이 같도록 문장을 완성하시오.\n선생님은 우리가 교실을 청소하게 하셨다. (make, clean)\nOur teacher ______ the classroom.",
+        "answer": "made us clean",
+        "skill": "사역동사 make"
+       },
+       {
+        "n": 28,
+        "type": "mc",
+        "q": "빈칸에 알맞은 말을 고르시오.\nCan I ask a question ______ you?",
+        "choices": {
+         "①": "at",
+         "②": "on",
+         "③": "with",
+         "④": "of",
+         "⑤": "in"
+        },
+        "answer": "④",
+        "skill": "ask A of B"
+       },
+       {
+        "n": 29,
+        "type": "mc",
+        "q": "다음 밑줄 친 부분의 쓰임이 나머지와 <u>다른</u> 것을 고르시오.",
+        "choices": {
+         "①": "The news <u>made</u> me sad.",
+         "②": "His joke <u>made</u> everyone laugh.",
+         "③": "The coach <u>made</u> the players run.",
+         "④": "The song <u>made</u> her famous.",
+         "⑤": "Dad <u>made</u> a wooden table for us."
+        },
+        "answer": "⑤",
+        "skill": "make의 문장 형식"
+       },
+       {
+        "n": 30,
+        "type": "mc",
+        "q": "다음 빈칸에 들어갈 알맞은 말을 고르시오.\n______ surprised me most was his kindness.",
+        "choices": {
+         "①": "That",
+         "②": "Who",
+         "③": "What",
+         "④": "Which",
+         "⑤": "It"
+        },
+        "answer": "③",
+        "skill": "관계대명사 what"
+       },
+       {
+        "n": 31,
+        "type": "mc",
+        "q": "빈칸에 알맞은 말을 고르시오.\nThe longer I waited, the ______ I felt.",
+        "choices": {
+         "①": "angry",
+         "②": "angrier",
+         "③": "angriest",
+         "④": "more angrily",
+         "⑤": "most angry"
+        },
+        "answer": "②",
+        "skill": "the 비교급, the 비교급"
+       },
+       {
+        "n": 32,
+        "type": "mc",
+        "q": "다음 밑줄 친 부분과 쓰임이 <u>같은</u> 것을 고르시오.\nI was very happy <u>to receive</u> a gift from my friend.",
+        "choices": {
+         "①": "He studied hard to pass the test.",
+         "②": "She grew up to become a pilot.",
+         "③": "We were glad to meet him again.",
+         "④": "This river is dangerous to swim in.",
+         "⑤": "He must be brave to say so."
+        },
+        "answer": "③",
+        "skill": "to부정사의 부사적 용법(감정의 원인)"
+       },
+       {
+        "n": 33,
+        "type": "mc",
+        "q": "빈칸에 들어갈 말로 알맞은 것을 고르시오.\nHe wore a thick coat ______ a cold.",
+        "choices": {
+         "①": "in order not catch",
+         "②": "so as not to catch",
+         "③": "in order to not catching",
+         "④": "so as catch not",
+         "⑤": "in order not catching"
+        },
+        "answer": "②",
+        "skill": "to부정사의 부정"
+       },
+       {
+        "n": 34,
+        "type": "mc",
+        "q": "다음 빈칸에 들어갈 수 있는 말을 고르시오.\nIt is not easy ______ me to speak in front of many people.",
+        "choices": {
+         "①": "for",
+         "②": "to",
+         "③": "of",
+         "④": "about",
+         "⑤": "with"
+        },
+        "answer": "①",
+        "skill": "to부정사의 의미상 주어"
+       },
+       {
+        "n": 35,
+        "type": "mc",
+        "q": "빈칸에 들어갈 알맞은 말을 고르시오.\nMy parents told me ______ late for the school bus.",
+        "choices": {
+         "①": "don't be",
+         "②": "to be not",
+         "③": "not to be",
+         "④": "not be",
+         "⑤": "not being"
+        },
+        "answer": "③",
+        "skill": "to부정사의 부정"
+       },
+       {
+        "n": 36,
+        "type": "fill",
+        "q": "다음 밑줄 친 부분을 분사구문으로 바꿔 쓰세요.\n<u>As she opened the door</u>, she saw a cat.\n→ ______, she saw a cat.",
+        "answer": "Opening the door",
+        "skill": "분사구문"
+       },
+       {
+        "n": 37,
+        "type": "mc",
+        "q": "다음 우리말을 영어로 바르게 옮긴 것을 고르시오.\n그 문은 이 열쇠로 열릴 수 있다.",
+        "choices": {
+         "①": "The door can opened by this key.",
+         "②": "The door is opened by this key.",
+         "③": "The door can open by this key.",
+         "④": "The door can be opened by this key.",
+         "⑤": "The door was opened by this key."
+        },
+        "answer": "④",
+        "skill": "조동사 수동태"
+       },
+       {
+        "n": 38,
+        "type": "mc",
+        "q": "다음 밑줄 친 부분 중 <u>생략할 수 있는</u> 것은?",
+        "choices": {
+         "①": "I know a girl <u>whose</u> father is a chef.",
+         "②": "She has a dog <u>that</u> barks all night.",
+         "③": "The man <u>who</u> lives next door is a pilot.",
+         "④": "The boy <u>who</u> is sitting on the bench is my brother.",
+         "⑤": "This is the movie <u>that</u> I told you about."
+        },
+        "answer": "⑤",
+        "skill": "관계대명사의 생략"
+       },
+       {
+        "n": 39,
+        "type": "mc",
+        "q": "(A), (B), (C) 각 네모 안에서 어법에 맞는 어휘를 골라 알맞게 짝지은 것은?\nMy grandparents live in a small village near the sea. They (A) [lived / have lived] there for more than forty years. (B) [That / What] I like most about the village is its quiet streets. The old house where they live (C) [built / was built] by my grandfather himself. Every summer, I visit them and help in the garden.",
+        "choices": {
+         "①": "lived – What – built",
+         "②": "lived – That – was built",
+         "③": "have lived – That – built",
+         "④": "have lived – What – was built",
+         "⑤": "have lived – That – was built"
+        },
+        "answer": "④",
+        "skill": "현재완료 / what / 수동태"
+       },
+       {
+        "n": 40,
+        "type": "mc",
+        "q": "다음 글의 밑줄 친 부분 중, 어법상 <u>틀린</u> 것은?\nHoney is <u>① one of the oldest food</u> in the world. Bees <u>② make</u> it from the nectar of flowers. In the past, it <u>③ was used</u> not only as food but also as medicine. Today, it <u>④ is added</u> to many kinds of drinks and desserts. Some people believe that it helps them sleep better. However, babies under one year old <u>⑤ should not eat</u> it.",
+        "choices": {
+         "①": "",
+         "②": "",
+         "③": "",
+         "④": "",
+         "⑤": ""
+        },
+        "answer": "①",
+        "skill": "one of the + 복수명사"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "reading",
+    "title": "Reading",
+    "instruction": "",
+    "groups": [
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 41,
+        "type": "mc",
+        "q": "다음 글의 내용과 일치하지 <u>않는</u> 것은?",
+        "choices": {
+         "①": "The first modern Olympic Games were held in Greece.",
+         "②": "Today, only a few European countries take part in the Olympics.",
+         "③": "Women first took part in the Games in Paris.",
+         "④": "Only male athletes competed in the first Games.",
+         "⑤": "The fifth Olympic Games were held in 1912."
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "The modern Olympic Games are held every four years. The first modern Olympics took place in Athens, Greece, in 1896. About 240 athletes from 14 nations took part in the event, and all of them were men. The Games were a great success, and the Greek people were proud of them. Four years later, the second Games were held in Paris, and women took part for the first time. Since then, more and more countries have joined the Olympics. Today, thousands of athletes from over 200 countries come together to compete. The Olympic Games will continue to bring people from different countries together."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 42,
+        "type": "mc",
+        "q": "다음 글의 내용과 일치하는 것은?",
+        "choices": {
+         "①": "Only new goods are sold at a flea market.",
+         "②": "All the sellers are professional shop owners.",
+         "③": "Buyers can talk with sellers about the price.",
+         "④": "Everyone must buy something at a flea market.",
+         "⑤": "A flea market is bad for the environment."
+        },
+        "answer": "③"
+       }
+      ],
+      "passage": "Have you ever been to a flea market? A flea market is a place where people sell used goods at low prices. Many people bring old books, toys, and clothes from home. Some of the sellers are students, and some are grandparents. Buyers walk around and talk with the sellers about the price. Some buy things they need, and some just enjoy looking around. A flea market is also good for the environment because things are used again."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 43,
+        "type": "mc",
+        "q": "Why was the writer pleased with the class trip?",
+        "choices": {
+         "①": "Because it was a sunny day.",
+         "②": "Because they went to the beach by bus.",
+         "③": "Because they took many pictures.",
+         "④": "Because the teacher gave them a prize.",
+         "⑤": "Because the class made the beach clean."
+        },
+        "answer": "⑤"
+       }
+      ],
+      "passage": "Last Saturday, my class went to the beach by bus. It was a sunny day. Our teacher gave each of us a bag and gloves. We picked up cans, bottles, and plastic bags for three hours. Everyone worked hard, and no one complained. In the end, the beach looked clean and beautiful. I was very pleased with our class. I hope we can do this again next month."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 44,
+        "type": "mc",
+        "q": "다음 글의 목적으로 가장 적절한 것은?",
+        "choices": {
+         "①": "주차장 이용 방법을 안내하려고",
+         "②": "학교 행사에 참석하도록 초대하려고",
+         "③": "과학 수업 준비물을 알려 주려고",
+         "④": "학부모 상담 일정을 변경하려고",
+         "⑤": "체육관 대여를 신청하려고"
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "Dear Parents,\nOur school will hold a Science Fair next Friday. The students have prepared their experiments for many weeks, and they would love to show them to you. The fair will start at 10 a.m. in the school gym. Parking space is limited, so please use public transportation if possible. We hope you can join us and enjoy your children's projects.\nSincerely,\nKim Minjung, Principal"
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 45,
+        "type": "mc",
+        "q": "다음 글의 요지로 가장 적절한 것은?",
+        "choices": {
+         "①": "새로운 일에 도전하기 전에 충분히 준비해야 한다.",
+         "②": "다른 사람의 조언을 듣는 것이 실수를 줄이는 방법이다.",
+         "③": "위인들의 업적에서 삶의 지혜를 얻을 수 있다.",
+         "④": "실수를 두려워하지 말고 그로부터 배워야 한다.",
+         "⑤": "목표를 이루려면 재능이 노력보다 중요하다."
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "Many people are afraid of making mistakes. They think that a mistake means they are not smart or not good enough. As a result, they avoid new challenges and stay in their comfort zone. However, mistakes are a natural part of learning. When you make a mistake, you can find out what went wrong and try a different way. Thomas Edison is said to have tried thousands of materials before he made a working light bulb. He did not see these attempts as failures; he saw them as steps toward the answer. If you never make a mistake, it may mean that you never try anything new. So the next time you make a mistake, don't be upset. Learn from it and move on."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 46,
+        "type": "mc",
+        "q": "다음 글의 제목으로 가장 적절한 것을 고르시오.",
+        "choices": {
+         "①": "Why Students Hate Exams",
+         "②": "How to Study All Night Long",
+         "③": "Sleep: A Secret Helper for Your Memory",
+         "④": "The Best Foods for a Healthy Brain",
+         "⑤": "Early Birds Always Get Higher Scores"
+        },
+        "answer": "③"
+       }
+      ],
+      "passage": "Many students stay up late to study, but a new study shows that this may not be a good idea. Researchers found that students who slept at least eight hours remembered more information than those who slept only five hours. While we sleep, our brain sorts out what we learned during the day and stores it as long-term memory. Without enough sleep, this process does not work well. For example, students who studied until midnight scored lower on the next day's test than those who studied less but went to bed early. This finding suggests that good sleep is as important as studying itself."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 47,
+        "type": "mc",
+        "q": "다음 글에서 전체 흐름과 관계 <u>없는</u> 문장은?",
+        "choices": {
+         "①": "",
+         "②": "",
+         "③": "",
+         "④": "",
+         "⑤": ""
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "Reading every day gives you many benefits. ① First, it helps you learn new words naturally. ② You can also improve your concentration because you have to focus on the story. ③ In addition, reading about other people's lives helps you understand their feelings. ④ Watching videos on your phone before bed can make it hard to fall asleep. ⑤ These benefits make reading one of the best habits you can have."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 48,
+        "type": "mc",
+        "q": "다음 도표의 내용과 일치하지 <u>않는</u> 것은?",
+        "choices": {
+         "①": "",
+         "②": "",
+         "③": "",
+         "④": "",
+         "⑤": ""
+        },
+        "answer": "③"
+       }
+      ],
+      "passage": "The above graph shows the percentage of middle school students in a city who chose reading, sports, watching videos, or playing games as their favorite free-time activity in the years 2000, 2010, and 2020. ① The percentage of students who liked watching videos grew steadily, rising from 20% in 2000 to 38% in 2020. ② Similarly, the percentage of students who chose games doubled from 15% in 2000 to 30% in 2020. ③ However, the percentage of students who liked sports fell below 20% in 2020. ④ Reading was the most popular activity in 2000, but it dropped to 10% in 2020. ⑤ In 2010, sports was the most popular activity among the four.",
+      "image": "c_graph"
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 49,
+        "type": "mc",
+        "q": "밑줄 친 he가 가리키는 대상이 나머지 넷과 <u>다른</u> 것은?",
+        "choices": {
+         "①": "",
+         "②": "",
+         "③": "",
+         "④": "",
+         "⑤": ""
+        },
+        "answer": "④"
+       }
+      ],
+      "passage": "Daniel had practiced the violin for months for the school concert, but the day before the show, <u>①he</u> lost his confidence and told his teacher, Mr. Park, that he wanted to quit. Mr. Park did not try to stop him. Instead, he asked Daniel to play just one song. While Daniel was playing, <u>②he</u> noticed that his hands were no longer shaking. When the music stopped, Mr. Park smiled and nodded. Daniel asked him if <u>③he</u> could really perform on stage, and Mr. Park answered that <u>④he</u> had once felt the same fear before his first performance. He added that the fear never fully disappears, but a musician learns to play in spite of it. Daniel felt a little braver. On the day of the concert, Mr. Park waited behind the stage, hoping that <u>⑤he</u> would remember the song he had practiced."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 50,
+        "type": "mc",
+        "q": "밑줄 친 <u>you leave your memory job to the camera</u>가 다음 글에서 의미하는 바로 가장 적절한 것은?",
+        "choices": {
+         "①": "you take photos and share them with many people",
+         "②": "you delete photos because they take up too much space",
+         "③": "you forget to bring the camera to a special event",
+         "④": "you look at old photos and feel sad about the past",
+         "⑤": "you depend on the camera instead of using your own brain to remember"
+        },
+        "answer": "⑤"
+       }
+      ],
+      "passage": "Have you ever taken a lot of photos to remember a special moment? Surprisingly, taking photos can make it harder to remember the moment. This kind of experience is called the photo-taking impairment effect, and it happens when <u>you leave your memory job to the camera</u>. When you take a picture, your brain thinks, 'The camera will remember this for me,' so it stops paying close attention to the details. As a result, you may end up with a full photo album but only a few clear memories. On the other hand, when you simply watch and enjoy the moment, your brain works harder to record it."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 51,
+        "type": "mc",
+        "q": "다음 글에 드러난 'I'의 심경으로 가장 적절한 것은?",
+        "choices": {
+         "①": "envious",
+         "②": "proud",
+         "③": "embarrassed",
+         "④": "bored",
+         "⑤": "grateful"
+        },
+        "answer": "③"
+       }
+      ],
+      "passage": "I ran into the classroom just before the bell rang. As soon as I opened the door, my classmates turned their heads and started to giggle. I didn't understand why, until Jisu pointed at my feet. I looked down and saw that I was wearing one white sneaker and one black boot. My face turned bright red. I tried to hide my feet behind my backpack, but it was too late. Even the teacher was trying hard not to laugh. I wanted to disappear into the floor right away."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 52,
+        "type": "mc",
+        "q": "주어진 글 다음에 이어질 글의 순서로 가장 적절한 것은?",
+        "choices": {
+         "①": "(A) – (C) – (B)",
+         "②": "(B) – (A) – (C)",
+         "③": "(B) – (C) – (A)",
+         "④": "(C) – (A) – (B)",
+         "⑤": "(C) – (B) – (A)"
+        },
+        "answer": "①"
+       }
+      ],
+      "passage": "Bubble wrap is a common material used to protect fragile items during shipping. People also enjoy popping the bubbles to relieve stress. But did you know that it was originally invented as wallpaper?\n\n(A) In 1957, two engineers sealed two plastic shower curtains together, trapping air bubbles between them. They hoped to sell the textured material as a new kind of wallpaper.\n\n(B) Their luck changed in 1960, when a large computer company began using it to protect its machines during delivery. Since then, it has been used all over the world.\n\n(C) Unfortunately, hardly anyone wanted plastic bubbles on their walls, so the product did not sell well. The inventors had to find a new use for it."
+     },
+     {
+      "part": "",
+      "note": "",
+      "questions": [
+       {
+        "n": 53,
+        "type": "mc",
+        "q": "다음 글의 내용을 한 문장으로 요약하고자 한다. 빈칸 (A), (B)에 들어갈 말로 가장 적절한 것은?\n\nAlthough libraries were once (A) ______ places only for reading books, they have now become (B) ______ centers where people learn and enjoy many activities.",
+        "choices": {
+         "①": "crowded …… lonely",
+         "②": "quiet …… lively",
+         "③": "noisy …… silent",
+         "④": "modern …… old",
+         "⑤": "expensive …… free"
+        },
+        "answer": "②"
+       }
+      ],
+      "passage": "Public libraries have changed a lot over time. In the past, a library was a place where people came to borrow books and read in silence. Visitors had to follow strict rules, and talking was usually not allowed. Today, however, many libraries offer much more than books. They hold concerts, run coding classes for children, and even lend tools such as cameras and board games. Some libraries have cafés and playrooms where families can spend time together. As a result, libraries are no longer just places for reading alone; they have become lively community centers where people meet, learn, and share ideas."
+     },
+     {
+      "part": "[54-55] 다음 글을 읽고 물음에 답하시오.",
+      "note": "",
+      "questions": [
+       {
+        "n": 54,
+        "type": "mc",
+        "q": "윗글에서 필자가 걱정하는 것으로 가장 적절한 것은?",
+        "choices": {
+         "①": "학생들이 공부 시간을 너무 길게 잡는 것",
+         "②": "학생들이 도서관에서만 공부하려는 것",
+         "③": "학생들이 과제를 자꾸 미루는 것",
+         "④": "학생들이 친구와 연락하는 시간이 줄어드는 것",
+         "⑤": "학생들이 여러 일을 동시에 하면 시간이 절약된다고 믿는 것"
+        },
+        "answer": "⑤"
+       },
+       {
+        "n": 55,
+        "type": "mc",
+        "q": "윗글에서 전체 흐름과 관계 <u>없는</u> 문장은?",
+        "choices": {
+         "①": "ⓐ",
+         "②": "ⓑ",
+         "③": "ⓒ",
+         "④": "ⓓ",
+         "⑤": "ⓔ"
+        },
+        "answer": "③"
+       }
+      ],
+      "passage": "Many people believe they can do two things at once. They watch TV while doing homework, or they text friends while listening to a lecture. ⓐ However, studies show that our brain cannot really focus on two tasks at the same time. ⓑ Instead, it quickly switches back and forth between them. ⓒ Some people prefer studying in a library rather than at home. ⓓ Each switch takes a little time and energy, so the work takes longer and more mistakes appear. ⓔ This is why doing one thing at a time is often faster and better. I'm worried that many students still believe multitasking saves their time. In fact, it may be slowing them down."
+     }
+    ]
+   }
+  ]
+ }
+}
