@@ -232,8 +232,18 @@ def clean_answers(spec: dict, raw: dict) -> dict:
 
 # ---------------------------------------------------------------- 채점
 
+_CONTRACT = [("can't", "cannot"), ("won't", "will not"), ("shan't", "shall not"), ("n't", " not"), ("cannot", "can not"),
+             ("i'm", "i am"), ("it's", "it is"), ("that's", "that is"), ("'re", " are"), ("'ve", " have"), ("'ll", " will")]
+
+
 def _norm(s) -> str:
-    return re.sub(r"\s+", " ", str(s or "").strip().lower()).replace("’", "'").rstrip(".")
+    """대소문자·띄어쓰기·끝 마침표·따옴표 모양·줄임말(doesn't = does not)·화살표 모양은 따지지 않음."""
+    t = str(s or "").strip().lower().replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+    t = re.sub(r"\s*(?:->|=>|→|⇒)\s*", " → ", t)
+    for a, b in _CONTRACT:
+        t = t.replace(a, b)
+    t = re.sub(r"\s+", " ", t).strip()
+    return t.rstrip(".!? ").strip()
 
 
 def is_correct(q: dict, given: str | None) -> bool:

@@ -113,6 +113,91 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     return _go(f"/leveltest/{t.id}")
 
 
+MAX_ZIP = 120 * 1024 * 1024
+
+
+@router.post("/leveltest/import")
+async def import_zip(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """시험지 꾸러미(zip) 올리기: 폴더마다 test.json + 듣기 파일(audio.*) + images/그림.png
+    같은 이름의 시험지가 있으면 문항·듣기·그림을 새것으로 바꾸고(응시 결과는 그대로), 없으면 새로 만듦."""
+    import io
+    import zipfile
+
+    f = await request.form()
+    u = f.get("pack")
+    if not getattr(u, "filename", ""):
+        flash(request, "꾸러미(zip) 파일을 골라 주세요.", "error")
+        return _go("/leveltest")
+    data = await u.read()
+    if len(data) > MAX_ZIP:
+        flash(request, f"파일이 너무 커요 ({len(data) // (1024 * 1024)}MB).", "error")
+        return _go("/leveltest")
+    try:
+        z = zipfile.ZipFile(io.BytesIO(data))
+    except zipfile.BadZipFile:
+        flash(request, "zip 파일이 아니에요.", "error")
+        return _go("/leveltest")
+    names = [n for n in z.namelist() if not n.endswith("/") and "__MACOSX" not in n]
+    roots = sorted({n.rsplit("test.json", 1)[0] for n in names if n.endswith("test.json")})
+    if not roots:
+        flash(request, "꾸러미 안에 test.json 이 없어요.", "error")
+        return _go("/leveltest")
+    done, problems = [], []
+    existing = {t.title: t for t in _tests(db, teacher.academy_id, active_only=False)}
+    for root in roots:
+        try:
+            meta = json.loads(z.read(root + "test.json").decode("utf-8-sig"))
+            spec, errs = lspec.check(meta.get("spec") or {})
+        except (ValueError, KeyError) as e:
+            problems.append(f"{root or 'test.json'}: 읽을 수 없어요 ({e})")
+            continue
+        title = str(meta.get("title") or root.strip("/") or "레벨테스트")[:80]
+        if errs:
+            problems.append(f"{title}: " + " / ".join(errs[:3]))
+            continue
+        spec.pop("minutes", None)
+        t = existing.get(title)
+        if t is None:
+            t = LevelTest(academy_id=teacher.academy_id, title=title, images={}, spec={})
+            db.add(t)
+        t.sub = str(meta.get("sub") or "")[:120]
+        t.sort = int(meta.get("sort") or t.sort or 0)
+        t.minutes = int(meta.get("minutes") or 0)
+        t.show_result = bool(meta.get("show_result", True))
+        t.active = bool(meta.get("active", False))
+        t.spec = spec
+        db.flush()
+        old_ids = [x for x in [t.audio_file_id, *(t.images or {}).values()] if x]
+        t.audio_file_id, images = None, {}
+        for n in names:
+            if not n.startswith(root) or n == root + "test.json":
+                continue
+            rel = n[len(root):]
+            base, _, ext = rel.rpartition(".")
+            ext = "." + ext.lower()
+            if rel.startswith("images/") and ext in IMAGE_TYPES:
+                sf = StoredFile(academy_id=t.academy_id, filename=rel[7:][:200], mime=IMAGE_TYPES[ext], data=z.read(n))
+                db.add(sf)
+                db.flush()
+                images[base[7:]] = sf.id
+            elif "/" not in rel and ext in AUDIO_TYPES:
+                sf = StoredFile(academy_id=t.academy_id, filename=rel[:200], mime=AUDIO_TYPES[ext], data=z.read(n))
+                db.add(sf)
+                db.flush()
+                t.audio_file_id = sf.id
+        t.images = images
+        if old_ids:
+            db.execute(delete(StoredFile).where(StoredFile.id.in_(old_ids)))
+        missing = lspec.image_keys(spec) - set(images)
+        done.append(f"{title} {_n_items(t)}문항" + (" · 듣기" if t.audio_file_id else "") + (f" (그림 없음: {', '.join(sorted(missing))})" if missing else ""))
+    db.commit()
+    if done:
+        flash(request, "올렸어요: " + ", ".join(done))
+    if problems:
+        flash(request, "못 올린 것: " + " | ".join(problems), "error")
+    return _go("/leveltest")
+
+
 @router.get("/leveltest/{tid}")
 def edit(tid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     t = _own(db, tid, teacher)

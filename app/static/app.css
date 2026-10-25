@@ -588,3 +588,7 @@ details.eq { border-top: 2px dashed var(--line-2); }
 }
 .q-choices.lt-pics .q-choice span { text-align: center; }
 .q-choices.lt-pics .q-choice span i { display: block; text-align: left; }
+.q-choices.lt-sym { flex-direction: row; gap: 6px; }
+.q-choices.lt-sym .q-choice { flex: 1; }
+.q-choices.lt-sym .q-choice span { text-align: center; padding: 10px 0; font-size: 1.15rem; }
+.lt-q .q-passage { margin-top: 4px; }

@@ -26,15 +26,18 @@
   {% for g in sec.groups %}
     {% if g.part or g.note %}<p class="lt-part"><b>{{ g.part }}</b>{% if g.note %} <span>{{ g.note|u }}</span>{% endif %}</p>{% endif %}
     {{ img(g.image) }}
-    {% if g.passage %}<div class="q-passage">{{ g.passage|u }}</div>{% endif %}
+    {% set solo = g.questions|length == 1 %}
+    {% if g.passage and not solo %}<div class="q-passage">{{ g.passage|u }}</div>{% endif %}
     {% if g.wordbank %}<div class="lt-bank">{% for w in g.wordbank %}<span>{{ w }}</span>{% endfor %}</div>{% endif %}
     {% for q in g.questions %}{% set key = sec.id ~ "_" ~ q.n %}{% set v = answers.get(key, "") %}
     <div class="q-card lt-q" data-key="{{ key }}" data-type="{{ q.type }}" id="q-{{ key }}">
       <p class="q-head"><b class="q-num">{{ q.n }}.</b> {{ (q.q or q.prompt or "")|u }}</p>
       {{ img(q.image) }}
+      {% if solo and g.passage %}<div class="q-passage">{{ g.passage|u }}</div>{% endif %}
       {% if q.type in ("mc", "mc_multi") %}
         {% if q.type == "mc_multi" %}<p class="small muted" style="margin:-4px 0 8px">알맞은 것을 모두 고르세요.</p>{% endif %}
-        <div class="q-choices {{ 'lt-pics' if q.choiceImages }}">
+        {% set sym = not q.choiceImages and (q.choices.values()|select|list|length == 0) %}
+        <div class="q-choices {{ 'lt-pics' if q.choiceImages }} {{ 'lt-sym' if sym }}">
         {% for letter, text in q.choices.items() %}
           <label class="q-choice"><input type="{{ 'checkbox' if q.type == 'mc_multi' else 'radio' }}" name="{{ key }}" value="{{ letter }}"
                  {% if letter in v.split(",") %}checked{% endif %}>

@@ -32,6 +32,13 @@
   {% else %}
   <p class="small muted" style="margin:0">아직 시험지가 없어요. <b>새 시험지</b>를 눌러 학년별 시험지를 만들어 주세요 (예: 초등 저학년, 중등 Type A).</p>
   {% endif %}
+  <details style="margin-top:12px"><summary class="small"><b>시험지 꾸러미(zip) 한 번에 올리기</b> — 문항·듣기·그림이 다 들어 있는 파일</summary>
+    <form method="post" action="/leveltest/import" enctype="multipart/form-data" class="actions" style="margin-top:8px">
+      <input type="file" name="pack" accept=".zip" aria-label="꾸러미 파일" required>
+      <button class="btn small" type="submit">올리기</button>
+    </form>
+    <p class="small muted" style="margin:6px 0 0">이름이 같은 시험지는 문항·듣기·그림만 새것으로 바뀌고, 이미 본 학생 결과는 그대로 남아요.</p>
+  </details>
 </section>
 
 <section class="panel" id="results">
