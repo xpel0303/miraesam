@@ -50,7 +50,6 @@
 <body>
   <div class="pdf-header">
     {% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% else %}<img src="static/logo-word.png" alt="미래샘 영어연구소">{% endif %}
-    {% if academy and academy.logo %}<span>{{ academy.name }}</span>{% endif %}
     <span class="doc">{{ doc_title or "" }}</span>
   </div>
   {% block body %}{% endblock %}

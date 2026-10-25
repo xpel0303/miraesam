@@ -118,6 +118,7 @@ def detail(sid: int, request: Request, teacher: Teacher = Depends(current_teache
             "all_done": all(p.get("status") == "done" for p in s.passages),
             "point_types": spec.POINT_TYPES, "layouts": LAYOUTS, "icons": spec.ICONS,
             "opts": {**spec.DEFAULT_OPTIONS, **(s.options or {})},
+            "legacy": any("points" not in r for p in s.passages for r in (p.get("sentences") or [])),
             "active": "analysis",
         },
     )
@@ -225,6 +226,26 @@ def regenerate(sid: int, idx: int, request: Request, teacher: Teacher = Depends(
     s.passages = passages
     flag_modified(s, "passages")
     _start(db, s, teacher, "analysis_build", {"only": [idx]}, f"지문 {idx + 1} 다시 분석 · {s.title}")
+    return _go(f"/analysis/{sid}")
+
+
+@router.post("/{sid}/regenerate")
+def regenerate_all(sid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """모든 지문을 새로 분석 (예전 양식으로 만든 자료를 지금 양식으로 바꿀 때)."""
+    s = _own(db, sid, teacher)
+    if _busy(db, s):
+        flash(request, "이미 만드는 중이에요.", "error")
+        return _go(f"/analysis/{sid}")
+    if not teacher.gemini_key_enc:
+        flash(request, "Gemini API 키가 없습니다. 설정에서 키를 먼저 넣어 주세요.", "error")
+        return _go(f"/analysis/{sid}")
+    passages = copy.deepcopy(s.passages)
+    for p in passages:
+        p["status"] = "waiting"
+    s.passages = passages
+    flag_modified(s, "passages")
+    _start(db, s, teacher, "analysis_build", {}, f"지문 분석 모두 다시 · {s.title}")
+    flash(request, f"지문 {len(passages)}개를 새 양식으로 다시 분석하고 있어요. 끝나면 PDF가 새로 만들어져요.")
     return _go(f"/analysis/{sid}")
 
 
