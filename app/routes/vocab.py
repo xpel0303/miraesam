@@ -7,6 +7,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
+from ..library.store import remember_form
 from ..docx_builders import vocab_list_docx, vocab_test_docx
 from ..jobs import enqueue
 from ..models import Academy, ClassGroup, Job, QuizResult, Student, Teacher, WordList, WordListClass
@@ -87,6 +88,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         job = enqueue(db, academy_id=wl.academy_id, teacher_id=teacher.id, kind="vocab_build", title=f"단어장 · {title}", payload={"list_id": wl.id, "count": count})
         wl.last_job_id = job.id
         db.commit()
+    if f.get("kind") != "list":
+        remember_form(db, teacher, f)  # 지문 보관함에 저장
     return _go(f"/vocab/{wl.id}")
 
 

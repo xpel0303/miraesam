@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ p.title }} · 지문 보관함 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/library">지문 보관함</a></p>
+<h1>{{ p.title }}</h1>
+<form method="post" action="/library/{{ p.id }}" class="panel">
+  <div class="row" style="grid-template-columns: 2fr 1fr 1fr">
+    <div class="field"><label for="e-title">제목</label><input id="e-title" type="text" name="title" value="{{ p.title }}"></div>
+    <div class="field"><label for="e-group">분류</label><input id="e-group" type="text" name="group" value="{{ p.group }}" list="group-list" placeholder="예: 고2 2학기 중간"></div>
+    <div class="field"><label for="e-source">출처</label><input id="e-source" type="text" name="source" value="{{ p.source }}"></div>
+  </div>
+  <datalist id="group-list">{% for g in groups %}<option value="{{ g }}">{% endfor %}</datalist>
+  <div class="field"><label for="e-text">영어 지문</label><textarea id="e-text" name="text" rows="14">{{ p.text }}</textarea></div>
+  <p class="small muted">{{ p.text.split()|length }}단어 · 처음 저장 {{ p.created_at|kst("%Y-%m-%d") }}{% if p.used %} · 자료 {{ p.used }}번에 씀{% endif %}</p>
+  <div class="actions"><button class="btn" type="submit">저장</button></div>
+</form>
+<form method="post" action="/library/{{ p.id }}/delete" onsubmit="return confirm('이 지문을 보관함에서 지울까요? 이미 만든 자료는 그대로예요.')"><button class="btn danger small" type="submit">보관함에서 지우기</button></form>
+{% endblock %}

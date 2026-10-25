@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
 from ..db import get_db
+from ..library.store import remember_form
 from ..docx_builders import sentence_docx
 from ..handlers.sentence import sections_for
 from ..jobs import enqueue
@@ -92,6 +93,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     db.add(s)
     db.commit()
     _start(db, s, teacher, "sentence_build", f"문장 시험지 · {title}")
+    remember_form(db, teacher, f)  # 지문 보관함에 저장
     return _go(f"/sentence/{s.id}")
 
 

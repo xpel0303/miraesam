@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..analysis.spec import split_sentences
 from ..db import get_db
+from ..library.store import remember_form
 from ..docx_builders import variant_docx
 from ..grammar.spec import CIRCLED, place_marks
 from ..jobs import enqueue
@@ -86,6 +87,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     db.add(vs)
     db.commit()
     _start(db, vs, teacher, "variant_build", f"변형문제 · {title}")
+    remember_form(db, teacher, f)  # 지문 보관함에 저장
     return _go(f"/variant/{vs.id}")
 
 

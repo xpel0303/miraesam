@@ -10,6 +10,7 @@ from ..comprehension.spec import make_given
 from ..docx_builders import grammar_docx
 from ..models import Academy
 from ..db import get_db
+from ..library.store import remember_form
 from ..grammar import spec
 from ..jobs import enqueue
 from ..models import GrammarSet, Job, StoredFile, Teacher
@@ -85,6 +86,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     db.add(gs)
     db.commit()
     _start(db, gs, teacher, "grammar_build", f"어법 문제 · {title}")
+    remember_form(db, teacher, f)  # 지문 보관함에 저장
     return _go(f"/grammar/{gs.id}")
 
 

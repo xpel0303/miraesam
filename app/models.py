@@ -531,3 +531,24 @@ class LevelResult(Base):
 
     test: Mapped["LevelTest"] = relationship()
     student: Mapped["Student | None"] = relationship()
+
+
+class Passage(Base):
+    """지문 보관함: 선생님이 한 번 넣은 지문을 저장해 두고 다른 자료를 만들 때 불러 씀.
+
+    자료를 만들 때 넣은 지문은 자동으로 저장(같은 글이면 하나만). group: '고2 2학기 중간' 같은 분류.
+    """
+
+    __tablename__ = "passages"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(160), default="")
+    text: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(120), default="")  # 출처: 교과서 3과, 2024 고2 3월 모의고사 20번 …
+    group: Mapped[str] = mapped_column(String(80), default="", index=True)  # 분류
+    text_hash: Mapped[str] = mapped_column(String(40), index=True)
+    used: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)

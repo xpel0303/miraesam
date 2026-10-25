@@ -10,6 +10,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from ..comprehension import spec
 from ..db import get_db
+from ..library.store import remember_form
 from ..docx_builders import comprehension_docx
 from ..jobs import enqueue
 from ..models import Academy, Job, StoredFile, Teacher, Workbook
@@ -124,6 +125,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     db.add(wb)
     db.commit()
     _start(db, wb, teacher, "comprehension_build", {}, f"내용이해 워크북 · {title}")
+    remember_form(db, teacher, f)  # 지문 보관함에 저장
     return _go(f"/comprehension/{wb.id}")
 
 

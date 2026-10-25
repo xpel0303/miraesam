@@ -9,6 +9,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from ..analysis import spec
 from ..db import get_db
+from ..library.store import remember_form
 from ..jobs import enqueue
 from ..models import AnalysisSet, Job, StoredFile, Teacher
 from ..web import current_teacher, flash, render
@@ -102,6 +103,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     db.add(s)
     db.commit()
     _start(db, s, teacher, "analysis_build", {}, f"지문 분석 · {title}")
+    remember_form(db, teacher, f)  # 지문 보관함에 저장
     return _go(f"/analysis/{s.id}")
 
 

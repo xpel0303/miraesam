@@ -10,7 +10,7 @@ from . import handlers  # noqa: F401  (작업 처리기 등록)
 from .config import BASE_DIR, SECRET_KEY
 from .db import init_db
 from .jobs import start_workers, stop_workers
-from .routes import analysis, auth, comprehension, exam, grammar, home, homework, leveltest, paraphrase, reports, roster, sentence, settings, student, variant, vocab
+from .routes import analysis, auth, comprehension, exam, grammar, home, homework, leveltest, library, paraphrase, reports, roster, sentence, settings, student, variant, vocab
 from .web import LoginRequired, render
 
 
@@ -28,7 +28,7 @@ app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, session_cookie="hw_session", max_age=60 * 60 * 24 * 30, same_site="lax", https_only=False)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-for r in (auth, home, settings, roster, student, comprehension, analysis, vocab, grammar, variant, sentence, paraphrase, reports, homework, exam, leveltest):
+for r in (auth, home, settings, roster, student, comprehension, analysis, vocab, grammar, variant, sentence, paraphrase, reports, homework, exam, leveltest, library):
     app.include_router(r.router)
 
 

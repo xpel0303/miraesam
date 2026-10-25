@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 from sqlalchemy.orm.attributes import flag_modified
 
 from ..db import get_db
+from ..library.store import remember_form
 from ..docx_builders import paraphrase_docx
 from ..handlers.paraphrase import views
 from ..jobs import enqueue
@@ -82,6 +83,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     db.add(s)
     db.commit()
     _start(db, s, teacher, "paraphrase_build", f"지문 변형 · {title}")
+    remember_form(db, teacher, f)  # 지문 보관함에 저장
     return _go(f"/paraphrase/{s.id}")
 
 
