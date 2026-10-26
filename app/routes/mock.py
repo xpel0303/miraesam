@@ -55,24 +55,28 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
 @router.get("/new")
 def new(request: Request, template: int | None = None, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     papers = _papers(db, teacher)
-    form = {"template_id": template or (papers[0].id if papers else None), "passages": [{}]}
+    form = {"template_id": template or (papers[0].id if papers else None), "mode": "new", "passages": [{}]}
     return render(request, "mock/new.html", {"teacher": teacher, "papers": papers, "form": form, "spec": spec, "active": "mock"})
 
 
 @router.post("")
 async def create(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     f = await request.form()
+    mode = "same" if f.get("mode") == "same" else "new"
     titles, texts = f.getlist("p_title"), f.getlist("p_text")
     passages = [{"title": str(titles[i]).strip()[:120] if i < len(titles) else "", "source": str(titles[i]).strip()[:120] if i < len(titles) else "",
                  "text": " ".join(str(x).split())} for i, x in enumerate(texts) if str(x).strip()]
     tid = int(f.get("template_id")) if str(f.get("template_id", "")).isdigit() else 0
     tp = db.get(ExamPaper, tid) if tid else None
+    same_slots = None
+    if mode == "same" and tp is not None and tp.academy_id == teacher.academy_id and tp.questions:
+        same_slots, passages = spec.same_passages(spec.blueprint(tp.questions), tp.questions)
     title = str(f.get("title", "")).strip()[:120]
     rng = str(f.get("range", "")).strip()[:400]
     errors = []
     if tp is None or tp.academy_id != teacher.academy_id or tp.status != "done" or not tp.questions:
         errors.append("본뜰 학교 기출을 골라 주세요. (기출 분석에서 시험지를 먼저 올려야 해요)")
-    if not passages:
+    if not passages and mode == "new":
         errors.append("새 시험 범위 지문을 하나 이상 넣어 주세요.")
     if len(passages) > spec.MAX_PASSAGES:
         errors.append(f"지문은 한 번에 {spec.MAX_PASSAGES}개까지입니다.")
@@ -82,19 +86,22 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     if not teacher.gemini_key_enc:
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 먼저 넣어 주세요.")
     if errors:
-        form = {"template_id": tid, "title": title, "range": rng, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)] or [{}]}
+        form = {"template_id": tid, "mode": mode, "title": title, "range": rng, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)] or [{}]}
         return render(request, "mock/new.html", {"teacher": teacher, "papers": _papers(db, teacher), "form": form, "errors": errors,
                                                  "spec": spec, "active": "mock"}, 400)
-    slots = spec.blueprint(tp.questions)
+    slots = same_slots or spec.blueprint(tp.questions)
     school = tp.school.name if tp.school else ""
     if not title:
-        title = f"{school} {tp.grade} 동형 모의고사".strip()
+        title = f"{school} {tp.grade} 동형 모의고사".strip() + (" (같은 지문)" if mode == "same" else "")
+    if mode == "same" and not rng:
+        rng = (tp.meta or {}).get("range", "") or f"{tp.title} 지문"
     m = MockSet(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, school_id=tp.school_id, template_id=tp.id,
-                options={"range": rng, "grade": tp.grade, "template_name": tp.title}, passages=passages, slots=slots)
+                options={"range": rng, "grade": tp.grade, "template_name": tp.title, "mode": mode}, passages=passages, slots=slots)
     db.add(m)
     db.commit()
     _start(db, m, teacher, "mock_build", f"동형 모의고사 · {title}")
-    remember_form(db, teacher, f)
+    if mode == "new":
+        remember_form(db, teacher, f)
     return _go(f"/mock/{m.id}")
 
 

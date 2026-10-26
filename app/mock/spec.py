@@ -62,6 +62,37 @@ def blueprint(questions: list[dict]) -> list[dict]:
     return slots
 
 
+def plain(text: str) -> str:
+    """시험지에 실린 지문 → 표시를 걷어낸 글 (밑줄 [u], 지문 속 ①~⑤·(a)~(e) 번호 표시)."""
+    t = re.sub(r"\[/?u\]", "", text or "")
+    t = re.sub(r"\(\s*[①②③④⑤]\s*\)|[①②③④⑤ⓐⓑⓒⓓⓔ]\s*", "", t)
+    return re.sub(r"[ \t]+", " ", t).strip()
+
+
+def same_passages(slots: list[dict], questions: list[dict]) -> tuple[list[dict], list[dict]]:
+    """'같은 지문으로' 모드: 지문 묶음마다 원래 시험지의 그 지문을 그대로 배정."""
+    by_label = {q["label"]: q for q in questions}
+    passages, unit_p = [], {}
+    for u in units(slots):
+        if not u[0]["needs_passage"]:
+            continue
+        lead = max(u, key=lambda s: s["passage_words"])
+        q = by_label.get(lead["label"], {})
+        unit_p[u[0]["unit"]] = len(passages)
+        src = f"원래 시험 {lead['label']}{'번' if lead['label'].isdigit() else ''} 지문"
+        passages.append({"title": src, "source": src, "text": plain(q.get("passage", "")), "same": True})
+    for s in slots:
+        s["p"] = unit_p.get(s["unit"]) if s["needs_passage"] else None
+    return slots, passages
+
+
+SAME_RULE = """이번에는 '같은 지문 다른 문제'입니다. 새 지문은 원래 문항의 지문과 같은 글입니다 (표시를 걷어낸 상태).
+- 같은 유형·발문·배점·형식을 지키되, 문제 내용은 원래 문항과 반드시 다르게: 정답 번호와 정답 내용, 밑줄·빈칸·①~⑤ 위치,
+  바꿔 넣은 낱말, 무관한 문장, 어법으로 묻는 구문, 서술형 정답 문장이 모두 원래 문항과 겹치지 않게 합니다.
+- 원래 문항에서 바꿔 실은 부분(반의어로 바꾼 낱말, 끼워 넣은 문장, 빈칸)은 원문으로 되돌린 뒤 새로 출제합니다. 원문을 알 수 없으면 문맥상 자연스러운 말로.
+- change 에는 원래 문항과 무엇을 다르게 냈는지 한 줄로."""
+
+
 def units(slots: list[dict]) -> list[list[dict]]:
     out: dict[int, list[dict]] = {}
     for s in slots:
@@ -157,6 +188,8 @@ def unit_prompt(unit: list[dict], passage: dict, memo_text: str = "", fix: list[
     lines = []
     if memo_text:
         lines += ["이 학교 출제 스타일 메모:", memo_text, ""]
+    if passage.get("same"):
+        lines += [SAME_RULE, ""]
     lines += [f"대상: {level or '고등학생'}",
               "아래 '원래 문항'들은 이 학교 지난 시험에서 한 지문을 같이 쓴 문항 묶음입니다. 새 지문으로 같은 형식의 문항을 같은 번호·배점으로 만들어 주세요.",
               "원래 문항:", json.dumps([_example(s) for s in unit], ensure_ascii=False, indent=1), "",
@@ -177,6 +210,7 @@ def standalone_prompt(batch: list[dict], passages: list[dict], used_words: list[
     lines += [f"대상: {level or '고등학생'}",
               "아래 '원래 문항'들은 이 학교 지난 시험의 지문 없는 문항(어휘·문장 단위)입니다. 새 시험 범위의 어휘·문장으로 같은 형식의 문항을 같은 번호·배점으로 만들어 주세요.",
               "- 정답 어휘는 새 범위 지문에 나온 단어로. 원래 문항의 오답 방식(같은 어원·접두사, 철자 비슷한 말, 다의어 등)을 그대로 따릅니다.",
+              *(["- 이번 범위는 원래 시험과 같은 지문입니다. 원래 문항과 다른 정답 어휘·다른 예문으로 내 주세요."] if any(p.get("same") for p in passages) else []),
               "- 문장(예문)은 새 범위 지문의 문장을 쓰거나 살짝 줄여서. 원래 문항에 한글 해석이 있었으면 passage 끝에 \\n(한글 해석)으로.",
               f"- 이미 다른 문항에서 쓴 정답 어휘(겹치지 않게): {', '.join(used_words) or '없음'}",
               "원래 문항:", json.dumps([_example(s, 600) for s in batch], ensure_ascii=False, indent=1), "",

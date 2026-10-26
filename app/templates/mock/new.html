@@ -3,7 +3,7 @@
 {% block main %}
 <p class="small"><a href="/mock">동형 모의고사</a></p>
 <h1>새 동형 모의고사</h1>
-<p class="lead">본뜰 학교 시험을 고르고, 다음 시험 범위 지문(교과서·모의고사·부교재)을 넣어 주세요. 지문은 문항 묶음에 알아서 나눠 쓰고, 어휘 문항은 범위 지문의 단어로 만들어요.</p>
+<p class="lead">학교 시험지를 고르면 그 시험과 똑같은 틀(문항 수·번호·배점·유형·발문·서술형 조건)로 새 시험지를 만들어요. 시험지는 <a href="/exam/new">기출 분석</a>에 먼저 올려 주세요.</p>
 {% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
 {% if not papers %}
 <div class="panel empty"><p>본뜰 학교 기출이 아직 없어요. <a href="/exam/new">기출 분석</a>에 학교 시험지를 먼저 올려 주세요.</p></div>
@@ -19,6 +19,10 @@
         {% endfor %}</optgroup>
       </select>
       <span class="hint">이 시험의 문항 수·번호·배점·유형·서술형 조건을 그대로 따라요. 같은 학교 경향 메모가 있으면 그것도 참고해요.</span></div>
+    <div class="field"><label>지문</label>
+      <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="mode" value="new" {% if form.mode != "same" %}checked{% endif %}> <b>다음 시험 범위 지문으로</b> <span class="muted small">— 시험 대비용. 아래에 범위 지문을 넣어 주세요.</span></label>
+      <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="mode" value="same" {% if form.mode == "same" %}checked{% endif %}> <b>이 시험지와 같은 지문으로</b> <span class="muted small">— 복습·재시험용. 같은 지문에 정답·밑줄 위치·어법 포인트를 바꾼 새 문제.</span></label>
+    </div>
     <div class="row">
       <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 신흥고 1학년 2학기 2차 대비 동형 1회"></div>
     </div>
@@ -26,6 +30,7 @@
       <input type="text" id="range" name="range" value="{{ form.range or '' }}" placeholder="예: 비상(홍) 1과·4과, 2025 고1 9월 33~36번, 2026 고1 9월 21·30·33·34·36·38번"></div>
   </section>
 
+  <div id="new-only">
   <div id="passages">
     {% for r in form.passages %}
     <section class="panel passage-card" data-source-title>
@@ -36,6 +41,7 @@
     {% endfor %}
   </div>
   <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
+  </div>
   <button class="btn" type="submit">동형 모의고사 만들기</button>
   <p class="small muted" style="margin-top:8px">31문항 시험지는 보통 10~20분 걸려요. 창을 닫아도 계속 만들어요.</p>
 </form>
@@ -50,6 +56,15 @@
   addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
   box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
   renumber();
+  const newOnly = document.getElementById("new-only");
+  function syncMode() {
+    const same = document.querySelector("input[name=mode]:checked").value === "same";
+    newOnly.hidden = same;
+    newOnly.querySelectorAll("textarea, input").forEach(e => e.disabled = same);
+    const bar = document.querySelector(".picker-bar"); if (bar) bar.hidden = same;
+  }
+  document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", syncMode));
+  syncMode();
 </script>
 {% endif %}
 {% endblock %}

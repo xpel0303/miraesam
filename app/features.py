@@ -39,7 +39,7 @@ FEATURES: list[Feature] = [
     Feature("exam", "기출 분석", "시험 운영", "시험지 PDF·사진 → 문항 추출, 유형·배점 분석지, 리포트 연결", 1, True, "/exam"),
     Feature("trend", "학교 경향분석", "시험 운영", "같은 학교 기출을 회차별로 비교하고 출제 스타일 메모", 1, True, "/trend"),
     Feature("reports", "학생·반 리포트", "시험 운영", "자동 채점, 학생별 오답 리포트, 반 리포트·결과 이미지", 1, True, "/reports"),
-    Feature("mock", "동형 모의고사", "시험 운영", "학교 기출 구성 그대로, 새 범위 지문으로 시험지·정답지", 3, True, "/mock"),
+    Feature("mock", "동형 모의고사", "시험 운영", "학교 시험지를 주면 같은 틀로 새 시험지·정답지 (새 범위 지문 또는 같은 지문)", 3, True, "/mock"),
     Feature("briefing", "설명회 자료", "시험 운영", "분석 문서를 골라 PowerPoint로", 3),
     # 학원 관리
     Feature("roster", "학생 명단", "학원 관리", "학교·반·학생 관리와 학생 접속 코드", 0, True, "/roster"),

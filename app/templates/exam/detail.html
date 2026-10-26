@@ -18,6 +18,7 @@
   <div class="actions">
     <form method="post" action="/exam/{{ p.id }}/pdf"><button class="btn" type="submit">분석지 PDF 만들기</button></form>
     {% if p.file_id %}<a class="btn ghost" href="/files/{{ p.file_id }}" target="_blank" rel="noopener">지난 분석지 열기</a>{% endif %}
+    <a class="btn" href="/mock/new?template={{ p.id }}">📝 이 시험지로 동형 모의고사</a>
     <form method="post" action="/exam/{{ p.id }}/to_report"><button class="btn ghost" type="submit">{{ "리포트 시험 열기" if report else "학생·반 리포트로 보내기" }}</button></form>
   </div>
   <p class="small muted" style="margin:8px 0 0">리포트로 보내면 문항 번호·배점·유형이 그대로 들어가요. 정답 한 줄만 넣으면 우리 학원 학생들 답으로 채점·리포트를 만들 수 있어요.</p>
@@ -61,7 +62,7 @@
     </summary>
     <div class="eq-body">
       <p class="small muted" style="margin:0 0 6px">{% if q.point %}출제 포인트: <b style="color:var(--ink)">{{ q.point }}</b> · {% endif %}
-        {% for pgn in q.pages %}<a href="/files/{{ p.pages[pgn - 1].file_id }}" target="_blank" rel="noopener">{{ pgn }}쪽</a> {% endfor %}
+        {% for pgn in q.pages if pgn <= p.pages|length %}<a href="/files/{{ p.pages[pgn - 1].file_id }}" target="_blank" rel="noopener">{{ pgn }}쪽</a> {% endfor %}
         {% if q.group %}· 묶음 [{{ q.group }}]{% endif %}{% if q.shared_with %} · 지문은 {{ q.shared_with }}{{ "번" if q.shared_with.isdigit() else "" }}과 같음{% endif %}</p>
       {% if q.passage %}<div class="box-preview small">{{ u(q.passage) }}</div>{% endif %}
       {% if q.box %}<div class="box-preview small" style="margin-top:6px;background:var(--surface)">{{ u(q.box) }}</div>{% endif %}

@@ -4,7 +4,7 @@
 {% block main %}
 <p class="small"><a href="/mock">동형 모의고사</a></p>
 <h1>{{ m.title }}</h1>
-<p class="lead">{{ m.options.template_name or "" }} 본뜸 · 지문 {{ m.passages|length }}개 · 문항 {{ m.items|length }} / {{ m.slots|length }}{% if c %} · {{ spec.fmt(c.total) }}점{% endif %}
+<p class="lead">{{ m.options.template_name or "" }} 본뜸{% if m.options.mode == "same" %} · <b>같은 지문 다른 문제</b>{% endif %} · 지문 {{ m.passages|length }}개 · 문항 {{ m.items|length }} / {{ m.slots|length }}{% if c %} · {{ spec.fmt(c.total) }}점{% endif %}
   {% if m.options.range %}<br><span class="small muted">범위: {{ m.options.range }}</span>{% endif %}</p>
 
 {% if busy %}<div class="job" data-job-id="{{ job.id }}" data-reload></div>
