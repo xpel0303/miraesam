@@ -34,11 +34,32 @@
   table.ln tr.bot td { padding: 0; height: 9pt; }
   table.ln tr.bot td.l { border-bottom: 0.8pt solid var(--pk); border-bottom-left-radius: 15pt; }
   table.ln tr.bot td.r { border-bottom-right-radius: 15pt; }
+  /* 글자 크기 단계 (한 쪽에 맞게) — 1쪽: .a1~.a3, 한 줄 해석: .b1~.b3 */
+  .a1 .banner { padding: 7pt 12pt 6pt; margin-bottom: 9pt; } .a1 .banner .t { font-size: 13.5pt; }
+  .a1 .box { padding: 8pt 11pt; margin-bottom: 7pt; }
+  .a1 .pass .en { font-size: 8.4pt; line-height: 1.62; } .a1 .pass .ko { font-size: 7.9pt; line-height: 1.62; }
+  .a1 table.key td { padding: 2.5pt 3pt; font-size: 8.4pt; line-height: 1.55; } .a1 table.voc td { padding: 2pt 5pt; font-size: 8.2pt; }
+  .a2 .banner { padding: 5pt 12pt 4pt; margin-bottom: 7pt; border-radius: 14pt; } .a2 .banner .t { font-size: 12pt; }
+  .a2 .pill { font-size: 8pt; padding: 1.5pt 11pt; margin: 0 0 3pt 3pt; }
+  .a2 .box { padding: 6pt 10pt; margin-bottom: 5pt; border-radius: 11pt; }
+  .a2 .pass .en { font-size: 7.9pt; line-height: 1.5; } .a2 .pass .ko { font-size: 7.4pt; line-height: 1.5; }
+  .a2 table.key td { padding: 1.5pt 3pt; font-size: 7.9pt; line-height: 1.45; } .a2 table.voc td { padding: 1.3pt 5pt; font-size: 7.7pt; }
+  .a3 .banner { padding: 4pt 12pt 3pt; margin-bottom: 5pt; border-radius: 12pt; } .a3 .banner .t { font-size: 11pt; } .a3 .banner .l { font-size: 9pt; }
+  .a3 .pill { font-size: 7.5pt; padding: 1pt 10pt; margin: 0 0 2pt 3pt; }
+  .a3 .box { padding: 5pt 9pt; margin-bottom: 4pt; border-radius: 9pt; }
+  .a3 .pass .en { font-size: 7.3pt; line-height: 1.42; } .a3 .pass .ko { font-size: 6.9pt; line-height: 1.42; }
+  .a3 table.key td { padding: 1pt 3pt; font-size: 7.3pt; line-height: 1.38; } .a3 table.voc td { padding: 0.8pt 5pt; font-size: 7.2pt; }
+  .b1 table.ln td { padding: 5.5pt 10pt; line-height: 1.58; } .b1 table.ln td.l { font-size: 8.4pt; } .b1 table.ln td.r { font-size: 7.9pt; }
+  .b2 table.ln td { padding: 4pt 9pt; line-height: 1.48; } .b2 table.ln td.l { font-size: 7.9pt; } .b2 table.ln td.r { font-size: 7.4pt; }
+  .b3 table.ln td { padding: 2.8pt 8pt; line-height: 1.4; } .b3 table.ln td.l { font-size: 7.3pt; } .b3 table.ln td.r { font-size: 6.9pt; }
+  .b1 table.ln tr.top td, .b2 table.ln tr.top td, .b3 table.ln tr.top td, .b1 table.ln tr.bot td, .b2 table.ln tr.bot td, .b3 table.ln tr.bot td { padding: 0; height: 7pt; }
 {% endblock %}
 
 {% block body %}
 {% for p in passages %}{% set o = p.out %}
-<div class="psg{% if loop.first %} first{% endif %}">
+{% set part = part or "all" %}
+<div class="psg{% if loop.first %} first{% endif %} a{{ p.z1 or 0 }} b{{ p.z2 or 0 }}">
+  {% if part != "p2" %}
   <div class="banner"><span class="t">{{ s.title }}</span><span class="l">{{ p.title or ((item_offset or 0) + loop.index) ~ "번" }}</span></div>
 
   <div class="pill">지문 및 해석</div>
@@ -67,8 +88,9 @@
   </div>
   {% endif %}
 
-  {% if show_lines and o.sentences %}
-  <div class="lines-page">
+  {% endif %}
+  {% if show_lines and o.sentences and part != "p1" %}
+  <div class="{{ 'lines-page' if part == 'all' else '' }}">
     <div class="pill">한 줄 해석</div>
     <table class="ln">
       <tr class="top"><td class="l"></td><td class="r"></td></tr>

@@ -7,7 +7,7 @@ from .. import llm
 from ..db import session_scope
 from ..jobs import JobContext, job_handler
 from ..models import Academy, StoredFile, SummarySet
-from ..pdf import render_pdf
+from ..pdf import page_counts, render_pdf
 from ..summary import spec
 
 
@@ -38,6 +38,32 @@ def _one(key, model, p: dict, level: str) -> dict:
     return {"out": out, "warnings": warns + [e for e in errs if "문장" not in e][:4], "status": "done", "error": None}
 
 
+LEVELS = 4  # 0 = 기본 크기 … 3 = 가장 촘촘하게
+
+
+def _fit(academy, s, ps: list[dict], show_lines: bool, chunk: int = 6):
+    """지문마다 1쪽(지문·해석·핵심 정리·어휘)과 2쪽(한 줄 해석)이 각각 한 쪽에 들어가는 가장 큰 글자 크기를 고름."""
+    for start in range(0, len(ps), chunk):
+        part = ps[start:start + chunk]
+        ctxs = []
+        for p in part:
+            for z in range(LEVELS):
+                ctxs.append({"academy": academy, "s": s, "passages": [{**p, "z1": z, "z2": z}], "doc_title": s.title, "part": "p1", "show_lines": False})
+            if show_lines:
+                for z in range(LEVELS):
+                    ctxs.append({"academy": academy, "s": s, "passages": [{**p, "z1": z, "z2": z}], "doc_title": s.title, "part": "p2", "show_lines": True})
+        counts = page_counts("pdf/summary.html", ctxs)
+        k = 0
+        for p in part:
+            c1 = counts[k:k + LEVELS]
+            k += LEVELS
+            p["z1"] = next((z for z, n in enumerate(c1) if n <= 1), LEVELS - 1)
+            if show_lines:
+                c2 = counts[k:k + LEVELS]
+                k += LEVELS
+                p["z2"] = next((z for z, n in enumerate(c2) if n <= 1), LEVELS - 1)
+
+
 def render_summary_pdf(ctx: JobContext, set_id: int) -> dict:
     with session_scope() as db:
         s = db.get(SummarySet, set_id)
@@ -47,9 +73,12 @@ def render_summary_pdf(ctx: JobContext, set_id: int) -> dict:
     ps = [{**p, "full": spec.passage_text(p)} for p in s.passages if p.get("status") == "done"]
     if not ps:
         raise llm.LLMError("PDF에 넣을 지문이 없습니다.")
+    show_lines = (s.options or {}).get("show_lines", True)
+    ctx.step("한 쪽에 맞게 글자 크기 고르는 중", 80)
+    _fit(academy, s, ps, show_lines)
     ctx.step("PDF 만드는 중", 90)
     pdf = render_pdf("pdf/summary.html", {"academy": academy, "s": s, "passages": ps, "doc_title": s.title,
-                                          "show_lines": (s.options or {}).get("show_lines", True)}, chunk_key="passages")
+                                          "show_lines": show_lines, "part": "all"}, chunk_key="passages")
     fid = ctx.save_file(f"{s.title}_지문정리.pdf", "application/pdf", pdf)
     with session_scope() as db:
         row = db.get(SummarySet, set_id)

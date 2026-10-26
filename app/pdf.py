@@ -26,6 +26,19 @@ def _draw(html: str) -> bytes:
         return pdf_worker.render(html, str(BASE_DIR))
 
 
+def page_counts(template: str, ctxs: list[dict]) -> list[int]:
+    """같은 틀을 여러 설정으로 그려 보고 쪽 수만 돌려줌 (따로 띄운 프로세스에서 한 번에)."""
+    from . import pdf_worker
+
+    tpl = templates.env.get_template(template)
+    htmls = [tpl.render(font_dir=FONT_DIR, **c) for c in ctxs]
+    try:
+        with mp.get_context("spawn").Pool(1) as pool:
+            return pool.apply(pdf_worker.count_pages, (htmls, str(BASE_DIR)))
+    except (OSError, mp.ProcessError):
+        return pdf_worker.count_pages(htmls, str(BASE_DIR))
+
+
 def _pages(pdf: bytes) -> int:
     import pypdfium2 as pdfium
 

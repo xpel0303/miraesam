@@ -10,3 +10,15 @@ def render(html: str, base_url: str) -> bytes:
     from weasyprint import HTML
 
     return HTML(string=html, base_url=base_url).write_pdf()
+
+
+def count_pages(htmls: list[str], base_url: str) -> list[int]:
+    """여러 HTML의 쪽 수만 셈 (PDF는 만들지 않음) — 한 쪽에 맞는 글자 크기를 고를 때."""
+    from weasyprint import HTML
+
+    out = []
+    for h in htmls:
+        doc = HTML(string=h, base_url=base_url).render()
+        out.append(len(doc.pages))
+        del doc
+    return out
