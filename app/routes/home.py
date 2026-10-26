@@ -75,4 +75,38 @@ def job_status(job_id: int, teacher: Teacher = Depends(current_teacher), db: Ses
         "progress": job.progress,
         "result": job.result,
         "error": job.error,
+        **_estimate(db, job),
     }
+
+
+def _estimate(db: Session, job: Job) -> dict:
+    """예상 남은 시간(초)과 대기 순서.
+    돌고 있으면: 지금까지 걸린 시간과 진행률로 계산 (진행이 조금이라도 쌓인 뒤부터).
+    아직이면: 같은 종류 작업이 최근에 걸린 시간의 가운데값."""
+    from datetime import datetime, timezone
+    from statistics import median
+
+    out: dict = {"eta": None, "eta_kind": None, "ahead": 0, "elapsed": None}
+    now_ = datetime.now(timezone.utc)
+    if job.status == "queued":
+        out["ahead"] = db.query(Job).filter(Job.status.in_(("queued", "running")), Job.id < job.id).count()
+    if job.status not in ("queued", "running"):
+        return out
+    if job.status == "running" and job.started_at:
+        started = job.started_at if job.started_at.tzinfo else job.started_at.replace(tzinfo=timezone.utc)
+        elapsed = (now_ - started).total_seconds()
+        out["elapsed"] = int(elapsed)
+        done = (job.progress or 0) - (job.start_progress or 0)
+        if done >= 8 and elapsed >= 15:
+            left = elapsed * (100 - job.progress) / done
+            out["eta"], out["eta_kind"] = int(max(10, left)), "live"
+            return out
+    rows = (db.query(Job.started_at, Job.finished_at).filter(Job.kind == job.kind, Job.status == "done", Job.finished_at.isnot(None),
+                                                            Job.started_at.isnot(None), Job.academy_id == job.academy_id)
+            .order_by(Job.id.desc()).limit(15).all())
+    secs = [(f - s).total_seconds() for s, f in rows if f and s and f > s]
+    if secs:
+        typical = median(secs)
+        spent = out["elapsed"] or 0
+        out["eta"], out["eta_kind"] = int(max(10, typical - spent)), "typical"
+    return out

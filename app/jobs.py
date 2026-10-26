@@ -15,6 +15,7 @@ jobs 테이블에 넣은 뒤 백그라운드 일꾼이 하나씩 처리합니다
         return {"file_id": ctx.save_file("분석지.pdf", "application/pdf", pdf_bytes)}
 """
 import logging
+from datetime import datetime, timezone
 import threading
 import traceback
 from typing import Callable
@@ -97,6 +98,7 @@ def _claim_next() -> int | None:
         if job is None:
             return None
         job.status = "running"
+        job.started_at, job.start_progress = datetime.now(timezone.utc), job.progress or 0
         job.attempts += 1
         job.step = "시작하는 중"
         job.error = None
@@ -116,6 +118,7 @@ def _run(job_id: int):
         with session_scope() as db:
             job = db.get(Job, job_id)
             job.status, job.step, job.progress, job.result = "done", "완료", 100, result
+            job.finished_at = datetime.now(timezone.utc)
     except LLMError as e:
         _fail(job_id, str(e))
     except Exception as e:  # 예상 못 한 오류: 기록하고, 횟수가 남았으면 다시 대기열로

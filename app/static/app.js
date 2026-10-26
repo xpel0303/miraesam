@@ -38,7 +38,7 @@ function watchJob(el) {
       return;
     }
     title.textContent = j.title || "작업";
-    step.textContent = j.status === "queued" ? (j.step || "차례를 기다리는 중") : j.step;
+    step.textContent = (j.status === "queued" ? (j.step || "차례를 기다리는 중") + (j.ahead ? ` · 앞에 작업 ${j.ahead}개` : "") : j.step) + etaText(j);
     bar.style.width = (j.status === "done" ? 100 : Math.max(j.progress, 4)) + "%";
     if (j.status === "done") {
       el.classList.add("done");
@@ -60,6 +60,15 @@ function watchJob(el) {
     setTimeout(tick, delay);
   }
   tick();
+}
+
+// 예상 남은 시간: "· 약 3분 남음" / 아직 모르면 비움
+function etaText(j) {
+  if (j.status !== "running" && j.status !== "queued") return "";
+  if (j.eta == null) return j.status === "running" ? " · 남은 시간 계산 중" : "";
+  const s = j.eta;
+  const t = s < 60 ? "1분 안쪽" : s < 3600 ? `약 ${Math.round(s / 60)}분` : `약 ${Math.floor(s / 3600)}시간 ${Math.round((s % 3600) / 60)}분`;
+  return j.status === "running" ? ` · ${t} 남음` : ` · 보통 ${t} 걸려요`;
 }
 
 function escapeHtml(s) {

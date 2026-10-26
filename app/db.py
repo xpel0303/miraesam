@@ -47,6 +47,9 @@ def session_scope():
 ADDED_COLUMNS = [
     ("exam_responses", "meta", "JSON", "'{}'"),  # 온라인 시험: 시작·제출 시각
     ("academies", "lt_token", "VARCHAR(16)", "NULL"),  # 레벨테스트 공용 링크
+    ("jobs", "started_at", "TIMESTAMP WITH TIME ZONE", "NULL"),  # 예상 소요시간 계산용
+    ("jobs", "start_progress", "INTEGER", "0"),
+    ("jobs", "finished_at", "TIMESTAMP WITH TIME ZONE", "NULL"),
 ]
 
 
