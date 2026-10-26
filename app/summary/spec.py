@@ -48,6 +48,11 @@ def _s(v) -> str:
     return re.sub(r"\s+", " ", str(v or "")).strip()
 
 
+def _chunk(v) -> str:
+    """덩어리 앞뒤에 AI가 붙인 / 를 떼어냄 (PDF에서 '/ /'로 겹쳐 보이지 않게)."""
+    return _s(re.sub(r"^\s*/+|/+\s*$", "", str(v or "")))
+
+
 def _norm(t: str) -> str:
     return re.sub(r"\s+", "", t or "").replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
 
@@ -73,8 +78,8 @@ def clean(raw, sentences: list[str]) -> tuple[dict, list[str], list[str]]:
     rows = []
     for n, sent in enumerate(sentences, 1):
         r = by_n.get(n) or {}
-        en = [_s(c) for c in (r.get("en") or []) if _s(c)]
-        ko = [_s(c) for c in (r.get("ko") or []) if _s(c)]
+        en = [_chunk(c) for c in (r.get("en") or []) if _chunk(c)]
+        ko = [_chunk(c) for c in (r.get("ko") or []) if _chunk(c)]
         ok = en and _norm(" ".join(en)) == _norm(sent) and len(en) == len(ko)
         if not ok:
             if not en:
@@ -125,8 +130,8 @@ def parse_lines(text: str) -> list[dict]:
         if not line.strip():
             continue
         en, _, ko = line.partition("||")
-        en = [c.strip() for c in en.split(" / ") if c.strip()]
-        ko = [c.strip() for c in ko.split(" / ") if c.strip()]
+        en = [_chunk(c) for c in en.split(" / ") if _chunk(c)]
+        ko = [_chunk(c) for c in ko.split(" / ") if _chunk(c)]
         if en:
             rows.append({"en": en, "ko": ko, "ok": len(en) == len(ko)})
     return rows
@@ -143,3 +148,10 @@ def passage_text(p: dict) -> str:
 
 def split(text: str) -> list[str]:
     return split_sentences(text)
+
+
+def tidy(out: dict) -> dict:
+    """예전에 만든 정리본도 PDF에서 덩어리 앞뒤 / 가 겹치지 않게."""
+    rows = [{**r, "en": [_chunk(c) for c in r.get("en", []) if _chunk(c)], "ko": [_chunk(c) for c in r.get("ko", []) if _chunk(c)]}
+            for r in out.get("sentences") or []]
+    return {**out, "sentences": rows}

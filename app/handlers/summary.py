@@ -70,7 +70,7 @@ def render_summary_pdf(ctx: JobContext, set_id: int) -> dict:
         academy = db.get(Academy, s.academy_id)
         db.expunge(s)
         db.expunge(academy)
-    ps = [{**p, "full": spec.passage_text(p)} for p in s.passages if p.get("status") == "done"]
+    ps = [{**p, "full": spec.passage_text(p), "out": spec.tidy(p.get("out") or {})} for p in s.passages if p.get("status") == "done"]
     if not ps:
         raise llm.LLMError("PDF에 넣을 지문이 없습니다.")
     show_lines = (s.options or {}).get("show_lines", True)

@@ -53,7 +53,7 @@ def split_sentences(text: str) -> list[str]:
         for m in _BOUNDARY.finditer(para):
             end = m.end()
             before = para[start:m.start() + 1]
-            last_word = re.findall(r"([A-Za-z.]+)\.$", before.rstrip("\"'”’)]"))
+            last_word = re.findall(r"(?<![A-Za-z0-9])([A-Za-z.]+)\.$", before.rstrip("\"'”’)]"))  # 30s. 처럼 숫자에 붙은 글자는 약어 아님
             token = last_word[0].lower().rstrip(".") if last_word else ""
             if token in _ABBREV or (len(token) == 1 and token.isalpha()):
                 continue  # Mr. / e.g. / J. 같은 약어 뒤에서는 자르지 않음

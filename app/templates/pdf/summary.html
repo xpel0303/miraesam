@@ -27,7 +27,8 @@
   table.ln tr { break-inside: avoid; }
   table.ln td.l { width: 57%; border-left: 0.8pt solid var(--pk); border-right: 0.8pt solid var(--pk); font-size: 8.9pt; padding-left: 13pt; }
   table.ln td.r { width: 43%; background: var(--pk-bg); font-size: 8.3pt; }
-  table.ln td.l b { font-weight: 400; margin-right: 3pt; }
+  table.ln td.l .no { display: inline-block; min-width: 11pt; height: 11pt; line-height: 11pt; padding: 0 2pt; border: 0.7pt solid var(--ink); border-radius: 6pt;
+    text-align: center; font-size: 7pt; margin-right: 4pt; vertical-align: 1pt; }
   table.ln tr.top td { padding: 0; height: 9pt; }
   table.ln tr.top td.l { border-top: 0.8pt solid var(--pk); border-top-left-radius: 15pt; }
   table.ln tr.top td.r { border-top-right-radius: 15pt; }
@@ -95,7 +96,7 @@
     <table class="ln">
       <tr class="top"><td class="l"></td><td class="r"></td></tr>
       {% for r in o.sentences %}
-      <tr><td class="l"><b>{{ CIR[loop.index0] if loop.index0 < 20 else "(" ~ loop.index ~ ")" }}</b>{{ r.en|join(" / ") }}</td><td class="r">{{ r.ko|join(" / ") }}</td></tr>
+      <tr><td class="l"><span class="no">{{ loop.index }}</span>{{ r.en|join(" / ") }}</td><td class="r">{{ r.ko|join(" / ") }}</td></tr>
       {% endfor %}
       <tr class="bot"><td class="l"></td><td class="r"></td></tr>
     </table>
