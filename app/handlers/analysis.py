@@ -62,25 +62,76 @@ def _analyze_one(key: str, model: str, p: dict, visual: bool = False) -> dict:
 
 
 def _fill_visuals(ctx: JobContext, set_id: int):
-    """'정리 그림'을 켰는데 그림 내용이 없는 지문(나중에 켠 경우)만 Gemini로 그림 내용을 따로 받음."""
+    """'정리 그림'을 켰을 때: 그림 내용이 없는 지문은 Gemini로 내용을 받고, 그림(일러스트)이 없는 지문은 그림 모델로 그림을 그림."""
     s = _load(set_id)
     if not {**spec.DEFAULT_OPTIONS, **(s.options or {})}.get("show_visual"):
         return
     todo = [i for i, p in enumerate(s.passages) if p.get("status") == "done" and not p.get("visual")]
+    if todo:
+        key, model = ctx.gemini()
+        for n, idx in enumerate(todo, 1):
+            p = s.passages[idx]
+            ctx.step(f"정리 그림 내용 만드는 중 ({n}/{len(todo)})", 70)
+            try:
+                raw = llm.generate(key, spec.visual_prompt(p.get("sentences_src") or [], (p.get("summary") or {}).get("topic", "")),
+                                   system=spec.VISUAL_SYSTEM, model=model, json_mode=True, temperature=0.5, max_tokens=3000)
+            except llm.LLMError:
+                continue  # 그림이 없어도 분석본은 만듦
+            vis = spec.clean_visual(raw.get("visual") if isinstance(raw, dict) else None)
+            if vis:
+                _save_passage(set_id, idx, {"visual": vis})
+    _draw_images(ctx, set_id)
+
+
+def _draw_images(ctx: JobContext, set_id: int):
+    """그림 내용은 있는데 일러스트가 없는 지문을 그림 모델(Nano Banana)로 그림. 실패하면 아이콘 4컷으로 대신 나옴."""
+    s = _load(set_id)
+    todo = [i for i, p in enumerate(s.passages) if p.get("status") == "done" and p.get("visual") and not p.get("visual_img")]
     if not todo:
         return
-    key, model = ctx.gemini()
+    key, _ = ctx.gemini()
     for n, idx in enumerate(todo, 1):
         p = s.passages[idx]
-        ctx.step(f"정리 그림 만드는 중 ({n}/{len(todo)})", 80)
+        ctx.step(f"정리 그림 그리는 중 ({n}/{len(todo)})", 80)
         try:
-            raw = llm.generate(key, spec.visual_prompt(p.get("sentences_src") or [], (p.get("summary") or {}).get("topic", "")),
-                               system=spec.VISUAL_SYSTEM, model=model, json_mode=True, temperature=0.5, max_tokens=3000)
-        except llm.LLMError:
-            continue  # 그림이 없어도 분석본은 만듦
-        vis = spec.clean_visual(raw.get("visual") if isinstance(raw, dict) else None)
-        if vis:
-            _save_passage(set_id, idx, {"visual": vis})
+            img = llm.generate_image(key, spec.image_prompt(p["visual"]), aspect="16:9")
+        except llm.LLMError as e:
+            _save_passage(set_id, idx, {"visual_error": str(e)})
+            if "API 키" in str(e) or "쓸 수 없습니다" in str(e):
+                break  # 이 키로는 그림을 못 그림 → 나머지도 아이콘으로
+            continue
+        fid = ctx.save_file(f"정리그림_{idx + 1}.jpg", "image/jpeg", _shrink(img))
+        _save_passage(set_id, idx, {"visual_img": fid, "visual_error": None})
+
+
+def _shrink(img: bytes, width: int = 1600) -> bytes:
+    """PDF가 너무 커지지 않게: 가로 1600px JPEG로 줄임 (지문 28개면 그림도 28장)."""
+    import io
+
+    from PIL import Image
+
+    im = Image.open(io.BytesIO(img)).convert("RGB")
+    if im.width > width:
+        im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
+    out = io.BytesIO()
+    im.save(out, "JPEG", quality=86, optimize=True)
+    return out.getvalue()
+
+
+def _with_images(passages: list[dict]) -> list[dict]:
+    """PDF에 넣을 수 있게 일러스트를 data URI로 붙인 복사본."""
+    import base64
+
+    ids = [p.get("visual_img") for p in passages if p.get("visual_img")]
+    if not ids:
+        return passages
+    with session_scope() as db:
+        files = {f.id: (f.mime, f.data) for f in db.query(StoredFile).filter(StoredFile.id.in_(ids))}
+    out = []
+    for p in passages:
+        f = files.get(p.get("visual_img"))
+        out.append({**p, "visual_uri": f"data:{f[0]};base64,{base64.b64encode(f[1]).decode()}"} if f else p)
+    return out
 
 
 def render_analysis_pdf(ctx: JobContext, set_id: int) -> dict:
@@ -95,7 +146,9 @@ def render_analysis_pdf(ctx: JobContext, set_id: int) -> dict:
     ctx.step("PDF 만드는 중", 88)
     pdf = render_pdf(
         "pdf/analysis.html",
-        {"academy": academy, "aset": s, "passages": s.passages, "opts": opts, "point_types": spec.POINT_TYPES, "doc_title": s.title},
+        {"academy": academy, "aset": s, "passages": _with_images(s.passages) if opts.get("show_visual") else s.passages, "opts": opts,
+         "point_types": spec.POINT_TYPES, "doc_title": s.title},
+        chunk_key="passages",
     )
     fid = ctx.save_file(f"{s.title}_지문분석.pdf", "application/pdf", pdf)
     with session_scope() as db:

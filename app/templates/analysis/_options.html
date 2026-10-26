@@ -7,5 +7,5 @@
 </div>
 <label style="font-weight:400"><input type="checkbox" name="show_background" value="1" {% if o.show_background %}checked{% endif %}> 배경지식 (주제·흐름 표 아래 칸)</label>
 <label style="font-weight:400"><input type="checkbox" name="show_vocab" value="1" {% if o.show_vocab %}checked{% endif %}> 핵심 어휘 &amp; 유의어·반의어 표</label>
-<label style="font-weight:400"><input type="checkbox" name="show_visual" value="1" {% if o.show_visual %}checked{% endif %}> 🎨 정리 그림 (지문 내용을 4컷 그림으로 한눈에)
-  <span class="hint">Gemini 사용량과 PDF 분량이 조금 늘어서 필요할 때만 켜 주세요. 나중에 켜도 그림만 따로 만들어요.</span></label>
+<label style="font-weight:400"><input type="checkbox" name="show_visual" value="1" {% if o.show_visual %}checked{% endif %}> 🎨 정리 그림 (지문 내용을 일러스트 한 장으로 — 큰 제목 + 대비·흐름 장면 + 형광펜 설명)
+  <span class="hint">Gemini 그림 모델(Nano Banana)로 그려요. 그림 모델은 유료 결제한 키에서만 될 수 있고, 안 되면 아이콘 정리로 대신 들어가요. 지문마다 그림 1장이라 시간이 조금 더 걸려요. 나중에 켜도 그림만 따로 만들어요.</span></label>

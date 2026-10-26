@@ -187,13 +187,17 @@ async def save_passage(sid: int, idx: int, request: Request, teacher: Teacher = 
             vocab.append(dict(zip(("word", "meaning", "syn", "ant"), cells[:4])))
     p["vocab"] = vocab[:20]
     if p.get("visual"):
-        vis = {"title": str(f.get("vis_title", "")).strip()[:60], "message": str(f.get("vis_message", "")).strip()[:120], "panels": []}
+        old = p["visual"]
+        vis = {**old, "title": str(f.get("vis_title", "")).strip()[:60], "message": str(f.get("vis_message", "")).strip()[:120], "panels": []}
         for k in range(4):
             head = str(f.get(f"vis{k}-head", "")).strip()[:30]
             if head:
                 icon = str(f.get(f"vis{k}-icon", "idea"))
-                vis["panels"].append({"icon": icon if icon in spec.ICONS else "idea", "head": head, "text": str(f.get(f"vis{k}-text", "")).strip()[:160]})
+                prev = old["panels"][k] if k < len(old.get("panels") or []) else {}
+                vis["panels"].append({**prev, "icon": icon if icon in spec.ICONS else "idea", "head": head, "text": str(f.get(f"vis{k}-text", "")).strip()[:160]})
         p["visual"] = vis if len(vis["panels"]) >= 2 else None
+        if p["visual"] != old:  # 그림 글자를 고치면 다음 PDF 때 그림을 새로 그림
+            _drop_image(db, p)
     _, p["warnings"] = spec.validate(p, p.get("sentences_src") or [])
     s.passages = passages
     flag_modified(s, "passages")
@@ -212,6 +216,33 @@ def rerender(sid: int, request: Request, teacher: Teacher = Depends(current_teac
     return _go(f"/analysis/{sid}")
 
 
+def _drop_image(db: Session, p: dict):
+    fid = p.pop("visual_img", None)
+    p.pop("visual_error", None)
+    if fid:
+        f = db.get(StoredFile, fid)
+        if f is not None:
+            db.delete(f)
+
+
+@router.post("/{sid}/redraw/{idx}")
+def redraw(sid: int, idx: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """정리 그림만 새로 그리기 (분석 내용은 그대로)."""
+    s = _own(db, sid, teacher)
+    if _busy(db, s) or not (0 <= idx < len(s.passages)):
+        return _go(f"/analysis/{sid}")
+    if not teacher.gemini_key_enc:
+        flash(request, "Gemini API 키가 없습니다. 설정에서 키를 먼저 넣어 주세요.", "error")
+        return _go(f"/analysis/{sid}")
+    passages = copy.deepcopy(s.passages)
+    _drop_image(db, passages[idx])
+    s.passages = passages
+    flag_modified(s, "passages")
+    s.options = {k: v for k, v in (s.options or {}).items() if k != "dirty"}
+    _start(db, s, teacher, "analysis_render", {}, f"정리 그림 다시 그리기 · {s.title}")
+    return _go(f"/analysis/{sid}#p{idx}")
+
+
 @router.post("/{sid}/regenerate/{idx}")
 def regenerate(sid: int, idx: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     s = _own(db, sid, teacher)
@@ -225,6 +256,7 @@ def regenerate(sid: int, idx: int, request: Request, teacher: Teacher = Depends(
         raise HTTPException(404)
     passages = copy.deepcopy(s.passages)
     passages[idx]["status"] = "waiting"
+    _drop_image(db, passages[idx])
     s.passages = passages
     flag_modified(s, "passages")
     _start(db, s, teacher, "analysis_build", {"only": [idx]}, f"지문 {idx + 1} 다시 분석 · {s.title}")
@@ -244,6 +276,7 @@ def regenerate_all(sid: int, request: Request, teacher: Teacher = Depends(curren
     passages = copy.deepcopy(s.passages)
     for p in passages:
         p["status"] = "waiting"
+        _drop_image(db, p)
     s.passages = passages
     flag_modified(s, "passages")
     _start(db, s, teacher, "analysis_build", {}, f"지문 분석 모두 다시 · {s.title}")

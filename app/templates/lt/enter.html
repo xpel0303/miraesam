@@ -3,19 +3,20 @@
 {% block body %}
 <div class="student-card">
   <img src="/static/mascot-wave.svg" alt="" width="64" height="64" style="float:right;margin:-6px -4px 0 8px">
-  <h1 style="font-size:1.5rem;margin:0 0 4px">레벨테스트</h1>
-  <p class="small muted" style="margin:0 0 16px">이름과 학교·학년을 적고 볼 시험을 골라 주세요. 듣기가 있는 시험은 소리를 켜 주세요 🔊</p>
+  <h1 style="font-size:1.5rem;margin:0 0 4px">레벨테스트{% if only %}<br><span style="font-size:1.1rem;color:var(--ink-2)">{{ only.title }}</span>{% endif %}</h1>
+  <p class="small muted" style="margin:0 0 16px">이름과 학교·학년을 적고 {{ "시작하기를 눌러 주세요." if only else "볼 시험을 골라 주세요." }} 듣기가 있는 시험은 소리를 켜 주세요 🔊</p>
   {% for e in errors or [] %}<div class="flash error small" role="alert">{{ e }}</div>{% endfor %}
   {% if tests %}
-  <form method="post" action="/lt/{{ token }}">
+  <form method="post" action="/lt/{{ token }}{{ '/' ~ only.id if only }}">
     <div class="field"><label for="lt-name">이름</label><input id="lt-name" type="text" name="name" value="{{ form.name or '' }}" placeholder="예: 김미래" autocomplete="name" required maxlength="40"></div>
     <div class="field"><label for="lt-info">학교 · 학년</label><input id="lt-info" type="text" name="info" value="{{ form.info or '' }}" placeholder="예: 전주중 2학년" maxlength="80"></div>
+    {% if only %}<p class="small" style="margin:0 0 14px">{% if only.sub %}{{ only.sub }}{% endif %}{% if only.minutes %} · 제한 시간 {{ only.minutes }}분{% endif %}</p>{% else %}
     <div class="field"><label>시험 고르기</label>
       <div class="lt-pick">{% for t in tests %}
         <label><input type="radio" name="test_id" value="{{ t.id }}" {% if form.test_id == t.id or (tests|length == 1) %}checked{% endif %} required>
           <span><b>{{ t.title }}</b>{% if t.sub %}<small>{{ t.sub }}</small>{% endif %}{% if t.minutes %}<small>{{ t.minutes }}분</small>{% endif %}</span></label>
       {% endfor %}</div>
-    </div>
+    </div>{% endif %}
     <button class="btn" type="submit" style="width:100%;padding:14px;font-size:1.05rem">시작하기</button>
   </form>
   {% else %}

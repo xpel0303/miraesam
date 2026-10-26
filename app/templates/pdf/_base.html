@@ -25,8 +25,9 @@
     size: A4;
     margin: 18mm 15mm 18mm 15mm;
     @top-left { content: element(pdf-header); }
-    @bottom-center { content: counter(page) " / " counter(pages); font-family: "Nanum Gothic"; font-size: 8pt; color: #8a8a8a; }
+    @bottom-center { content: {% if chunked %}counter(page){% else %}counter(page) " / " counter(pages){% endif %}; font-family: "Nanum Gothic"; font-size: 8pt; color: #8a8a8a; }
   }
+  {% if chunked %}@page :first { counter-reset: page {{ page_offset + 1 }}; }{% endif %}
   * { box-sizing: border-box; }
   html { font-family: "Nanum Gothic", sans-serif; font-size: 10pt; color: var(--ink); line-height: 1.55; }
   body { margin: 0; }

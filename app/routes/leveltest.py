@@ -19,7 +19,8 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
 from ..leveltest import pack as lpack, spec as lspec
-from ..models import Academy, LevelResult, LevelTest, StoredFile, Student, Teacher
+from ..homework import spec as hspec
+from ..models import Academy, Homework, HomeworkClass, HomeworkResult, LevelResult, LevelTest, StoredFile, Student, Teacher
 from ..web import current_teacher, flash, render
 
 router = APIRouter()
@@ -378,22 +379,36 @@ async def public_start(token: str, request: Request, db: Session = Depends(get_d
     return _go(f"/lt/r/{r.key}")
 
 
+def start_for_student(db: Session, s: Student, t: LevelTest) -> LevelResult:
+    """재원생 응시: 이미 본 시험은 결과로, 풀다 만 것은 이어서 (다시 보게 하려면 선생님이 결과를 지우면 됨)."""
+    r = db.execute(select(LevelResult).where(LevelResult.test_id == t.id, LevelResult.student_id == s.id)
+                   .order_by(LevelResult.id.desc())).scalars().first()
+    if r is None:
+        info = " ".join(x for x in [s.school.name if s.school else "", s.class_group.name if s.class_group else ""] if x)
+        r = _new_result(db, t, s.name, info, s)
+    return r
+
+
+def _assigned_tests(db: Session, s: Student) -> set[int]:
+    """이 학생 반에 숙제로 내준 레벨테스트."""
+    if not s.class_id:
+        return set()
+    hws = db.execute(select(Homework).join(HomeworkClass, HomeworkClass.homework_id == Homework.id)
+                     .where(HomeworkClass.class_id == s.class_id, Homework.active.is_(True))).scalars()
+    return {t.get("test_id") for h in hws for t in (h.tasks or []) if t.get("kind") == "leveltest"}
+
+
 @router.post("/s/{code}/lt/{tid}")
 def student_start(code: str, tid: int, db: Session = Depends(get_db)):
     s = db.execute(select(Student).options(selectinload(Student.class_group), selectinload(Student.school))
                    .where(Student.access_code == code.upper(), Student.active.is_(True))).scalar_one_or_none()
     if s is None:
         raise HTTPException(404)
-    t = next((x for x in _tests(db, s.academy_id) if x.id == tid), None)
-    if t is None:
-        raise HTTPException(404, "이 레벨테스트는 지금 볼 수 없어요.")
-    # 이미 본 시험은 결과로, 풀다 만 것은 이어서 (다시 보게 하려면 선생님이 결과를 지우면 됨)
-    r = db.execute(select(LevelResult).where(LevelResult.test_id == t.id, LevelResult.student_id == s.id)
-                   .order_by(LevelResult.id.desc())).scalars().first()
-    if r is None:
-        info = " ".join(x for x in [s.school.name if s.school else "", s.class_group.name if s.class_group else ""] if x)
-        r = _new_result(db, t, s.name, info, s)
-    return _go(f"/lt/r/{r.key}")
+    t = db.get(LevelTest, tid)
+    took = t is not None and db.execute(select(LevelResult.id).where(LevelResult.test_id == tid, LevelResult.student_id == s.id)).first()
+    if t is None or t.academy_id != s.academy_id or not (tid in _assigned_tests(db, s) or took):
+        raise HTTPException(404, "이 레벨테스트는 지금 볼 수 없어요. 선생님께 확인해 주세요.")
+    return _go(f"/lt/r/{start_for_student(db, s, t).key}")
 
 
 def _result(db: Session, key: str) -> LevelResult:
@@ -421,7 +436,7 @@ def take(key: str, request: Request, db: Session = Depends(get_db)):
         dl = _deadline(r)
         if dl is not None and _now() > dl + timedelta(seconds=GRACE):  # 시간이 지나 창을 닫았던 경우: 저장된 답으로 제출
             _finish(db, r, r.answers or {})
-        elif not t.active:
+        elif not t.active and r.student_id is None:
             raise HTTPException(404, "이 레벨테스트는 지금 닫혀 있어요. 학원에 물어봐 주세요.")
         else:
             return render(request, "lt/take.html", {"t": t, "spec": lspec.public(t.spec), "answers": r.answers or {}, "r": r, "preview": False,
@@ -450,6 +465,31 @@ def _finish(db: Session, r: LevelResult, answers: dict):
     rep = lspec.report(r.test.spec or {}, answers)
     rep["test"] = r.test.title
     r.answers, r.report, r.score, r.level, r.submitted_at = answers, rep, rep["score"], rep["band"]["label"], _now()
+    db.commit()
+    _mark_homework(db, r)
+
+
+def _mark_homework(db: Session, r: LevelResult):
+    """재원생이 제출하면, 그 레벨테스트를 할 일로 넣은 숙제를 완료로."""
+    s = db.get(Student, r.student_id) if r.student_id else None
+    if s is None or not s.class_id:
+        return
+    hws = db.execute(select(Homework).join(HomeworkClass, HomeworkClass.homework_id == Homework.id)
+                     .where(HomeworkClass.class_id == s.class_id, Homework.active.is_(True))).scalars()
+    for h in hws:
+        for i, t in enumerate(h.tasks or []):
+            if t.get("kind") != "leveltest" or t.get("test_id") != r.test_id:
+                continue
+            hr = db.execute(select(HomeworkResult).where(HomeworkResult.homework_id == h.id, HomeworkResult.student_id == s.id,
+                                                         HomeworkResult.task == i)).scalar_one_or_none()
+            if hr is None:
+                hr = HomeworkResult(academy_id=h.academy_id, homework_id=h.id, student_id=s.id, task=i, attempts=0, best=0)
+                db.add(hr)
+            hr.attempts = (hr.attempts or 0) + 1
+            hr.correct, hr.total, hr.detail = (r.report or {}).get("correct", 0), (r.report or {}).get("total", 0), []
+            hr.best = max(hr.best or 0, r.score or 0)
+            if not hr.done:
+                hr.done, hr.late = True, hspec.is_late(h.due)
     db.commit()
 
 
@@ -508,3 +548,31 @@ def image(tid: int, name: str, request: Request, db: Session = Depends(get_db)):
     if sf is None:
         raise HTTPException(404)
     return Response(sf.data, media_type=sf.mime, headers={"Cache-Control": "private, max-age=86400"})
+
+
+# ---------------- 신규생: 시험지마다 따로 보내는 링크 (그 시험만 보임) ----------------
+# (위의 /lt/r/…, /lt/a/… 보다 뒤에 둬야 그 주소들과 섞이지 않음)
+
+def _one_test(db: Session, token: str, tid: int) -> tuple[Academy, LevelTest]:
+    academy = db.execute(select(Academy).where(Academy.lt_token == token)).scalar_one_or_none()
+    t = db.get(LevelTest, tid) if academy else None
+    if academy is None or t is None or t.academy_id != academy.id or not t.active or not _n_items(t):
+        raise HTTPException(404, "레벨테스트 링크가 바뀌었거나 지금은 볼 수 없는 시험이에요. 학원에 새 링크를 물어봐 주세요.")
+    return academy, t
+
+
+@router.get("/lt/{token}/{tid:int}")
+def public_enter_one(token: str, tid: int, request: Request, db: Session = Depends(get_db)):
+    academy, t = _one_test(db, token, tid)
+    return render(request, "lt/enter.html", {"tests": [t], "only": t, "token": token, "form": {}, **_shell(db, academy.id, "레벨테스트")})
+
+
+@router.post("/lt/{token}/{tid:int}")
+async def public_start_one(token: str, tid: int, request: Request, db: Session = Depends(get_db)):
+    academy, t = _one_test(db, token, tid)
+    f = await request.form()
+    name, info = str(f.get("name", "")).strip()[:40], str(f.get("info", "")).strip()[:80]
+    if not name:
+        return render(request, "lt/enter.html", {"tests": [t], "only": t, "token": token, "errors": ["이름을 적어 주세요."],
+                                                 "form": {"name": name, "info": info}, **_shell(db, academy.id, "레벨테스트")}, 400)
+    return _go(f"/lt/r/{_new_result(db, t, name, info).key}")

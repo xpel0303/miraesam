@@ -116,6 +116,15 @@
   </details>
   {% endif %}
 
+  {% if p.visual_img or p.visual_error %}
+  <div class="vis-preview">
+    <h3 style="margin:14px 0 6px;font-size:1rem">정리 그림</h3>
+    {% if p.visual_img %}<a href="/files/{{ p.visual_img }}" target="_blank" rel="noopener"><img src="/files/{{ p.visual_img }}" alt="정리 그림" loading="lazy" style="width:100%;max-width:760px;border-radius:10px;border:1px solid var(--line)"></a>{% endif %}
+    {% if p.visual_error %}<p class="small" style="color:var(--err)">그림을 그리지 못해서 PDF에는 아이콘 정리로 들어갔어요: {{ p.visual_error }}</p>{% endif %}
+    {% if not busy %}<form method="post" action="/analysis/{{ aset.id }}/redraw/{{ idx }}" style="margin-top:6px"><button class="btn ghost small" type="submit">🎨 그림 다시 그리기</button></form>{% endif %}
+  </div>
+  {% endif %}
+
   {% if not busy and p.status in ("done", "failed") %}
   <form method="post" action="/analysis/{{ aset.id }}/regenerate/{{ idx }}" style="margin-top:12px" onsubmit="return confirm('이 지문을 새로 분석할까요? 고친 내용은 사라집니다.')">
     <button class="btn ghost small" type="submit">이 지문만 다시 분석</button>

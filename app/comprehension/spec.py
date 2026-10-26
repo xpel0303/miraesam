@@ -11,7 +11,7 @@
 import random
 import re
 
-MAX_PASSAGES = 6
+MAX_PASSAGES = 30
 
 SECTIONS = [  # (key, 문항 수, 문제지 지시문)
     ("ox_ko_short", 5, "글의 내용과 일치하면 O, 일치하지 않으면 X를 고르시오."),

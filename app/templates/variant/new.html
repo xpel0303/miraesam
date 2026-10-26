@@ -2,7 +2,7 @@
 {% block title %}새 변형문제 · {{ APP_NAME }}{% endblock %}
 {% block main %}
 <h1>새 변형문제</h1>
-<p class="lead">지문마다 고른 유형을 하나씩 만들어요. 지문 {{ spec.MAX_PASSAGES }}개에 6유형이면 36문항입니다.</p>
+<p class="lead">지문마다 고른 유형을 하나씩 만들어요. 지문 수 × 고른 유형 수만큼 문항이 생겨요 (지문 {{ spec.MAX_PASSAGES }}개까지).</p>
 {% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
 
 <form method="post" action="/variant">

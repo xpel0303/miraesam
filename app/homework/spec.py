@@ -4,6 +4,7 @@
   vocab  단어 퀴즈      {list_id, mode, count, pass}           — 단어장 퀴즈를 그대로 씀
   ox     OX 퀴즈        {source, items[{q, a, why, p}], passages[{title, text}], pass}  — 내용이해 워크북 OX를 복사
   omr    답 입력        {source, items[{n, a}], pass}           — 종이로 푼 변형문제·어법 문제(또는 직접 넣은 정답)의 답만 입력
+  leveltest 레벨테스트 {test_id}                                — 레벨테스트를 풀고 제출하면 완료 (점수 = 최고 점수)
   check  할 일 체크     {text}                                  — 본문 암기처럼 학생이 '했어요'를 누름
 
 pass = 통과 점수(%). 0 이면 한 번 내면 완료.
@@ -17,7 +18,7 @@ from ..reports.spec import CIRCLED, parse_key
 from ..variant import spec as vspec
 from ..vocab.spec import QUIZ_MODES
 
-KINDS = {"vocab": "단어 퀴즈", "ox": "OX 퀴즈", "omr": "답 입력", "check": "할 일 체크"}
+KINDS = {"vocab": "단어 퀴즈", "ox": "OX 퀴즈", "omr": "답 입력", "leveltest": "레벨테스트", "check": "할 일 체크"}
 MAX_TASKS = 8
 OX_LEVELS = {"short": "기본만", "deep": "심화만", "all": "기본+심화"}
 _C2N = {c: i + 1 for i, c in enumerate("①②③④⑤")}
@@ -104,6 +105,10 @@ def key_items(text: str) -> list[dict]:
     return out
 
 
+def task_leveltest(t) -> dict:
+    return {"kind": "leveltest", "title": f"레벨테스트 · {t.title}", "test_id": t.id, "pass": 0}
+
+
 def task_check(text: str) -> dict:
     t = re.sub(r"\s+", " ", text or "").strip()[:200]
     return {"kind": "check", "title": t or "할 일", "text": t}
@@ -158,6 +163,8 @@ def summary_text(task: dict) -> str:
         nums = [it["n"] for it in task["items"]]
         rng = f"{nums[0]}~{nums[-1]}번 중 " if nums else ""
         return f"{rng}{len(nums)}문항 답 입력" + (f" · {task['pass']}점 이상 통과" if task["pass"] else "")
+    if k == "leveltest":
+        return "레벨테스트 풀고 제출하기"
     return "했으면 체크"
 
 

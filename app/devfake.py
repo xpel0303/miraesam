@@ -121,8 +121,9 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
     if system and "지문 분석본" in system:
         return _analysis(prompt)
     if system and "4컷 정리 그림" in system:
-        return {"visual": {"title": "[가짜] 한눈에 정리", "message": "[가짜] 한 줄 결론",
-                           "panels": [{"icon": i, "head": f"[가짜] {k + 1}단계", "text": "[가짜] 설명"} for k, i in enumerate(("book", "idea", "people", "check"))]}}
+        return {"visual": {"title": "[가짜] 한눈에 정리", "title_mark": "정리", "layout": "contrast", "message": "[가짜] 한 줄 결론",
+                           "panels": [{"icon": i, "head": f"[가짜] {k + 1}칸", "text": "[가짜] 설명", "mark": "설명", "scene": "A student reading a book."}
+                                      for k, i in enumerate(("book", "idea"))]}}
     if system and "시험지 이미지를 글자 그대로" in system:
         return _exam(prompt)
     if json_mode:
@@ -230,3 +231,33 @@ def _exam(prompt: str) -> dict:
     if pages and len(pages) == 1 and pages[0] % 2 == 0:  # 앞 쪽이 빈 쪽이라 한 쪽만 온 경우
         c = {"header": c.get("header"), "items": [dict(i, page=1) for i in c["items"] if i.get("page") == 2]}
     return c
+
+
+def fake_image(prompt: str, aspect: str = "16:9") -> bytes:
+    """가짜 정리 그림 (PNG). 진짜 그림 모델 대신 제목·칸 모양만 흉내 냄."""
+    import io
+    import glob
+
+    from PIL import Image, ImageDraw, ImageFont
+
+    w, h = (1600, 900) if aspect == "16:9" else (1200, 1200)
+    img = Image.new("RGB", (w, h), "#fdf8ee")
+    d = ImageDraw.Draw(img)
+    fonts = glob.glob("/usr/share/fonts/**/NotoSansCJK-Bold.ttc", recursive=True)
+    font = lambda size: ImageFont.truetype(fonts[0], size) if fonts else ImageFont.load_default()
+    title = (re.findall(r'headline[^"]*"([^"]+)"', prompt) or ["[가짜] 정리 그림"])[0]
+    d.text((60, 40), title[:40], fill="#1b2a4a", font=font(64))
+    cols = ("#5b7bb2", "#e9a23b", "#5aa469")
+    n = max(2, min(3, len(re.findall(r"^Panel \d", prompt, re.M)) or 2))
+    pw = (w - 120 - 40 * (n - 1)) // n
+    for i in range(n):
+        x = 60 + i * (pw + 40)
+        d.rounded_rectangle((x, 160, x + pw, h - 170), 28, fill=cols[i % 3])
+        d.rectangle((x + 30, h - 290, x + pw - 30, h - 210), fill="#ffe14d")
+        d.text((x + 50, h - 280), f"[가짜] 칸 {i + 1}", fill="#222", font=font(44))
+    d.rectangle((0, h - 120, w, h), fill="#1b2a4a")
+    d.text((60, h - 95), "[가짜 그림] 실제로는 Gemini 그림 모델이 그립니다", fill="white", font=font(44))
+    time.sleep(0.2)
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    return buf.getvalue()

@@ -129,8 +129,9 @@ def student_home(code: str, request: Request, db: Session = Depends(get_db)):
     for r in db.execute(select(ExamResponse).where(ExamResponse.student_id == s.id)).scalars():
         m = r.meta or {}
         (going if m.get("started_at") and not m.get("submitted_at") else done).add(r.exam_id)
-    lts = list(db.execute(select(LevelTest).where(LevelTest.academy_id == s.academy_id, LevelTest.active.is_(True)).order_by(LevelTest.sort, LevelTest.id)).scalars())
+    # 레벨테스트는 숙제로 내준 것만 풀 수 있음 → 홈에는 이미 본(또는 풀다 만) 시험만 보여 줌
     lt_done = {r.test_id: r for r in db.execute(select(LevelResult).where(LevelResult.student_id == s.id).order_by(LevelResult.id)).scalars()}
+    lts = list(db.execute(select(LevelTest).where(LevelTest.id.in_(list(lt_done) or [0])).order_by(LevelTest.sort, LevelTest.id)).scalars())
     return render(request, "student/home.html", {"student": s, "academy": db.get(Academy, s.academy_id), "lists": lists, "lts": lts, "lt_done": lt_done, "best": best,
                                                  "exams": exams, "done": done, "going": going, "online": {e.id for e in exams if obuild.is_online(e)}, "hws": hws, "hw_prog": hw_prog,
                                                  "today": hspec.today(), "code": s.access_code})
@@ -390,6 +391,12 @@ def hw_task(code: str, hid: int, i: int, request: Request, db: Session = Depends
         public = [{"prompt": q["prompt"], "choices": q.get("choices")} for q in qs]
         return render(request, "student/quiz.html", _ctx(db, s, wl=wl, mode=t["mode"], modes=spec.QUIZ_MODES, qs=public, seed=seed, count=t["count"],
                                                          hw=h, action=f"/s/{s.access_code}/hw/{h.id}/{i}"))
+    if t["kind"] == "leveltest":
+        from .leveltest import start_for_student
+        lt = db.get(LevelTest, t.get("test_id") or 0)
+        if lt is None or lt.academy_id != s.academy_id:
+            raise HTTPException(404, "레벨테스트가 지워졌어요. 선생님께 알려 주세요.")
+        return RedirectResponse(f"/lt/r/{start_for_student(db, s, lt).key}", status_code=303)
     if t["kind"] == "ox":
         items = [{"q": x["q"], "p": x["p"]} for x in t["items"]]  # 정답은 보내지 않음
         return render(request, "student/hw_ox.html", _ctx(db, s, h=h, i=i, t=t, items=items))

@@ -28,7 +28,7 @@ TYPES = {
 CODE_TYPES = ["order", "insert"]
 AI_TYPES = [t for t in TYPES if t not in CODE_TYPES]
 DEFAULT_TYPES = ["topic", "blank", "order", "insert", "irrelevant", "summary"]
-MAX_PASSAGES = 6
+MAX_PASSAGES = 30
 
 ORDER_CHOICES = ["(A)-(C)-(B)", "(B)-(A)-(C)", "(B)-(C)-(A)", "(C)-(A)-(B)", "(C)-(B)-(A)"]
 

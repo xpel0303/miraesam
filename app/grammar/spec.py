@@ -29,7 +29,7 @@ SENTENCE_TYPES = ["paren", "blank", "pick", "arrange", "transform"]
 PASSAGE_TYPES = ["under5", "count"]
 DEFAULT_COUNTS = {"paren": 6, "blank": 4, "pick": 3, "arrange": 4, "transform": 3}
 MAX_PER_TYPE = 15
-MAX_PASSAGES = 3
+MAX_PASSAGES = 10
 CIRCLED = "①②③④⑤"
 LETTERS = "ⓐⓑⓒⓓⓔ"
 

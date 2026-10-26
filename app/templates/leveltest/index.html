@@ -1,31 +1,35 @@
 {% extends "base.html" %}
-{% block title %}레벨테스트 · {{ APP_NAME }}{% endblock %}
+{% block title %}레벨테스트 · {{ APP_NAME }}<script>
+  document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", () => navigator.clipboard.writeText(b.dataset.copy).then(() => { b.textContent = "복사했어요 ✓"; setTimeout(() => b.textContent = "링크 복사", 1800); })));
+</script>
+{% endblock %}
 {% block main %}
 <div class="panel-head" style="margin-bottom:4px"><h1>레벨테스트</h1>
   <form method="post" action="/leveltest/new"><button class="btn" type="submit">새 시험지</button></form></div>
-<p class="lead">재원생은 학생 화면(접속 코드)에서, 처음 오는 학생은 아래 공용 링크로 들어와 풀어요. 제출하면 바로 채점되고 레벨 리포트가 여기 모여요.</p>
+<p class="lead">재원생은 <a href="/homework/new">숙제</a>로 레벨테스트를 내주면 학생 화면에 그 시험만 떠요. 처음 오는 학생에게는 아래 표에서 <b>그 학생이 볼 시험의 링크</b>를 복사해 보내 주세요. 제출하면 바로 채점되고 결과가 여기 모여요.</p>
 
-<section class="panel">
-  <h2>신규생 공용 링크</h2>
+<details class="panel">
+  <summary><b>모든 시험을 고를 수 있는 링크</b> <span class="small muted">— 학생이 직접 시험을 골라야 해서 헷갈릴 수 있어요</span></summary>
   <div class="actions">
     <input type="text" id="lt-link" value="{{ link }}" readonly style="flex:1;min-width:240px;font-family:ui-monospace,monospace" aria-label="공용 링크">
     <button class="btn small" type="button" onclick="navigator.clipboard.writeText(document.getElementById('lt-link').value).then(()=>{this.textContent='복사했어요 ✓'})">복사</button>
     <form method="post" action="/leveltest/link/reset" onsubmit="return confirm('링크를 새로 만들면 예전 링크는 더 이상 안 열려요. 바꿀까요?')"><button class="btn ghost small" type="submit">링크 바꾸기</button></form>
   </div>
-  <p class="small muted" style="margin:8px 0 0">상담 문자에 이 링크를 보내면 학생이 이름·학교/학년만 적고 바로 볼 수 있어요. 재원생은 학생 화면 맨 아래 '레벨테스트'에서 봐요.</p>
-</section>
+  <p class="small muted" style="margin:8px 0 0">'학생에게 보임'인 시험이 모두 나와요. 링크를 바꾸면 시험별 링크도 함께 바뀌어요.</p>
+</details>
 
 <section class="panel">
   <h2>시험지</h2>
   {% if tests %}
   <div class="table-wrap"><table class="list">
-    <thead><tr><th>순서</th><th>시험지</th><th>문항</th><th>시간</th><th>상태</th><th>응시</th></tr></thead>
+    <thead><tr><th>순서</th><th>시험지</th><th>문항</th><th>시간</th><th>상태</th><th>신규생 링크</th><th>응시</th></tr></thead>
     <tbody>{% for t in tests %}
       <tr><td class="muted">{{ t.sort }}</td>
         <td class="wrap"><a href="/leveltest/{{ t.id }}"><b>{{ t.title }}</b></a>{% if t.sub %} <span class="small muted">{{ t.sub }}</span>{% endif %}</td>
         <td>{{ n_items[t.id] or "-" }}</td>
         <td class="small">{{ (t.minutes ~ "분") if t.minutes else "제한 없음" }}</td>
         <td>{% if t.active %}<span class="tag tag-on">학생에게 보임</span>{% elif not n_items[t.id] %}<span class="tag">문항 넣기 전</span>{% else %}<span class="tag">닫음</span>{% endif %}</td>
+        <td>{% if t.active and n_items[t.id] %}<button class="btn ghost small" type="button" data-copy="{{ link }}/{{ t.id }}" title="{{ link }}/{{ t.id }}">링크 복사</button>{% else %}<span class="small muted">학생에게 보이기를 켜면 생겨요</span>{% endif %}</td>
         <td><a class="small" href="/leveltest?test_id={{ t.id }}#results">{{ counts.get(t.id, 0) }}명</a></td></tr>
     {% endfor %}</tbody>
   </table></div>
@@ -65,4 +69,7 @@
   <p class="small muted" style="margin:0">아직 응시한 학생이 없어요.</p>
   {% endif %}
 </section>
+<script>
+  document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", () => navigator.clipboard.writeText(b.dataset.copy).then(() => { b.textContent = "복사했어요 ✓"; setTimeout(() => b.textContent = "링크 복사", 1800); })));
+</script>
 {% endblock %}

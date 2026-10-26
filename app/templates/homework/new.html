@@ -31,6 +31,7 @@
           {% if src.workbook %}<optgroup label="OX 퀴즈 (내용이해 워크북)">{% for x in src.workbook %}<option value="workbook:{{ x.id }}">{{ x.title }}</option>{% endfor %}</optgroup>{% endif %}
           {% if src.variant %}<optgroup label="답 입력 (변형문제 시험지)">{% for x in src.variant %}<option value="variant:{{ x.id }}">{{ x.title }}</option>{% endfor %}</optgroup>{% endif %}
           {% if src.grammar %}<optgroup label="답 입력 (어법 문제 시험지)">{% for x in src.grammar %}<option value="grammar:{{ x.id }}">{{ x.title }}</option>{% endfor %}</optgroup>{% endif %}
+          {% if src.leveltest %}<optgroup label="레벨테스트">{% for x in src.leveltest %}<option value="leveltest:{{ x.id }}">{{ x.title }}{% if x.sub %} ({{ x.sub }}){% endif %}</option>{% endfor %}</optgroup>{% endif %}
           <optgroup label="기타"><option value="key">답 입력 (정답 직접 넣기 — 교재·프린트)</option><option value="check">할 일 체크 (본문 암기 등)</option></optgroup>
         </select></div>
         <div class="field opt" data-for="vocab workbook" style="flex:1 1 150px"><select name="t_mode" aria-label="방식"></select></div>

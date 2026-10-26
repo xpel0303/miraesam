@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
 from ..homework import spec
-from ..models import (Academy, ClassGroup, GrammarSet, Homework, HomeworkClass, HomeworkResult, Student, Teacher, VariantSet, WordList,
+from ..models import (Academy, ClassGroup, GrammarSet, Homework, HomeworkClass, HomeworkResult, LevelTest, Student, Teacher, VariantSet, WordList,
                       Workbook)
 from ..vocab.spec import QUIZ_MODES
 from ..web import current_teacher, flash, render
@@ -38,7 +38,9 @@ def _sources(db: Session, aid: int) -> dict:
     wbs = [w for w in q(Workbook) if any(p.get("status") == "done" for p in (w.passages or []))]
     vss = [v for v in q(VariantSet, VariantSet.status == "done") if spec.variant_key(v)]
     gss = [g for g in q(GrammarSet, GrammarSet.status == "done") if spec.grammar_key(g)]
-    return {"vocab": q(WordList, WordList.status == "done"), "workbook": wbs, "variant": vss, "grammar": gss}
+    lts = [t for t in db.execute(select(LevelTest).where(LevelTest.academy_id == aid).order_by(LevelTest.sort, LevelTest.id)).scalars()
+           if (t.spec or {}).get("sections")]
+    return {"vocab": q(WordList, WordList.status == "done"), "workbook": wbs, "variant": vss, "grammar": gss, "leveltest": lts}
 
 
 def _set_classes(db: Session, h: Homework, teacher: Teacher, raw: list) -> int:
@@ -77,6 +79,12 @@ def _build_tasks(db: Session, aid: int, f) -> tuple[list[dict], list[str]]:
                 continue
             title = re.sub(r"\s+", " ", f.getlist("t_title")[i] if i < len(f.getlist("t_title")) else "").strip()[:80] or "답 입력"
             tasks.append(spec.task_omr(title, "key", items, g(passes)))
+        elif kind == "leveltest" and ref.isdigit():
+            obj = db.get(LevelTest, int(ref))
+            if obj is None or obj.academy_id != aid:
+                errors.append(f"할 일 {n}: 레벨테스트를 찾을 수 없어요.")
+                continue
+            tasks.append(spec.task_leveltest(obj))
         elif kind in ("vocab", "workbook", "variant", "grammar") and ref.isdigit():
             M = {"vocab": WordList, "workbook": Workbook, "variant": VariantSet, "grammar": GrammarSet}[kind]
             obj = db.get(M, int(ref))

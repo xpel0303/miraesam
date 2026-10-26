@@ -13,7 +13,7 @@
 """
 import re
 
-MAX_PASSAGES = 6
+MAX_PASSAGES = 30
 
 TAG_TYPES = ("grammar", "vocab", "both", "connective", "parallel", "highlight")
 POINT_TYPES = {
@@ -178,17 +178,51 @@ def clean_result(raw: dict, sentences: list[str]) -> tuple[dict, list[str]]:
 
 
 def clean_visual(v) -> dict | None:
-    """정리 그림(4컷): {title, panels[{icon, head, text}], message}. 아이콘은 정해진 목록에서만."""
+    """정리 그림: {title, title_mark, layout, panels[{head, text, mark, scene, icon}], message}."""
     if not isinstance(v, dict):
         return None
     panels = []
     for x in v.get("panels") or []:
         if isinstance(x, dict) and (x.get("head") or "").strip():
             icon = str(x.get("icon") or "").strip()
-            panels.append({"icon": icon if icon in ICONS else "idea", "head": x["head"].strip()[:30], "text": (x.get("text") or "").strip()[:160]})
+            panels.append({"icon": icon if icon in ICONS else "idea", "head": x["head"].strip()[:30], "text": (x.get("text") or "").strip()[:160],
+                           "mark": (x.get("mark") or "").strip()[:60], "scene": (x.get("scene") or "").strip()[:400]})
     if len(panels) < 2:
         return None
-    return {"title": (v.get("title") or "").strip()[:60], "panels": panels[:4], "message": (v.get("message") or "").strip()[:120]}
+    layout = "flow" if v.get("layout") == "flow" or len(panels) >= 3 else "contrast"
+    return {"title": (v.get("title") or "").strip()[:60], "title_mark": (v.get("title_mark") or "").strip()[:60], "layout": layout,
+            "panels": panels[:4], "message": (v.get("message") or "").strip()[:120]}
+
+
+def _quoted(marks: str) -> str:
+    parts = [m.strip() for m in (marks or "").split(",") if m.strip()]
+    return " and ".join(f'"{m}"' for m in parts)
+
+
+def image_prompt(vis: dict) -> str:
+    """정리 그림 → 그림 모델(Nano Banana)에게 줄 설명. 선생님이 준 예시처럼: 큰 한글 제목 + 대비/흐름 일러스트 칸 + 노란 형광펜 캡션."""
+    panels = vis["panels"][:3]
+    n = len(panels)
+    lines = [
+        "Create ONE wide educational infographic illustration that summarizes an English reading passage for Korean high school students.",
+        "Art style: warm, detailed hand-drawn comic / storybook illustration with clean ink outlines and rich painterly colors "
+        "(like a modern Korean webtoon infographic). Expressive characters acting out the idea as a visual metaphor. "
+        "High contrast, easy to read when printed.",
+        f'Top: a large bold Korean headline on a light background, exactly: "{vis["title"]}"'
+        + (f" — render the words {_quoted(vis['title_mark'])} in extra-bold black, the rest in regular weight." if vis.get("title_mark") else "."),
+        f"Below the headline: {n} panels side by side, separated by a thin seam"
+        + (" — the panels CONTRAST each other (e.g. gloomy stormy mood vs. bright hopeful mood)." if vis.get("layout") == "contrast"
+           else " — the panels show a FLOW from left to right, with hand-drawn dashed arrows between them."),
+    ]
+    for i, pn in enumerate(panels, 1):
+        mark = f" Put the words {_quoted(pn['mark'])} on a bright yellow highlighter box with black text." if pn.get("mark") else ""
+        lines.append(f'Panel {i}: scene — {pn.get("scene") or pn["text"]} At the top of this panel, a bold Korean heading in white with a dark outline: '
+                     f'"{pn["head"]}", and under it a one-line Korean caption in white with a dark outline: "{pn["text"]}".{mark}')
+    if vis.get("message"):
+        lines.append(f'Bottom: a slim dark navy banner with white Korean text: "{vis["message"]}".')
+    lines.append("Render every Korean text EXACTLY as given, with correct spelling, large and legible. "
+                 "Do not add any other text, English words, numbers, logos, signatures or watermarks.")
+    return "\n".join(lines)
 
 
 def sentence_points(row: dict) -> list[dict]:
@@ -272,10 +306,18 @@ SYSTEM_PROMPT = """당신은 대한민국 고등학교 내신·수능 영어 교
 
 VISUAL_RULE = """
 ## 정리 그림 (추가로 요청됨)
-- visual: 지문 내용을 한눈에 정리하는 4컷 그림의 내용.
-  {"title": "그림 제목(한국어, 짧게)", "panels": [{"icon": "아이콘 이름", "head": "핵심어 2~8글자", "text": "한두 문장 설명(한국어)"} 4개, 글의 흐름 순서대로],
-   "message": "그림 아래 한 줄 결론"}
-  icon은 다음 중에서만 고릅니다: """ + ", ".join(ICONS) + "\n"
+- visual: 지문 내용을 한 장의 일러스트로 정리하기 위한 내용. 그림 화가에게 줄 설명서입니다.
+  {"title": "그림 맨 위 큰 제목(한국어, 20자 안팎)", "title_mark": "제목 안에서 굵게 강조할 핵심어(제목 글자 그대로, 1~2개를 쉼표로)",
+   "layout": "contrast"(두 생각·상황을 대비) 또는 "flow"(원인→과정→결과 같은 흐름),
+   "panels": [  // contrast면 2개, flow면 3개
+     {"head": "칸 제목(한국어, 4~12글자)", "text": "칸 설명 한 문장(한국어, 30자 이내, 쉬운 말)",
+      "mark": "text 안에서 노란 형광펜을 칠할 핵심 어구(text 글자 그대로, 1~2개를 쉼표로)",
+      "scene": "이 칸에 그릴 장면 (English, 1-2 sentences): 인물·사물·배경으로 지문의 생각을 비유적으로 보여 주는 구체적인 장면",
+      "icon": "아이콘 이름"}
+   ],
+   "message": "그림 아래 한 줄 결론(한국어, 25자 이내)"}
+  장면은 글자 없이 그림만으로도 뜻이 통하게, 인물이 행동하는 이야기 장면으로 정합니다.
+  icon은 그림을 못 만들 때 대신 쓸 아이콘으로, 다음 중에서만 고릅니다: """ + ", ".join(ICONS) + "\n"
 
 
 def user_prompt(sentences: list[str], *, need_title: bool, level: str = "", target: str = "", visual: bool = False) -> str:
@@ -298,8 +340,8 @@ def repair_prompt(errors: list[str]) -> str:
 
 
 VISUAL_SYSTEM = """당신은 고등학생용 영어 지문 정리 자료를 만드는 교재 디자이너입니다.
-지문을 한눈에 보여 주는 4컷 정리 그림의 내용을 JSON으로만 만듭니다.""" + VISUAL_RULE + """
-출력: {"visual": {"title": "...", "panels": [{"icon": "...", "head": "...", "text": "..."}], "message": "..."}}"""
+지문을 한눈에 보여 주는 정리 그림(4컷 정리 그림 대신 쓰는 일러스트 인포그래픽)의 내용을 JSON으로만 만듭니다.""" + VISUAL_RULE + """
+출력: {"visual": {"title": "...", "title_mark": "...", "layout": "contrast", "panels": [{"head": "...", "text": "...", "mark": "...", "scene": "...", "icon": "..."}], "message": "..."}}"""
 
 
 def visual_prompt(sentences: list[str], topic: str = "") -> str:

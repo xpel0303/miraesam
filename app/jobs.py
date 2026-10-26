@@ -162,6 +162,27 @@ def start_workers():
         t = threading.Thread(target=_worker, name=f"job-worker-{i}", daemon=True)
         t.start()
         _threads.append(t)
+    k = threading.Thread(target=_keepalive, name="job-keepalive", daemon=True)
+    k.start()
+    _threads.append(k)
+
+
+def _keepalive():
+    """무료 서버는 15분 동안 들어오는 요청이 없으면 잠들어 작업이 멈춤 → 작업이 남아 있는 동안 4분마다 자기 주소를 두드림."""
+    import os
+    import urllib.request
+
+    base = os.getenv("RENDER_EXTERNAL_URL") or os.getenv("SITE_URL")
+    if not base:
+        return
+    while not _stop.wait(240):
+        try:
+            with session_scope() as db:
+                busy = db.execute(select(Job.id).where(Job.status.in_(("queued", "running"))).limit(1)).first()
+            if busy:
+                urllib.request.urlopen(base.rstrip("/") + "/healthz", timeout=20).read()
+        except Exception:  # noqa: BLE001
+            log.warning("keepalive ping failed")
 
 
 def stop_workers():

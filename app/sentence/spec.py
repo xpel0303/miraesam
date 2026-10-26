@@ -20,7 +20,7 @@ STEMS = {
     "arrange": "우리말과 같은 뜻이 되도록 주어진 단어를 배열하시오.",
     "blank": "우리말을 참고하여 빈칸에 알맞은 말을 쓰시오. (첫 글자 힌트)",
 }
-MAX_PASSAGES = 6
+MAX_PASSAGES = 30
 MAX_SENTENCES = 40
 ARRANGE_MIN, ARRANGE_MAX = 4, 22  # 단어 배열은 너무 짧거나 긴 문장 제외
 

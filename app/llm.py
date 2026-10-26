@@ -124,3 +124,59 @@ def generate(
         raise LLMError(f"Gemini 호출 실패 ({resp.status_code}): {detail[:200]}")
 
     raise LLMError(last_error)
+
+
+# ---------------------------------------------------------------- 그림 만들기 (Gemini 이미지 모델, 'Nano Banana')
+
+IMAGE_MODELS = ["gemini-3.1-flash-image-preview", "gemini-3-pro-image-preview", "gemini-2.5-flash-image"]
+_image_model_ok: str | None = None  # 한 번 성공한 모델은 기억
+
+
+def generate_image(api_key: str | None, prompt: str, *, aspect: str = "16:9", timeout: float = 240.0) -> bytes:
+    """그림 한 장(PNG/JPEG 바이트). 최신 이미지 모델부터 차례로 시도 (계정에서 못 쓰는 모델은 건너뜀)."""
+    global _image_model_ok
+    if not api_key:
+        raise LLMError("Gemini API 키가 없습니다. 설정 화면에서 키를 먼저 넣어 주세요.")
+    if os.getenv("FAKE_LLM") == "1":
+        from .devfake import fake_image
+
+        return fake_image(prompt, aspect)
+    payload = {"contents": [{"role": "user", "parts": [{"text": prompt}]}],
+               "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": aspect}}}
+    models = ([_image_model_ok] if _image_model_ok else []) + [m for m in IMAGE_MODELS if m != _image_model_ok]
+    last_error = "그림을 만들지 못했습니다."
+    for model in models:
+        for attempt in range(3):
+            try:
+                resp = httpx.post(API.format(model=model), json=payload, headers={"x-goog-api-key": api_key}, timeout=timeout)
+            except httpx.HTTPError as e:
+                last_error = f"Gemini 서버에 연결하지 못했습니다 ({type(e).__name__})."
+                time.sleep(3 * (attempt + 1))
+                continue
+            if resp.status_code == 200:
+                body = resp.json()
+                for cand in body.get("candidates") or []:
+                    for part in (cand.get("content") or {}).get("parts") or []:
+                        data = (part.get("inlineData") or part.get("inline_data") or {}).get("data")
+                        if data:
+                            _image_model_ok = model
+                            return base64.b64decode(data)
+                last_error = "Gemini가 그림 대신 빈 답을 보냈습니다 (안전 필터일 수 있어요)."
+                break
+            detail = ""
+            try:
+                detail = resp.json().get("error", {}).get("message", "")
+            except ValueError:
+                pass
+            if resp.status_code in (400, 403) and "API key" in detail:
+                raise LLMError("Gemini API 키가 올바르지 않습니다. 설정 화면에서 키를 다시 확인해 주세요.")
+            if resp.status_code in (404, 400, 403):  # 이 계정에서 못 쓰는 모델 → 다음 모델
+                last_error = f"그림 모델을 쓸 수 없습니다 ({model}: {detail[:120]}). 결제(유료 등급)가 켜진 키가 필요할 수 있어요."
+                break
+            if resp.status_code == 429:
+                last_error = "그림 만들기 사용 한도에 걸렸습니다. 잠시 뒤 다시 시도해 주세요. (무료 키는 그림 모델을 못 쓸 수 있어요)"
+                time.sleep(15 * (attempt + 1))
+                continue
+            last_error = f"그림 만들기 실패 ({resp.status_code}): {detail[:150]}"
+            time.sleep(4 * (attempt + 1))
+    raise LLMError(last_error)
