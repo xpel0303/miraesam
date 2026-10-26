@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}새 동형 모의고사 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/mock">동형 모의고사</a></p>
+<h1>새 동형 모의고사</h1>
+<p class="lead">본뜰 학교 시험을 고르고, 다음 시험 범위 지문(교과서·모의고사·부교재)을 넣어 주세요. 지문은 문항 묶음에 알아서 나눠 쓰고, 어휘 문항은 범위 지문의 단어로 만들어요.</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+{% if not papers %}
+<div class="panel empty"><p>본뜰 학교 기출이 아직 없어요. <a href="/exam/new">기출 분석</a>에 학교 시험지를 먼저 올려 주세요.</p></div>
+{% else %}
+<form method="post" action="/mock">
+  <section class="panel">
+    <div class="field"><label for="tpl">본뜰 학교 시험</label>
+      <select id="tpl" name="template_id" required>
+        {% set ns = namespace(sch=None) %}
+        {% for p in papers %}{% set sn = p.school.name if p.school else "학교 미지정" %}
+          {% if sn != ns.sch %}{% if ns.sch is not none %}</optgroup>{% endif %}<optgroup label="{{ sn }}">{% set ns.sch = sn %}{% endif %}
+          <option value="{{ p.id }}" {% if form.template_id == p.id %}selected{% endif %}>{{ p.title }} · {{ p.questions|length }}문항</option>
+        {% endfor %}</optgroup>
+      </select>
+      <span class="hint">이 시험의 문항 수·번호·배점·유형·서술형 조건을 그대로 따라요. 같은 학교 경향 메모가 있으면 그것도 참고해요.</span></div>
+    <div class="row">
+      <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 신흥고 1학년 2학기 2차 대비 동형 1회"></div>
+    </div>
+    <div class="field"><label for="range">시험 범위 <span class="hint">시험지 맨 위에 그대로 들어가요</span></label>
+      <input type="text" id="range" name="range" value="{{ form.range or '' }}" placeholder="예: 비상(홍) 1과·4과, 2025 고1 9월 33~36번, 2026 고1 9월 21·30·33·34·36·38번"></div>
+  </section>
+
+  <div id="passages">
+    {% for r in form.passages %}
+    <section class="panel passage-card" data-source-title>
+      <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
+      <div class="field"><label>출처 <span class="hint">정답지에 출처로 들어가요 (예: 교과서 1과 Discover Yourself / 2026 고1 9월 33번)</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+      <div class="field"><label>영어 지문</label><textarea name="p_text" rows="7">{{ r.text or '' }}</textarea></div>
+    </section>
+    {% endfor %}
+  </div>
+  <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
+  <button class="btn" type="submit">동형 모의고사 만들기</button>
+  <p class="small muted" style="margin-top:8px">31문항 시험지는 보통 10~20분 걸려요. 창을 닫아도 계속 만들어요.</p>
+</form>
+<script>
+  const MAX = {{ spec.MAX_PASSAGES }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
+  function renumber() {
+    const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => { c.querySelector("[data-num]").textContent = i + 1; c.querySelector("[data-remove]").hidden = cards.length === 1; });
+    addBtn.disabled = cards.length >= MAX;
+    document.getElementById("count-note").textContent = `${cards.length} / ${MAX}개`;
+  }
+  addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
+  box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
+  renumber();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ m.title }} · {{ APP_NAME }}{% endblock %}
+{% macro rich(t) %}{{ spec.rich(t) }}{% endmacro %}
+{% block main %}
+<p class="small"><a href="/mock">동형 모의고사</a></p>
+<h1>{{ m.title }}</h1>
+<p class="lead">{{ m.options.template_name or "" }} 본뜸 · 지문 {{ m.passages|length }}개 · 문항 {{ m.items|length }} / {{ m.slots|length }}{% if c %} · {{ spec.fmt(c.total) }}점{% endif %}
+  {% if m.options.range %}<br><span class="small muted">범위: {{ m.options.range }}</span>{% endif %}</p>
+
+{% if busy %}<div class="job" data-job-id="{{ job.id }}" data-reload></div>
+{% elif m.status == "failed" and m.error %}<div class="flash error" role="alert">{{ m.error }}
+  <form method="post" action="/mock/{{ m.id }}/retry" style="margin-top:8px"><button class="btn small" type="submit">이어서 다시 만들기</button></form></div>{% endif %}
+{% if m.warnings %}<div class="flash small">확인해 볼 문항: {% for w in m.warnings %}{{ w.split("] ", 1)[-1] }}{% if not loop.last %} / {% endif %}{% endfor %}</div>{% endif %}
+
+<section class="panel">
+  <div class="panel-head"><h2>PDF</h2>
+    {% if not busy and m.items %}<form method="post" action="/mock/{{ m.id }}/render"><button class="btn {{ '' if m.options.dirty else 'ghost' }} small" type="submit">PDF 다시 만들기</button></form>{% endif %}
+  </div>
+  {% if m.file_id %}<div class="actions"><a class="btn" href="/files/{{ m.file_id }}" target="_blank" rel="noopener">시험지 PDF</a>
+    <a class="btn ghost" href="/files/{{ m.key_file_id }}" target="_blank" rel="noopener">정답·해설 PDF</a></div>
+    {% if m.options.dirty %}<p class="small" style="margin:10px 0 0;color:var(--err)">고친 내용이 아직 PDF에 반영되지 않았어요.</p>{% endif %}
+  {% elif busy %}<p class="muted small" style="margin:0">다 만들면 여기에 PDF가 생겨요. 만든 문항은 아래에 하나씩 나타나요.</p>
+  {% else %}<p class="muted small" style="margin:0">아직 PDF가 없어요.</p>{% endif %}
+  {% if m.school_id %}<p class="small muted" style="margin:10px 0 0">{% if trend and trend.memo %}이 학교 <a href="/trend/{{ m.school_id }}{{ '?grade=' ~ trend.grade if trend.grade }}">경향 메모</a>를 참고해서 만들었어요.{% else %}<a href="/trend/{{ m.school_id }}">학교 경향분석</a>에서 경향 메모를 만들어 두면 다음부터 더 학교 시험답게 나와요.{% endif %}</p>{% endif %}
+  {% if not busy %}<details style="margin-top:10px"><summary class="small">제목·범위 고치기</summary>
+    <form method="post" action="/mock/{{ m.id }}/info" style="margin-top:8px">
+      <div class="field"><label>제목</label><input type="text" name="title" value="{{ m.title }}"></div>
+      <div class="field"><label>시험 범위</label><input type="text" name="range" value="{{ m.options.range or '' }}"></div>
+      <button class="btn small" type="submit">저장</button>
+    </form></details>{% endif %}
+</section>
+
+{% for u in units %}
+<section class="panel" id="u{{ u.unit }}">
+  <div class="panel-head">
+    <h3 style="margin:0">{% for s in u.slots %}{{ s.label }}{% if s.label.isdigit() %}번{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}
+      <span class="small muted" style="font-weight:400">{% for s in u.slots %}{{ s.type }} {{ spec.fmt(s.points) }}점{% if not loop.last %} · {% endif %}{% endfor %}</span></h3>
+    {% if u.its %}<span class="small">{% for it in u.its %}{% if it.kind == "mc" %}<b>{{ it.label }}</b> 정답 {{ spec.CIRCLED[it.answer - 1] if it.answer else "?" }}{% if not loop.last %} · {% endif %}{% endif %}{% endfor %}</span>{% endif %}
+  </div>
+  {% if u.needs_passage %}<p class="small muted" style="margin:0 0 6px">지문: {% if u.p is not none %}{{ m.passages[u.p].source or m.passages[u.p].title or "지문 " ~ (u.p + 1) }}{% else %}배정 전{% endif %}
+    {% if u.its and u.its[0].change %} · {{ u.its[0].change }}{% endif %}</p>{% endif %}
+  {% if u.problems %}<div class="flash error small">{{ u.problems|join(" / ") }}</div>{% endif %}
+
+  {% if u.its %}
+  <details><summary class="small">미리 보기 · 고치기</summary>
+  <form method="post" action="/mock/{{ m.id }}/unit/{{ u.unit }}" style="margin-top:10px">
+    {% for it in m.items %}{% if it.unit == u.unit %}{% set i = loop.index0 %}{% set p = "i" ~ i ~ "-" %}
+    <div class="gq" style="border-top:1px solid var(--line);padding-top:10px;margin-top:10px">
+      <p style="margin:0 0 6px"><b>{{ it.label }}{% if it.label.isdigit() %}.{% endif %}</b> {{ it.stem }} <span class="small muted">({{ spec.fmt(it.points) }}점 · {{ it.type }}{% if it.point %} · {{ it.point }}{% endif %})</span></p>
+      <div class="field"><label class="small">발문</label><input type="text" name="{{ p }}stem" value="{{ it.stem }}"></div>
+      {% if it.passage or (u.needs_passage and it.label == u.slots[0].label) %}<div class="field"><label class="small">지문 <span class="hint">밑줄 [u]…[/u], 빈칸 _____</span></label><textarea name="{{ p }}passage" rows="7" style="font-size:0.9rem">{{ it.passage }}</textarea></div>{% endif %}
+      <div class="field"><label class="small">상자 (&lt;보기&gt;·주어진 단어·요약문)</label><textarea name="{{ p }}box" rows="2" style="font-size:0.9rem">{{ it.box }}</textarea></div>
+      {% if it.kind == "mc" %}
+        {% for k in range(5) %}<div class="row" style="grid-template-columns:32px 1fr;margin:0"><span style="padding-top:8px">{{ spec.CIRCLED[k] }}</span><div class="field" style="margin:0 0 4px"><input type="text" name="{{ p }}c{{ k }}" value="{{ it.choices[k] if k < it.choices|length else '' }}" aria-label="{{ k + 1 }}번 보기"></div></div>{% endfor %}
+        <div class="row"><div class="field"><label class="small">정답</label><select name="{{ p }}answer">{% for k in range(1, 6) %}<option value="{{ k }}" {% if it.answer == k %}selected{% endif %}>{{ spec.CIRCLED[k - 1] }}</option>{% endfor %}</select></div></div>
+      {% else %}
+        <div class="field"><label class="small">[조건]</label><textarea name="{{ p }}conditions" rows="3" style="font-size:0.9rem">{{ it.conditions }}</textarea></div>
+        <div class="field"><label class="small">모범 답안</label><textarea name="{{ p }}answer_text" rows="2" style="font-size:0.9rem">{{ it.answer_text }}</textarea></div>
+        <div class="field"><label class="small">채점 기준</label><textarea name="{{ p }}grading" rows="2" style="font-size:0.9rem">{{ it.grading }}</textarea></div>
+      {% endif %}
+      <div class="field"><label class="small">해설</label><textarea name="{{ p }}explain" rows="2" style="font-size:0.9rem">{{ it.explain }}</textarea></div>
+    </div>
+    {% endif %}{% endfor %}
+    {% if not busy %}<button class="btn small" type="submit">이 묶음 저장</button>{% endif %}
+  </form>
+  </details>
+  {% elif busy %}<p class="small muted" style="margin:0">만드는 중…</p>{% endif %}
+
+  {% if not busy and m.status != "making" %}
+  <form method="post" action="/mock/{{ m.id }}/unit/{{ u.unit }}/remake" class="actions" style="margin-top:10px" onsubmit="return confirm('이 묶음 문항을 새로 만들까요? 고친 내용은 사라집니다.')">
+    {% if u.needs_passage %}<select name="p" aria-label="쓸 지문" style="max-width:320px">{% for p in m.passages %}<option value="{{ loop.index0 }}" {% if u.p == loop.index0 %}selected{% endif %}>{{ loop.index }}. {{ (p.source or p.title or p.text[:40])[:50] }}</option>{% endfor %}</select>{% endif %}
+    <button class="btn ghost small" type="submit">{{ "이 지문으로 다시 만들기" if u.needs_passage else "다시 만들기" }}</button>
+  </form>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if not busy %}<form method="post" action="/mock/{{ m.id }}/delete" onsubmit="return confirm('이 동형 모의고사를 지울까요?')"><button class="btn danger small" type="submit">지우기</button></form>{% endif %}
+<script>
+  document.addEventListener("job:done", (e) => { if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600); });
+  const watch = document.querySelector("[data-reload]");
+  if (watch) new MutationObserver(() => { if (watch.classList.contains("failed")) setTimeout(() => location.reload(), 1500); }).observe(watch, { attributes: true, attributeFilter: ["class"] });
+  if (location.hash.startsWith("#u")) { const d = document.querySelector(location.hash + " details"); if (d) d.open = true; }
+</script>
+{% endblock %}

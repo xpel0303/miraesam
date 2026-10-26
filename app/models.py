@@ -552,3 +552,58 @@ class Passage(Base):
     used: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class SchoolTrend(Base):
+    """학교 경향분석: 같은 학교(·학년) 기출 분석이 쌓이면 Gemini가 쓴 '출제 스타일 메모'.
+
+    memo: {summary: [..], vocab: "..", grammar: [..], reading: "..", writing: "..", strategy: [..]}
+    exam_ids: 메모를 쓸 때 본 기출 분석(ExamPaper) id 들 — 새 기출이 더해지면 '새로 쓰기' 안내
+    """
+
+    __tablename__ = "school_trends"
+    __table_args__ = (UniqueConstraint("academy_id", "school_id", "grade"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    school_id: Mapped[int] = mapped_column(ForeignKey("schools.id"))
+    grade: Mapped[str] = mapped_column(String(6), default="")
+    memo: Mapped[dict] = mapped_column(JSON, default=dict)
+    exam_ids: Mapped[list] = mapped_column(JSON, default=list)
+    last_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+    school: Mapped["School"] = relationship()
+
+
+class MockSet(Base):
+    """동형 모의고사: 학교 기출 한 회(template)의 문항 구성 그대로, 새 범위 지문으로 새 시험지.
+
+    passages: [{title, source, text}]  새 시험 범위 지문
+    slots:    [{label, kind, points, type, stem, group, lead, passage_words, p}]  설계도 (template 문항 + 쓸 지문 번호 p)
+    items:    [{label, kind, points, type, stem, passage, box, choices[], answer, answer_text, conditions, grading, explain, point, change, src, fixed}]
+    """
+
+    __tablename__ = "mock_sets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(120))
+    school_id: Mapped[int | None] = mapped_column(ForeignKey("schools.id"), nullable=True)
+    template_id: Mapped[int | None] = mapped_column(ForeignKey("exam_papers.id", ondelete="SET NULL"), nullable=True)
+    options: Mapped[dict] = mapped_column(JSON, default=dict)
+    passages: Mapped[list] = mapped_column(JSON, default=list)
+    slots: Mapped[list] = mapped_column(JSON, default=list)
+    items: Mapped[list] = mapped_column(JSON, default=list)
+    warnings: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(10), default="waiting")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_id: Mapped[int | None] = mapped_column(ForeignKey("stored_files.id"), nullable=True)
+    key_file_id: Mapped[int | None] = mapped_column(ForeignKey("stored_files.id"), nullable=True)
+    last_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+    teacher: Mapped["Teacher | None"] = relationship()
+    school: Mapped["School | None"] = relationship()

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}동형 모의고사 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>동형 모의고사</h1><a class="btn" href="/mock/new">새 동형 모의고사</a></div>
+<p class="lead">학교 기출 한 회를 골라 번호·배점·유형·발문·서술형 조건까지 그대로 본떠, 새 시험 범위 지문으로 시험지를 만들어요. 시험지 PDF와 정답·해설 PDF가 따로 나와요.</p>
+{% if sets %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>제목</th><th>학교</th><th>지문</th><th>문항</th><th>만든 날</th><th></th></tr></thead>
+  <tbody>{% for m in sets %}
+    <tr>
+      <td class="wrap"><a href="/mock/{{ m.id }}"><b>{{ m.title }}</b></a>{% if m.status in ("waiting", "making") %} <span class="tag">만드는 중</span>{% elif m.status == "failed" %} <span class="tag" style="color:var(--err)">실패</span>{% endif %}</td>
+      <td>{{ m.school.name if m.school else "" }}</td><td>{{ m.passages|length }}개</td><td>{{ m.items|length }} / {{ m.slots|length }}</td>
+      <td class="muted small">{{ m.created_at|kst("%Y-%m-%d") }}</td>
+      <td class="small">{% if m.file_id %}<a href="/files/{{ m.file_id }}" target="_blank" rel="noopener">시험지</a> · <a href="/files/{{ m.key_file_id }}" target="_blank" rel="noopener">정답</a>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 만든 동형 모의고사가 없어요. 먼저 <a href="/exam">기출 분석</a>에 학교 시험지를 올려 두면 그 시험을 본떠 만들 수 있어요.</p><a class="btn" href="/mock/new">첫 동형 모의고사 만들기</a></div>
+{% endif %}
+{% endblock %}

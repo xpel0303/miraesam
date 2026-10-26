@@ -84,7 +84,8 @@
     ta.value = p.text;
     ta.dispatchEvent(new Event("input", { bubbles: true }));
     const t = titleInput || (single && document.querySelector("input[name=title]"));
-    if (t && !t.value.trim()) { t.value = p.title; t.dispatchEvent(new Event("input", { bubbles: true })); }
+    const wantSource = ta.closest("[data-source-title]");  // 출처 칸이면 출처를 먼저
+    if (t && !t.value.trim()) { t.value = (wantSource && p.source) ? `${p.source}${p.title ? " · " + p.title : ""}` : p.title; t.dispatchEvent(new Event("input", { bubbles: true })); }
     ta.closest(".passage-card, .field")?.classList.add("picked-flash");
     setTimeout(() => ta.closest(".passage-card, .field")?.classList.remove("picked-flash"), 1200);
   }

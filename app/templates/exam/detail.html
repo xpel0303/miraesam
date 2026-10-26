@@ -144,6 +144,7 @@
       <div class="field"><label>학기</label><select name="semester"><option value="">-</option>{% for x in [1, 2] %}<option value="{{ x }}" {% if p.semester == x %}selected{% endif %}>{{ x }}학기</option>{% endfor %}</select></div>
       <div class="field"><label>차수</label><select name="term"><option value="">-</option>{% for x in [1, 2] %}<option value="{{ x }}" {% if p.term == x %}selected{% endif %}>{{ x }}차</option>{% endfor %}</select></div>
     </div>
+    <div class="field"><label>시험 범위</label><input type="text" name="range" value="{{ p.meta.range or '' }}" placeholder="예: 비상(홍) 1·4과, 2025 고1 9월 33~36번"></div>
     <button class="btn small" type="submit">저장</button>
   </form>
   </details>

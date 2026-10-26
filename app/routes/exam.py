@@ -102,7 +102,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     school_id = _int(f.get("school_id"), 1, 10**9)
     new_school = str(f.get("new_school", "")).strip()[:60]
     grade = str(f.get("grade") or "")
-    form = {"school_id": school_id, "new_school": new_school, "grade": grade, "year": f.get("year"), "semester": f.get("semester"), "term": f.get("term")}
+    form = {"school_id": school_id, "new_school": new_school, "grade": grade, "year": f.get("year"), "semester": f.get("semester"), "term": f.get("term"),
+            "range": f.get("range", "")}
     if errors:
         return render(request, "exam/new.html", {"teacher": teacher, "form": form, "errors": errors, "schools": _schools(db, teacher),
                                                  "grades": GRADES, "active": "exam"}, 400)
@@ -125,7 +126,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         db.add(sf)
         db.flush()
         ids.append(sf.id)
-    p.meta = {"upload_ids": ids, "upload_names": [n for n, _ in files]}
+    p.meta = {"upload_ids": ids, "upload_names": [n for n, _ in files], "range": str(f.get("range", "")).strip()[:400]}
     db.flush()
     db.refresh(p)
     p.title = _title(p)
@@ -159,6 +160,7 @@ async def save_info(pid: int, request: Request, teacher: Teacher = Depends(curre
     p.school_id = sid if sid and db.execute(select(School.id).where(School.id == sid, School.academy_id == teacher.academy_id)).first() else None
     p.grade = str(f.get("grade") or "") if f.get("grade") in GRADES else ""
     p.year, p.semester, p.term = _int(f.get("year"), 2000, 2100), _int(f.get("semester"), 1, 2), _int(f.get("term"), 1, 2)
+    p.meta = {**(p.meta or {}), "range": str(f.get("range", "")).strip()[:400]}
     db.flush()
     db.refresh(p)
     p.title = str(f.get("title", "")).strip()[:120] or _title(p)

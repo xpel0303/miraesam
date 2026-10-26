@@ -24,6 +24,8 @@
       <div class="field"><label for="semester">학기</label><select id="semester" name="semester"><option value="">-</option><option value="1" {% if form.semester == "1" %}selected{% endif %}>1학기</option><option value="2" {% if form.semester == "2" %}selected{% endif %}>2학기</option></select></div>
       <div class="field"><label for="term">차수</label><select id="term" name="term"><option value="">-</option><option value="1" {% if form.term == "1" %}selected{% endif %}>1차 (중간)</option><option value="2" {% if form.term == "2" %}selected{% endif %}>2차 (기말)</option></select></div>
     </div>
+    <div class="field"><label for="range">시험 범위 <span class="hint">선택. 경향분석·동형 모의고사에 쓰여요 (예: 비상(홍) 1·4과, 2025 고1 9월 33~36번)</span></label>
+      <input type="text" id="range" name="range" value="{{ form.range or '' }}"></div>
   </section>
   <button class="btn" type="submit" id="go">올리고 읽기 시작</button>
   <p class="small muted" style="margin-top:8px">8쪽 시험지는 보통 2~4분 걸려요. 창을 닫아도 계속 읽습니다.</p>

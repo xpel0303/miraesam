@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ school.name }} 경향분석 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/trend">학교 경향분석</a></p>
+<h1>{{ school.name }} {{ grade }}</h1>
+<p class="lead">기출 {{ papers|length }}회 · 평균 {{ cmp.avg.n }}문항 (객관식 {{ cmp.avg.mc }} · 서술형 {{ cmp.avg.sa }}) · 서술형 배점 비중 평균 {{ cmp.avg.sa_share }}%</p>
+
+<section class="panel">
+  <div class="panel-head"><h2>출제 스타일 메모</h2>
+    {% if not busy %}<form method="post" action="/trend/{{ school.id }}/memo"><input type="hidden" name="grade" value="{{ grade }}">
+      <button class="btn {{ '' if not (row and row.memo) or stale else 'ghost' }} small" type="submit">{{ "메모 새로 쓰기" if row and row.memo else "메모 쓰기" }}</button></form>{% endif %}
+  </div>
+  {% if busy %}<div class="job" data-job-id="{{ job.id }}" data-reload></div>{% endif %}
+  {% if row and row.memo %}
+    {% if stale %}<p class="small" style="color:var(--err);margin:0 0 8px">메모를 쓴 뒤로 기출이 바뀌었어요. '메모 새로 쓰기'를 누르면 새 기출까지 반영해요.</p>{% endif %}
+    {% for k in keys %}{% if row.memo[k] %}
+      <h3>{{ names[k] }}</h3>
+      {% if row.memo[k] is string %}<p style="margin:0 0 6px">{{ row.memo[k] }}</p>{% else %}<ul style="margin:0 0 6px">{% for x in row.memo[k] %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+    {% endif %}{% endfor %}
+    <p class="small muted" style="margin:8px 0 0">{{ row.updated_at|kst("%Y-%m-%d %H:%M") }} · 기출 {{ row.exam_ids|length }}회로 씀</p>
+  {% elif not busy %}<p class="muted small" style="margin:0">아직 메모가 없어요. 기출이 1회만 있어도 쓸 수 있지만, 2~3회 이상이면 경향이 훨씬 정확해요.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h2>회차 비교</h2>
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th>시험</th><th>문항</th><th>객관식</th><th>서술형</th><th>서술형 비중</th><th>지문 · 평균 길이</th><th></th></tr></thead>
+    <tbody>{% for r in cmp.rows %}
+      <tr><td class="wrap"><a href="/exam/{{ r.id }}">{{ r.name }}</a>{% if r.range %}<br><span class="small muted">{{ r.range }}</span>{% endif %}</td>
+        <td>{{ r.n }}</td><td>{{ r.mc }} · {{ fmt(r.mc_points) }}점</td><td>{{ r.sa }} · {{ fmt(r.sa_points) }}점</td><td>{{ r.sa_share }}%</td>
+        <td>{{ r.passages }}개 · {{ r.avg_words }}단어</td>
+        <td class="small"><a href="/mock/new?template={{ r.id }}">이 시험 본떠 만들기</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="panel">
+  <h2>유형별 문항 수</h2>
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th>유형</th>{% for r in cmp.rows %}<th>{{ r.name }}</th>{% endfor %}<th>평균</th></tr></thead>
+    <tbody>{% for t in cmp.matrix %}
+      <tr><td>{{ t.type }}</td>{% for v in t.cells %}<td>{{ v or "" }}</td>{% endfor %}<td><b>{{ t.avg }}</b></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+
+{% if mocks %}
+<section class="panel">
+  <h2>이 학교로 만든 동형 모의고사</h2>
+  <ul style="margin:0">{% for x in mocks %}<li><a href="/mock/{{ x.id }}">{{ x.title }}</a> <span class="small muted">{{ x.created_at|kst("%Y-%m-%d") }}</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+<p><a class="btn" href="/mock/new?template={{ papers[-1].id }}">이 학교 동형 모의고사 만들기</a></p>
+<script>
+  document.addEventListener("job:done", (e) => { if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600); });
+</script>
+{% endblock %}

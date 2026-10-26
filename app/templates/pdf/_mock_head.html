@@ -1,0 +1,19 @@
+{# 동형 모의고사 시험지·정답지 공통 머리 (학교 시험지 표지처럼) #}
+<div class="mh">
+  <div class="l">
+    <h1>{{ m.title }}{% if key %} · 정답과 해설{% endif %}</h1>
+    <div class="s">{% if school %}{{ school }} 출제 유형{% endif %}{% if m.options.grade %} · {{ m.options.grade }}{% endif %}{% if m.options.template_name %} · 본뜬 시험: {{ m.options.template_name }}{% endif %}</div>
+    {% if not key %}<div class="who"><span>반</span><span>번호</span><span>이름</span></div>{% endif %}
+  </div>
+  <div class="r">
+    <table class="meta">
+      <tr><th>유형</th><th>문항 수</th><th>배점</th></tr>
+      <tr><td>선택형</td><td>{{ c.mc }}</td><td>{{ spec.fmt(c.mc_pts) }}</td></tr>
+      {% if c.short %}<tr><td>단답형</td><td>{{ c.short }}</td><td>{{ spec.fmt(c.short_pts) }}</td></tr>
+      <tr><td>서술형</td><td>{{ c.long }}</td><td>{{ spec.fmt(c.long_pts) }}</td></tr>
+      {% else %}<tr><td>서술형</td><td>{{ c.sa }}</td><td>{{ spec.fmt(c.sa_pts) }}</td></tr>{% endif %}
+      <tr><td><b>총</b></td><td><b>{{ c.n }}</b></td><td><b>{{ spec.fmt(c.total) }}</b></td></tr>
+    </table>
+  </div>
+</div>
+{% if m.options.range %}<div class="range"><b>시험 범위</b> {{ m.options.range }}</div>{% endif %}

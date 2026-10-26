@@ -124,6 +124,13 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
         return {"visual": {"title": "[가짜] 한눈에 정리", "title_mark": "정리", "layout": "contrast", "message": "[가짜] 한 줄 결론",
                            "panels": [{"icon": i, "head": f"[가짜] {k + 1}칸", "text": "[가짜] 설명", "mark": "설명", "scene": "A student reading a book."}
                                       for k, i in enumerate(("book", "idea"))]}}
+    if system and "특정 학교의 지난 시험 문항" in system:
+        return _mock(prompt)
+    if system and "입시 컨설턴트" in system:
+        return {"summary": ["[가짜] 선택형 20 + 서답형 8 구성이 반복됨", "[가짜] 어법 '모두 고르시오' 유형이 매회 나옴"],
+                "vocab": "[가짜] 영영 뜻풀이와 공통 어휘 단답형", "grammar": ["[가짜] 분사구문", "[가짜] 가정법"],
+                "reading": "[가짜] 교과서 본문 세트 문항", "writing": "[가짜] 앞 구절 2점 + 뒤 구절 3점 조건 영작",
+                "strategy": ["[가짜] 본문 문장 변형 연습"]}
     if system and "시험지 이미지를 글자 그대로" in system:
         return _exam(prompt)
     if json_mode:
@@ -261,3 +268,33 @@ def fake_image(prompt: str, aspect: str = "16:9") -> bytes:
     buf = io.BytesIO()
     img.save(buf, "PNG")
     return buf.getvalue()
+
+
+def _mock(prompt: str) -> dict:
+    """동형 모의고사 가짜 출제: 원래 문항 번호·종류 그대로, 새 지문 앞부분을 지문으로."""
+    import json as _json
+
+    m = re.search(r"원래 문항:\n(\[.*?\n\])\n", prompt, re.S)
+    try:
+        orig = _json.loads(m.group(1)) if m else []
+    except ValueError:
+        orig = []
+    pm = re.search(r"새 지문 \(출처: [^)]*\):\n(.+?)\n\n출력", prompt, re.S)
+    text = pm.group(1).strip() if pm else ""
+    sents = _sentences(text)[:6] or ["This is a fake sentence for testing."]
+    items = []
+    for k, o in enumerate(orig):
+        sa = o.get("kind") == "서술형"
+        passage = ""
+        if text and k == 0:
+            passage = " ".join(f"{'①②③④⑤'[i]} [u]{s}[/u]" if i < 5 else s for i, s in enumerate(sents))
+            if "빈칸" in (o.get("stem") or ""):
+                passage += " _____ ."
+        elif not text:
+            passage = "[가짜] She _____ the book yesterday."
+        items.append({"label": o.get("label"), "stem": o.get("stem") or "[가짜 발문]", "passage": passage,
+                      "box": "[가짜] 보기 상자" if o.get("box") else "", "conditions": "(1) [가짜 조건]" if sa else "",
+                      "choices": [] if sa else [f"[가짜] 보기 {i + 1}" for i in range(5)], "answer": 0 if sa else 1 + k % 5,
+                      "answer_text": "[가짜] 모범 답안 문장입니다." if sa else "", "grading": "[가짜] 앞 구절 2점, 뒤 구절 3점" if sa else "",
+                      "explain": "[가짜 해설]", "point": "[가짜 포인트]", "fixed": False})
+    return {"change": "[가짜] 원문 그대로 싣고 밑줄 ①~⑤ 표시", "items": items}

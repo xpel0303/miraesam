@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}학교 경향분석 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>학교 경향분석</h1>
+<p class="lead"><a href="/exam">기출 분석</a>에 올린 시험지를 학교·학년별로 모아 회차끼리 비교해요. 문항 수·배점·유형 분포는 바로 나오고, 출제 스타일 메모는 버튼 한 번으로 써요. 메모는 동형 모의고사를 만들 때도 쓰여요.</p>
+{% if items %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>학교</th><th>학년</th><th>기출</th><th>경향 메모</th><th></th></tr></thead>
+  <tbody>{% for x in items %}
+    <tr><td><a href="/trend/{{ x.school.id }}{{ '?grade=' ~ x.grade if x.grade }}"><b>{{ x.school.name }}</b></a></td><td>{{ x.grade or "-" }}</td><td>{{ x.count }}회</td>
+      <td class="small">{% if x.memo and x.memo.memo %}있음 ({{ x.memo.updated_at|kst("%Y-%m-%d") }}){% else %}<span class="muted">아직 없음</span>{% endif %}</td>
+      <td class="small"><a href="/mock/new">동형 모의고사</a></td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 분석한 학교 기출이 없어요.</p><a class="btn" href="/exam/new">시험지 올리기</a></div>
+{% endif %}
+{% if no_school %}<p class="small muted">학교를 정하지 않은 기출 {{ no_school }}회는 빠져 있어요. 기출 분석 화면의 '시험 정보 고치기'에서 학교를 골라 주세요.</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "pdf/_base.html" %}
+{# 동형 모의고사 시험지: 학교 시험지처럼 2단, 번호·배점·발문·묶음 그대로 #}
+{% block style %}
+  @page { margin: 14mm 12mm 15mm 12mm; }
+  html { font-size: 9.3pt; line-height: 1.55; }
+  .mh { display: table; width: 100%; border: 1.2pt solid var(--ink); margin-bottom: 6pt; }
+  .mh .l, .mh .r { display: table-cell; vertical-align: top; padding: 6pt 9pt; }
+  .mh .l { border-right: 1.2pt solid var(--ink); }
+  .mh h1 { font-size: 14pt; margin: 0 0 2pt; }
+  .mh .s { font-size: 8.5pt; color: var(--ink-2); }
+  .mh .who { margin-top: 8pt; font-size: 8.5pt; }
+  .mh .who span { display: inline-block; width: 30%; border-bottom: 0.6pt solid var(--ink-3); padding-bottom: 1pt; margin-right: 2%; }
+  .mh .r { width: 34%; }
+  table.meta { font-size: 7.8pt; }
+  table.meta th, table.meta td { padding: 1pt 4pt; text-align: center; border: 0.6pt solid #888; }
+  .range { border: 0.8pt solid var(--ink); padding: 3pt 8pt; font-size: 7.8pt; margin-bottom: 8pt; }
+  .range b { color: var(--brand); margin-right: 4pt; }
+  .cols { columns: 2; column-gap: 14pt; column-rule: 0.8pt solid var(--ink); }
+  .q { margin: 0 0 11pt; break-inside: avoid; }
+  .grp { font-weight: 700; margin: 0 0 4pt; }
+  .stem { margin: 0 0 3pt; font-weight: 700; }
+  .stem .pt { font-weight: 400; }
+  .pass { border: 0.7pt solid var(--ink); padding: 5pt 7pt; text-align: justify; margin: 3pt 0; line-height: 1.6; }
+  .box { border: 0.7pt solid var(--ink); padding: 4pt 7pt; margin: 4pt 0; font-size: 8.8pt; }
+  .box .bt { text-align: center; font-weight: 700; margin-bottom: 1pt; }
+  .bl { display: inline-block; width: 64pt; border-bottom: 0.7pt solid var(--ink); }
+  u { text-underline-offset: 1.5pt; }
+  .ch { margin: 3pt 0 0 2pt; }
+  .ch div { padding-left: 12pt; text-indent: -12pt; margin: 0.5pt 0; }
+  .ch.grid div { display: inline-block; width: 32%; padding-left: 0; text-indent: 0; }
+  .ans { margin-top: 5pt; font-weight: 700; }
+  .line { border-bottom: 0.6pt solid var(--ink-2); height: 15pt; }
+  .end { text-align: center; color: var(--ink-3); font-size: 8pt; margin-top: 6pt; }
+{% endblock %}
+{% block body %}
+{% set key = false %}{% include "pdf/_mock_head.html" %}
+<div class="cols">
+{% set ns = namespace(unit=None) %}
+{% for it in items %}
+  {% set unit_items = items|selectattr("unit", "equalto", it.unit)|list %}
+  {% set first = ns.unit != it.unit %}{% set ns.unit = it.unit %}
+  {% if first and unit_items|length > 1 %}
+  <div class="q">
+    <p class="grp">[{% for x in unit_items %}{{ x.label }}{% if not loop.last %}, {% endif %}{% endfor %}] 다음 글을 읽고, 물음에 답하시오.</p>
+    {% if it.passage %}<div class="pass">{{ spec.rich(it.passage) }}</div>{% endif %}
+  </div>
+  {% endif %}
+  <div class="q">
+    <p class="stem">{{ spec.lab(it.label) }} {{ it.stem }} <span class="pt">({{ spec.fmt(it.points) }}점)</span></p>
+    {% if it.passage and not (first and unit_items|length > 1) %}<div class="pass">{{ spec.rich(it.passage) }}</div>{% endif %}
+    {% if it.box %}<div class="box">{% if "보기" in it.stem %}<div class="bt">&lt;보기&gt;</div>{% elif "주어진 단어" in it.stem %}<div class="bt">주어진 단어</div>{% endif %}{{ spec.rich(it.box) }}</div>{% endif %}
+    {% if it.conditions %}<div class="box"><div class="bt">[조건]</div>{{ spec.rich(it.conditions) }}</div>{% endif %}
+    {% if it.kind == "mc" and it.choices and not (it.choices[0] == "①") %}
+      {% set short = (it.choices|map("length")|max) <= 14 %}
+      <div class="ch {{ 'grid' if short }}">{% for ch in it.choices %}<div>{{ spec.CIRCLED[loop.index0] }} {{ spec.rich(ch) }}</div>{% endfor %}</div>
+    {% elif it.kind == "sa" %}
+      <p class="ans">답:</p><div class="line"></div>{% if (it.points or 0) >= 5 %}<div class="line"></div>{% endif %}
+    {% endif %}
+  </div>
+{% endfor %}
+<p class="end">― 끝 ―</p>
+</div>
+{% endblock %}
