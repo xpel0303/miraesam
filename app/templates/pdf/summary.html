@@ -1,0 +1,84 @@
+{% extends "pdf/_base.html" %}
+{# 지문 한쪽 정리: 지문마다 1쪽(지문 및 해석 · 핵심 정리 · 주요 어휘) + 2쪽(한 줄 해석) #}
+{% set CIR = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳" %}
+{% block style %}
+  :root { --pk: #e8418c; --pk-bg: #fbe0ed; }
+  .psg { break-before: page; }
+  .psg.first { break-before: auto; }
+  .banner { background: var(--pk); color: #fff; border-radius: 20pt; text-align: center; padding: 9pt 14pt 8pt; margin: 0 0 13pt; }
+  .banner .t { font-size: 15pt; font-weight: 800; }
+  .banner .l { font-size: 10.5pt; margin-left: 6pt; font-weight: 700; }
+  .pill { display: inline-block; background: var(--pk); color: #fff; font-weight: 800; font-size: 9pt; border-radius: 11pt; padding: 2.5pt 13pt; margin: 2pt 0 5pt 3pt; }
+  .box { border: 0.8pt solid var(--pk); border-radius: 15pt; padding: 10pt 12pt; margin: 0 0 10pt; }
+  .pass { display: table; width: 100%; table-layout: fixed; }
+  .pass > div { display: table-cell; vertical-align: top; text-align: justify; }
+  .pass .en { width: 53%; padding-right: 10pt; border-right: 0.8pt solid var(--pk); font-size: 8.9pt; line-height: 1.75; }
+  .pass .ko { width: 47%; padding-left: 10pt; font-size: 8.3pt; line-height: 1.75; }
+  table.key td, table.voc td { border: 0; }
+  table.key td { padding: 3.5pt 3pt; font-size: 8.8pt; line-height: 1.65; }
+  table.key td.k { width: 52pt; color: var(--pk); font-weight: 800; text-align: center; vertical-align: middle; font-size: 9.3pt; }
+  table.voc td { padding: 2.6pt 5pt; font-size: 8.7pt; }
+  table.voc td.sep { border-left: 0.6pt dotted var(--pk); }
+  table.voc td.mid { border-left: 0.8pt solid var(--pk); }
+  .keep { break-inside: avoid; }
+  .lines-page { break-before: page; }
+  table.ln { border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+  table.ln td { border: 0; padding: 7pt 11pt; line-height: 1.7; vertical-align: top; }
+  table.ln tr { break-inside: avoid; }
+  table.ln td.l { width: 57%; border-left: 0.8pt solid var(--pk); border-right: 0.8pt solid var(--pk); font-size: 8.9pt; padding-left: 13pt; }
+  table.ln td.r { width: 43%; background: var(--pk-bg); font-size: 8.3pt; }
+  table.ln td.l b { font-weight: 400; margin-right: 3pt; }
+  table.ln tr.top td { padding: 0; height: 9pt; }
+  table.ln tr.top td.l { border-top: 0.8pt solid var(--pk); border-top-left-radius: 15pt; }
+  table.ln tr.top td.r { border-top-right-radius: 15pt; }
+  table.ln tr.bot td { padding: 0; height: 9pt; }
+  table.ln tr.bot td.l { border-bottom: 0.8pt solid var(--pk); border-bottom-left-radius: 15pt; }
+  table.ln tr.bot td.r { border-bottom-right-radius: 15pt; }
+{% endblock %}
+
+{% block body %}
+{% for p in passages %}{% set o = p.out %}
+<div class="psg{% if loop.first %} first{% endif %}">
+  <div class="banner"><span class="t">{{ s.title }}</span><span class="l">{{ p.title or ((item_offset or 0) + loop.index) ~ "번" }}</span></div>
+
+  <div class="pill">지문 및 해석</div>
+  <div class="box"><div class="pass"><div class="en">{{ p.full }}</div><div class="ko">{{ o.translation }}</div></div></div>
+
+  <div class="keep">
+    <div class="pill">지문 핵심 정리</div>
+    <div class="box"><table class="key">
+      <tr><td class="k">제목</td><td>{{ o.title }}</td></tr>
+      <tr><td class="k">주제</td><td>{{ o.topic }}</td></tr>
+      <tr><td class="k">목적</td><td>{{ o.purpose }}</td></tr>
+      <tr><td class="k">세 줄 요약</td><td>{% for x in o.summary %}{{ CIR[loop.index0] }} {{ x }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td></tr>
+    </table></div>
+  </div>
+
+  {% if o.vocab %}{% set half = ((o.vocab|length) / 2)|round(0, "ceil")|int %}
+  <div class="keep">
+    <div class="pill">주요 어휘</div>
+    <div class="box" style="padding:7pt 10pt;border-radius:12pt"><table class="voc">
+      <colgroup><col style="width:21%"><col style="width:29%"><col style="width:21%"><col style="width:29%"></colgroup>
+      {% for i in range(half) %}{% set a = o.vocab[i] %}{% set b = o.vocab[i + half] if i + half < o.vocab|length else none %}
+      <tr><td>{{ a.word }}</td><td class="sep">[{{ a.pos }}] {{ a.meaning }}</td>
+        <td class="mid">{{ b.word if b else "" }}</td><td class="sep">{% if b %}[{{ b.pos }}] {{ b.meaning }}{% endif %}</td></tr>
+      {% endfor %}
+    </table></div>
+  </div>
+  {% endif %}
+
+  {% if show_lines and o.sentences %}
+  <div class="lines-page">
+    <div class="pill">한 줄 해석</div>
+    <table class="ln">
+      <tr class="top"><td class="l"></td><td class="r"></td></tr>
+      {% for r in o.sentences %}
+      <tr><td class="l"><b>{{ CIR[loop.index0] if loop.index0 < 20 else "(" ~ loop.index ~ ")" }}</b>{{ r.en|join(" / ") }}</td><td class="r">{{ r.ko|join(" / ") }}</td></tr>
+      {% endfor %}
+      <tr class="bot"><td class="l"></td><td class="r"></td></tr>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

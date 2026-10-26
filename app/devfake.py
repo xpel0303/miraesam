@@ -118,6 +118,8 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
         return _paraphrase(prompt)
     if system and "내용이해 워크북" in system:
         return _comprehension(prompt)
+    if system and "지문 정리본" in system:
+        return _summary(prompt)
     if system and "지문 분석본" in system:
         return _analysis(prompt)
     if system and "4컷 정리 그림" in system:
@@ -298,3 +300,18 @@ def _mock(prompt: str) -> dict:
                       "answer_text": "[가짜] 모범 답안 문장입니다." if sa else "", "grading": "[가짜] 앞 구절 2점, 뒤 구절 3점" if sa else "",
                       "explain": "[가짜 해설]", "point": "[가짜 포인트]", "fixed": False})
     return {"change": "[가짜] 원문 그대로 싣고 밑줄 ①~⑤ 표시", "items": items}
+
+
+def _summary(prompt: str) -> dict:
+    sents = re.findall(r"^\[(\d+)\] (.+)$", prompt, re.M)
+    rows = []
+    for n, sent in sents:
+        w = sent.split()
+        en = [" ".join(w[i:i + 4]) for i in range(0, len(w), 4)]
+        rows.append({"n": int(n), "en": en, "ko": [f"[가짜] 덩어리{k + 1}" for k in range(len(en))]})
+    words = sorted({x.lower() for x in re.findall(r"[A-Za-z]{7,}", prompt)})[:14]
+    return {"title": "A Fake Title for Testing", "topic": "[가짜] 지문의 주제라는 주제",
+            "purpose": "이 글은 [가짜] 내용을 설명하기 위한 것이다. 또한, 시험용임을 전달하고자 한다.",
+            "summary": ["[가짜] 첫째 줄 요약.", "[가짜] 둘째 줄 요약.", "[가짜] 셋째 줄 요약."],
+            "translation": "[가짜 해석] " + "자연스러운 우리말 해석이 여기 들어갑니다. " * max(3, len(rows)),
+            "vocab": [{"word": w, "pos": "명", "meaning": "[가짜] 뜻"} for w in words], "sentences": rows}

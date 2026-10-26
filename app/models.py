@@ -290,6 +290,26 @@ class SentenceSet(Base):
     teacher: Mapped["Teacher | None"] = relationship()
 
 
+class SummarySet(Base):
+    """지문 정리 (지문 한쪽 정리). passages: [{title, text, out{title, topic, purpose, summary[3], translation, vocab[], sentences[{en[], ko[]}]},
+    status, error, warnings}]   options: {level, show_lines}"""
+
+    __tablename__ = "summary_sets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(120))
+    options: Mapped[dict] = mapped_column(JSON, default=dict)
+    passages: Mapped[list] = mapped_column(JSON, default=list)
+    file_id: Mapped[int | None] = mapped_column(ForeignKey("stored_files.id"), nullable=True)
+    last_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+    teacher: Mapped["Teacher | None"] = relationship()
+
+
 class ParaphraseSet(Base):
     """지문 변형. passages: [{title, text, strength, out, notes[], ratio, status, error, warnings}]
     options: {level, focus, show_compare}"""

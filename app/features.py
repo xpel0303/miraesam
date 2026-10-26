@@ -27,6 +27,7 @@ GROUPS = ["수업 자료", "시험 운영", "학원 관리"]
 FEATURES: list[Feature] = [
     # 수업 자료
     Feature("library", "지문 보관함", "수업 자료", "한 번 넣은 지문을 저장해 두고 어느 자료에서나 불러오기", 2, True, "/library"),
+    Feature("summary", "지문 한쪽 정리", "수업 자료", "지문·해석 나란히, 제목·주제·목적·세 줄 요약, 주요 어휘, 끊어 읽기 한 줄 해석", 2, True, "/summary"),
     Feature("analysis", "지문 분석", "수업 자료", "문장별 구문 분석·해석·어휘·어법 포인트", 2, True, "/analysis"),
     Feature("comprehension", "내용이해 워크북", "수업 자료", "OX 한글·영어, 목표어법 작문, 단어 뜻 쓰기", 2, True, "/comprehension"),
     Feature("variant", "변형문제", "수업 자료", "빈칸·순서·삽입·요약 등 수능 유형 변형문제", 2, True, "/variant"),

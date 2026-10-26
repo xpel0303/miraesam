@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}새 지문 한쪽 정리 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>새 지문 한쪽 정리</h1>
+<p class="lead">지문마다 1쪽: <b>지문 및 해석</b> → <b>지문 핵심 정리</b>(제목·주제·목적·세 줄 요약) → <b>주요 어휘</b>. 2쪽: <b>한 줄 해석</b>(끊어 읽기 직독직해).</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+<form method="post" action="/summary">
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label for="title">제목 <span class="hint">PDF 위 띠에 들어가요</span></label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 2026 고1 9월 모의고사 정리"></div>
+      <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
+    </div>
+    <label style="font-weight:400"><input type="checkbox" name="show_lines" value="1" {% if form.show_lines %}checked{% endif %}> 한 줄 해석(끊어 읽기) 쪽 넣기</label>
+  </section>
+  <div id="passages">
+    {% for r in form.passages %}
+    <section class="panel passage-card">
+      <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
+      <div class="field"><label>번호·출처 <span class="hint">띠 옆에 들어가요. 예: 21번, 교과서 1과</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+      <div class="field"><label>영어 지문</label><textarea name="p_text" rows="7">{{ r.text or '' }}</textarea></div>
+    </section>
+    {% endfor %}
+  </div>
+  <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
+  <button class="btn" type="submit">정리본 만들기</button>
+  <p class="small muted" style="margin-top:8px">지문 하나에 1분쯤 걸려요. 창을 닫아도 계속 만들어요.</p>
+</form>
+<script>
+  const MAX = {{ spec.MAX_PASSAGES }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
+  function renumber() { const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => { c.querySelector("[data-num]").textContent = i + 1; c.querySelector("[data-remove]").hidden = cards.length === 1; });
+    addBtn.disabled = cards.length >= MAX; document.getElementById("count-note").textContent = `${cards.length} / ${MAX}개`; }
+  addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
+  box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
+  renumber();
+</script>
+{% endblock %}
