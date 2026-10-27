@@ -21,9 +21,15 @@ def _ai(key, model, passage, types, level, notes=None) -> dict:
     return raw if isinstance(raw, dict) else {}
 
 
+def _types_for(vs: VariantSet, pi: int) -> list[str]:
+    if vs.options.get("mode") == "mix":
+        return [a["type"] for a in vs.options.get("plan") or [] if a["p"] == pi]
+    return vs.options.get("types", spec.DEFAULT_TYPES)
+
+
 def _one_passage(key, model, vs: VariantSet, pi: int) -> tuple[list[dict], list[str]]:
     p = vs.passages[pi]
-    text, level, types = p["text"], vs.options.get("level", ""), vs.options.get("types", spec.DEFAULT_TYPES)
+    text, level, types = p["text"], vs.options.get("level", ""), _types_for(vs, pi)
     seed = secrets.randbits(31)
     got: dict[str, dict] = {}
     warns: list[str] = []
@@ -105,8 +111,8 @@ def build(ctx: JobContext) -> dict:
     questions, warns = list(vs.questions), list(vs.warnings or [])
     try:
         for pi in range(len(vs.passages)):
-            if pi in done_p:
-                continue  # 재시작으로 이어서 할 때 끝난 지문은 건너뜀
+            if pi in done_p or not _types_for(vs, pi):
+                continue  # 재시작으로 이어서 할 때 끝난 지문(섞기에서 문항이 없는 지문)은 건너뜀
             ctx.step(f"지문 {pi + 1}/{len(vs.passages)} 문제 만드는 중", int(5 + 85 * pi / len(vs.passages)))
             qs, w = _one_passage(key, model, vs, pi)
             questions += qs
@@ -116,6 +122,11 @@ def build(ctx: JobContext) -> dict:
                 row.questions, row.warnings = list(questions), list(warns)
         if not questions:
             raise llm.LLMError("문항을 하나도 만들지 못했습니다. " + " ".join(warns[:2]))
+        if vs.options.get("mode") == "mix":  # 섞기: 배정표 순서(랜덤)대로 문항 순서를 바꿈
+            pos = {(x["p"], x["type"]): k for k, x in enumerate(vs.options.get("plan") or [])}
+            questions.sort(key=lambda q: pos.get((q["p"], q["type"]), 999))
+            with session_scope() as db:
+                db.get(VariantSet, set_id).questions = list(questions)
     except llm.LLMError as e:
         with session_scope() as db:
             row = db.get(VariantSet, set_id)

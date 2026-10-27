@@ -64,6 +64,47 @@ def _idx(v) -> int:
     return i if 1 <= i <= 5 else 0
 
 
+# ---------------------------------------------------------------- 섞어서 만들기 (랜덤)
+
+MAX_MIX = 60
+
+
+def feasible(text: str, t: str) -> bool:
+    return len(split_sentences(text)) >= MIN_SENTENCES.get(t, 1)
+
+
+def plan_mix(passages: list[dict], types: list[str], n: int, seed: int) -> list[dict]:
+    """고른 유형으로 n문항을 지문들에 고르게 나눠 배정하고 순서를 섞음. [{"p": 지문 번호, "type": 유형}, …]
+    - 유형은 고르게 (n을 유형 수로 나눠 돌아가며), 지문도 고르게 (가장 적게 쓴 지문부터)
+    - 같은 지문에 같은 유형은 한 번만, 문장 수가 모자라는 지문에는 그 유형을 안 줌"""
+    rng = random.Random(seed)
+    want = [types[i % len(types)] for i in range(n)]
+    rng.shuffle(want)
+    used = {i: 0 for i in range(len(passages))}
+    pairs: set[tuple[int, str]] = set()
+    plan = []
+    for t in want:
+        cands = [i for i in used if (i, t) not in pairs and feasible(passages[i]["text"], t)]
+        if not cands:  # 이 유형을 줄 지문이 없으면 다른 유형으로
+            alt = [(i, u) for u in types for i in used if (i, u) not in pairs and feasible(passages[i]["text"], u)]
+            if not alt:
+                break
+            low = min(used[i] for i, _ in alt)
+            i, t = rng.choice([a for a in alt if used[a[0]] == low])
+        else:
+            low = min(used[i] for i in cands)
+            i = rng.choice([c for c in cands if used[c] == low])
+        used[i] += 1
+        pairs.add((i, t))
+        plan.append({"p": i, "type": t})
+    rng.shuffle(plan)
+    return plan
+
+
+def mix_capacity(passages: list[dict], types: list[str]) -> int:
+    return sum(1 for p in passages for t in types if feasible(p["text"], t))
+
+
 # ---------------------------------------------------------------- 코드로 만드는 유형
 
 def make_order(passage: str, seed: int) -> dict | None:

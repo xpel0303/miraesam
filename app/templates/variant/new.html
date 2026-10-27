@@ -2,7 +2,7 @@
 {% block title %}새 변형문제 · {{ APP_NAME }}{% endblock %}
 {% block main %}
 <h1>새 변형문제</h1>
-<p class="lead">지문마다 고른 유형을 하나씩 만들어요. 지문 수 × 고른 유형 수만큼 문항이 생겨요 (지문 {{ spec.MAX_PASSAGES }}개까지).</p>
+<p class="lead">넣은 지문으로 수능 유형 변형문제를 만들어요 (지문 {{ spec.MAX_PASSAGES }}개까지).</p>
 {% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
 
 <form method="post" action="/variant">
@@ -10,6 +10,12 @@
     <div class="row">
       <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 3월 모의고사 변형 1회"></div>
       <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>만드는 방식</label>
+      <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="mode" value="each" {% if form.mode != "mix" %}checked{% endif %}> <b>지문마다 고른 유형 전부</b> <span class="muted small">— 지문 수 × 유형 수만큼, 지문 순서대로</span></label>
+      <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="mode" value="mix" {% if form.mode == "mix" %}checked{% endif %}> <b>고른 유형으로 섞어서 랜덤 출제</b> <span class="muted small">— 지문과 유형을 고르게 섞어 모의고사처럼</span></label>
+      <div class="row" id="mix-n" style="max-width:420px;margin-top:6px"><div class="field"><label for="mix_n">문항 수 <span class="hint">비우면 지문 수만큼 (최대 {{ spec.MAX_MIX }})</span></label>
+        <input type="text" id="mix_n" name="mix_n" inputmode="numeric" value="{{ form.mix_n or '' }}" placeholder="예: 20"></div></div>
     </div>
     <div class="field"><label>유형</label>
       <div class="actions">
@@ -42,5 +48,8 @@
   addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
   box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
   renumber();
+  const mixN = document.getElementById("mix-n");
+  const syncMode = () => { mixN.hidden = document.querySelector("input[name=mode]:checked").value !== "mix"; };
+  document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", syncMode)); syncMode();
 </script>
 {% endblock %}

@@ -1,5 +1,6 @@
 """변형문제 화면."""
 import copy
+import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -50,7 +51,7 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher)):
-    form = {"types": spec.DEFAULT_TYPES, "passages": [{}]}
+    form = {"types": spec.DEFAULT_TYPES, "mode": "each", "mix_n": "", "passages": [{}]}
     return render(request, "variant/new.html", {"teacher": teacher, "form": form, "spec": spec, "levels": LEVELS, "active": "variant"})
 
 
@@ -75,15 +76,27 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         if len(p["text"]) > 4000:
             errors.append(f"지문 {i}이 너무 깁니다 (4000자까지).")
         short = [spec.TYPES[t] for t in ("order", "insert", "irrelevant") if t in types and n < spec.MIN_SENTENCES[t]]
-        if short and n < 4:
+        if short and n < 4 and f.get("mode") != "mix":
             errors.append(f"지문 {i}은 {n}문장이라 {', '.join(short)} 문제를 만들기엔 짧아요.")
+    mode = "mix" if f.get("mode") == "mix" else "each"
+    try:
+        mix_n = max(1, min(spec.MAX_MIX, int(str(f.get("mix_n") or len(passages) or 1))))
+    except ValueError:
+        mix_n = len(passages) or 1
+    if mode == "mix" and passages and types:
+        cap = spec.mix_capacity(passages, types)
+        if cap == 0:
+            errors.append("지문이 짧아서 고른 유형으로 만들 수 있는 문항이 없어요.")
+        elif mix_n > cap:
+            errors.append(f"지문 {len(passages)}개와 고른 유형으로는 {cap}문항까지 만들 수 있어요 (같은 지문에 같은 유형은 한 번만).")
     if any(t in spec.AI_TYPES for t in types) and not teacher.gemini_key_enc:
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 넣거나, 순서 배열·문장 삽입만 골라 주세요.")
     if errors:
-        form = {"title": title, "level": level, "types": types, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)]}
+        form = {"title": title, "level": level, "types": types, "mode": mode, "mix_n": mix_n, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)]}
         return render(request, "variant/new.html", {"teacher": teacher, "form": form, "errors": errors, "spec": spec, "levels": LEVELS, "active": "variant"}, 400)
     vs = VariantSet(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, passages=passages,
-                    options={"types": types, "level": level if level in LEVELS else ""})
+                    options={"types": types, "level": level if level in LEVELS else "", "mode": mode,
+                             **({"mix_n": mix_n, "plan": spec.plan_mix(passages, types, mix_n, secrets.randbits(31))} if mode == "mix" else {})})
     db.add(vs)
     db.commit()
     _start(db, vs, teacher, "variant_build", f"변형문제 · {title}")
@@ -167,6 +180,8 @@ def regenerate(vid: int, request: Request, teacher: Teacher = Depends(current_te
     if not _busy(db, vs):
         vs.questions, vs.warnings = [], []
         vs.options = {k: v for k, v in vs.options.items() if k != "dirty"}
+        if vs.options.get("mode") == "mix":  # 섞기는 새로 만들 때 배정도 새로 (다른 조합)
+            vs.options = {**vs.options, "plan": spec.plan_mix(vs.passages, vs.options["types"], vs.options.get("mix_n", len(vs.passages)), secrets.randbits(31))}
         _start(db, vs, teacher, "variant_build", f"변형문제 새로 만들기 · {vs.title}")
     return _go(f"/variant/{vid}")
 
