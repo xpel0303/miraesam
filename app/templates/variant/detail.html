@@ -55,6 +55,28 @@
       <div class="box-preview"><b>주어진 문장:</b> {{ q.given }}<br>{% for s in q.sentences %}{{ s }} {% if loop.index0 in q.gaps %}<b>( {{ circled[q.gaps.index(loop.index0)] }} )</b> {% endif %}{% endfor %}</div>
     {% elif t == "irrelevant" %}
       <div class="box-preview">{{ q.lead }} {% for s in q.numbered %}<b>{{ circled[loop.index0] }}</b> {{ s }} {% endfor %}{{ q.tail }}</div>
+    {% elif t in ("grammar", "sa_grammar", "definition") %}
+      <div class="box-preview">{{ spec.rich(q.view.passage) if q.view else q.passage }}</div>
+      <div class="table-wrap" style="margin-top:8px"><table class="list edit-items">
+        <thead><tr><th>밑줄</th>{% if t == "definition" %}<th>영영풀이</th>{% endif %}<th>틀림</th><th>{{ "맞는 풀이" if t == "definition" else "고친 형태" }}</th>{% if t != "definition" %}<th>어법 포인트</th>{% endif %}</tr></thead>
+        <tbody>{% for m in q.marks %}{% set sym = spec.CIRCLED if t == "grammar" else spec.LETTERS %}
+          <tr><td><b>{{ sym[loop.index0] }}</b> {{ m.text }}</td>
+            {% if t == "definition" %}<td class="wrap"><input type="text" name="{{ p }}m{{ loop.index0 }}-def" value="{{ m.definition }}" aria-label="영영풀이"></td>{% endif %}
+            <td><input type="checkbox" name="{{ p }}m{{ loop.index0 }}-wrong" value="1" {% if m.wrong %}checked{% endif %} aria-label="틀림"></td>
+            <td><input type="text" name="{{ p }}m{{ loop.index0 }}-fix" value="{{ m.fix }}" aria-label="고친 것"></td>
+            {% if t != "definition" %}<td class="wrap"><input type="text" name="{{ p }}m{{ loop.index0 }}-why" value="{{ m.why }}" aria-label="이유"></td>{% endif %}</tr>
+        {% endfor %}</tbody>
+      </table></div>
+      {% if t == "sa_grammar" %}<p class="small muted">서술형: 틀린 것 2개에 체크</p>{% endif %}
+    {% elif t == "sa_arrange" %}
+      <div class="box-preview">{{ spec.rich(q.view.passage) if q.view else "" }}</div>
+      <p class="small">&lt;보기&gt; {{ q.words|join(" / ") }}</p>
+      <div class="field"><label class="small">우리말 (밑줄)</label><input type="text" name="{{ p }}korean" value="{{ q.korean }}"></div>
+      <p class="small">정답: <b>{{ q.sentence }}</b>{% if q.point %} · 출제 구문: {{ q.point }}{% endif %}</p>
+    {% elif t == "sa_summary" %}
+      <div class="field"><label class="small">요약문 ((A), (B) 빈칸 포함)</label><input type="text" name="{{ p }}summary" value="{{ q.summary }}"></div>
+      <div class="row"><div class="field"><label class="small">(A) 답</label><input type="text" name="{{ p }}ans0" value="{{ q.answers[0] if q.answers else '' }}"></div>
+        <div class="field"><label class="small">(B) 답</label><input type="text" name="{{ p }}ans1" value="{{ q.answers[1] if q.answers|length > 1 else '' }}"></div></div>
     {% elif t == "vocab" %}
       <div class="box-preview">{% if q.pieces %}{% for pc in q.pieces %}{% if pc.mark is none %}{{ pc.text }}{% else %}<b>{{ circled[pc.mark] }}</b><u>{{ pc.text }}</u>{% endif %}{% endfor %}{% else %}{{ q.passage }}{% endif %}</div>
       <div class="table-wrap" style="margin-top:8px"><table class="list edit-items">

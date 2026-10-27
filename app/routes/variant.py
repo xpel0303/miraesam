@@ -1,5 +1,6 @@
 """변형문제 화면."""
 import copy
+import re
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -114,6 +115,7 @@ def detail(vid: int, request: Request, teacher: Teacher = Depends(current_teache
         if q["type"] == "vocab":
             q["pieces"] = place_marks(q["passage"], q["marks"])
         q["answer_label"] = spec.answer_text(q)
+        q["view"] = spec.view(q, vs.passages[q["p"]]["text"])
         q["problems"] = spec.validate(q)
         qs.append(q)
     return render(request, "variant/detail.html", {"teacher": teacher, "vs": vs, "job": job, "busy": _busy(db, vs), "qs": qs,
@@ -144,6 +146,21 @@ async def save(vid: int, request: Request, teacher: Teacher = Depends(current_te
             q["answer"] = max(1, min(5, int(f.get(p + "answer"))))
         if t == "match" and f.get(p + "ask") in ("wrong", "right"):
             q["ask"] = f.get(p + "ask")
+        if t in ("grammar", "sa_grammar", "definition") and f"{p}m0-fix" in f:
+            for k, m in enumerate(q["marks"]):
+                m["wrong"] = f.get(f"{p}m{k}-wrong") == "1"
+                m["fix"] = g(f"{p}m{k}-fix", m.get("fix", ""))
+                if t == "definition":
+                    m["definition"] = g(f"{p}m{k}-def", m.get("definition", ""))
+                else:
+                    m["why"] = g(f"{p}m{k}-why", m.get("why", ""))
+        if t == "sa_arrange" and p + "korean" in f:
+            q["korean"] = g(p + "korean", q.get("korean", ""))
+        if t == "sa_summary" and p + "summary" in f:
+            q["summary"] = g(p + "summary", q["summary"])
+            q["answers"] = [g(p + "ans0"), g(p + "ans1")]
+            text = vs.passages[q["p"]]["text"]
+            q["found"] = all(a and re.search(r"(?<![A-Za-z])" + re.escape(a) + r"(?![A-Za-z])", text, re.I) for a in q["answers"])
         if t == "vocab" and f"{p}m0-fix" in f:
             for k, m in enumerate(q["marks"]):
                 m["wrong"] = f.get(f"{p}m{k}-wrong") == "1"

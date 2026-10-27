@@ -24,10 +24,18 @@ TYPES = {
     "summary": "요약문 완성",
     "match": "내용 일치",
     "vocab": "어휘 (문맥상 낱말)",
+    "grammar": "어법 (틀린 것)",
+    "definition": "영영풀이",
+    "sa_grammar": "서술형 · 어법 고쳐 쓰기",
+    "sa_arrange": "서술형 · 배열 영작",
+    "sa_summary": "서술형 · 요약문 완성",
 }
+SA_TYPES = ("sa_grammar", "sa_arrange", "sa_summary")
+MARK_TYPES = ("vocab", "grammar", "sa_grammar")  # 지문에 밑줄 5개, 틀린 것 표시
 CODE_TYPES = ["order", "insert"]
 AI_TYPES = [t for t in TYPES if t not in CODE_TYPES]
 DEFAULT_TYPES = ["topic", "blank", "order", "insert", "irrelevant", "summary"]
+LETTERS = "ⓐⓑⓒⓓⓔ"
 MAX_PASSAGES = 30
 
 ORDER_CHOICES = ["(A)-(C)-(B)", "(B)-(A)-(C)", "(B)-(C)-(A)", "(C)-(A)-(B)", "(C)-(B)-(A)"]
@@ -44,6 +52,11 @@ STEMS = {
     "match_wrong": "다음 글의 내용과 일치하지 않는 것은?",
     "match_right": "다음 글의 내용과 일치하는 것은?",
     "vocab": "다음 글의 밑줄 친 부분 중, 문맥상 낱말의 쓰임이 적절하지 않은 것은?",
+    "grammar": "다음 글의 밑줄 친 부분 중, 어법상 틀린 것은?",
+    "definition": "다음 글의 밑줄 친 ⓐ~ⓔ의 영영풀이로 적절하지 않은 것은?",
+    "sa_grammar": "[서술형] 다음 글의 밑줄 친 ⓐ~ⓔ 중 어법상 틀린 것 2개를 찾아 기호를 쓰고 바르게 고쳐 쓰시오.",
+    "sa_arrange": "[서술형] 윗글의 밑줄 친 우리말과 같은 뜻이 되도록 <보기>의 단어를 모두 한 번씩 써서 (A)에 들어갈 문장을 완성하시오.",
+    "sa_summary": "[서술형] 다음 글의 내용을 한 문장으로 요약할 때, 빈칸 (A), (B)에 들어갈 말을 본문에서 찾아 그대로 쓰시오.",
 }
 
 MIN_SENTENCES = {"order": 4, "insert": 6, "irrelevant": 5}
@@ -184,11 +197,39 @@ def clean_ai(t: str, raw: dict, passage: str, seed: int) -> dict | None:
     if t == "match":
         ask = "right" if str(raw.get("ask", "")).lower().startswith("r") else "wrong"
         return {"type": t, "ask": ask, "choices": [_s(c) for c in (raw.get("choices") or [])][:5], "answer": _idx(raw.get("answer")), "explain": explain}
-    if t == "vocab":
+    if t in ("vocab", "grammar", "sa_grammar"):
         marks = [{"text": str(m.get("text", "")).strip(), "wrong": bool(m.get("wrong")), "fix": _s(m.get("fix")), "why": _s(m.get("why"))}
                  for m in (raw.get("marks") or []) if isinstance(m, dict)]
         return {"type": t, "passage": (raw.get("passage") or "").strip(), "marks": marks, "explain": explain}
+    if t == "definition":
+        marks = [{"text": str(m.get("text", "")).strip(), "definition": _s(m.get("definition")), "wrong": bool(m.get("wrong")),
+                  "fix": _s(m.get("fix")), "why": ""} for m in (raw.get("marks") or []) if isinstance(m, dict)]
+        return {"type": t, "passage": passage, "marks": marks, "explain": explain}
+    if t == "sa_arrange":
+        sent = _s(raw.get("sentence"))
+        m = re.search(re.escape(sent), passage) if sent else None
+        words = arrange_words(sent, seed) if m else []
+        return {"type": t, "sentence": sent, "korean": _s(raw.get("korean")), "before": passage[: m.start()] if m else "",
+                "after": passage[m.end():] if m else "", "found": bool(m), "words": words, "point": _s(raw.get("point")), "explain": explain}
+    if t == "sa_summary":
+        answers = [_s(x) for x in (raw.get("answers") or [])][:2]
+        found = len(answers) == 2 and all(re.search(r"(?<![A-Za-z])" + re.escape(a) + r"(?![A-Za-z])", passage, re.I) for a in answers if a)
+        return {"type": t, "summary": _s(raw.get("summary")), "answers": answers, "found": bool(found), "explain": explain}
     return None
+
+
+def arrange_words(sentence: str, seed: int) -> list[str]:
+    """문장 → 섞은 단어 (첫 단어는 소문자로, 끝 문장부호는 뺌)."""
+    ws = sentence.rstrip(".!?").split()
+    if ws and not (ws[0] == "I" or ws[0][1:2].isupper()):
+        ws[0] = ws[0][:1].lower() + ws[0][1:]
+    ws = [w.strip(",;:\"“”") for w in ws if w.strip(",;:\"“”")]
+    rnd = random.Random(seed)
+    for _ in range(5):
+        rnd.shuffle(ws)
+        if len(ws) < 3 or ws != sentence.split():
+            break
+    return ws
 
 
 def validate(q: dict | None) -> list[str]:
@@ -211,6 +252,39 @@ def validate(q: dict | None) -> list[str]:
         errs.append("순서 배열: 덩어리가 3개가 아닙니다.")
     if t == "insert" and len(q.get("gaps") or []) != 5:
         errs.append("문장 삽입: 빈자리 후보가 5개가 아닙니다.")
+    if t == "definition":
+        marks = q.get("marks") or []
+        if len(marks) != 5:
+            errs.append(f"영영풀이: 밑줄이 5개여야 하는데 {len(marks)}개입니다.")
+        elif place_marks(q.get("passage", ""), marks) is None:
+            errs.append("영영풀이: 밑줄 단어를 지문에서 순서대로(글자 그대로) 찾지 못했습니다.")
+        if sum(m["wrong"] for m in marks) != 1:
+            errs.append("영영풀이: 적절하지 않은 풀이는 정확히 1개여야 합니다.")
+        if any(not m.get("definition") for m in marks):
+            errs.append("영영풀이: 비어 있는 풀이가 있습니다.")
+    if t == "sa_arrange":
+        if not q.get("found"):
+            errs.append("배열 영작: 문장(sentence)을 지문에서 글자 그대로 찾지 못했습니다.")
+        elif not 6 <= len(q.get("words") or []) <= 22:
+            errs.append("배열 영작: 문장은 6~22단어여야 합니다.")
+        if not q.get("korean"):
+            errs.append("배열 영작: 우리말 뜻(korean)이 없습니다.")
+    if t == "sa_summary":
+        if "(A)" not in q.get("summary", "") or "(B)" not in q.get("summary", ""):
+            errs.append("서술형 요약: 요약문에 (A)와 (B)가 있어야 합니다.")
+        if not q.get("found"):
+            errs.append("서술형 요약: 답(answers) 2개를 지문에서 글자 그대로 찾지 못했습니다.")
+    if t in ("grammar", "sa_grammar"):
+        marks = q.get("marks") or []
+        need = 2 if t == "sa_grammar" else 1
+        if len(marks) != 5:
+            errs.append(f"{name}: 밑줄이 5개여야 하는데 {len(marks)}개입니다.")
+        elif place_marks(q.get("passage", ""), marks) is None:
+            errs.append(f"{name}: 밑줄 부분을 지문에서 순서대로 찾지 못했습니다.")
+        if sum(m["wrong"] for m in marks) != need:
+            errs.append(f"{name}: 틀린 밑줄은 정확히 {need}개여야 합니다.")
+        if any(m["wrong"] and not m.get("fix") for m in marks):
+            errs.append(f"{name}: 틀린 밑줄의 고친 형태(fix)가 없습니다.")
     if t == "vocab":
         marks = q.get("marks") or []
         if len(marks) != 5:
@@ -224,6 +298,17 @@ def validate(q: dict | None) -> list[str]:
 
 def answer_text(q: dict) -> str:
     a = q.get("answer") or 0
+    t = q["type"]
+    if t == "sa_grammar":
+        return ", ".join(f"{LETTERS[i]} {m['text']} → {m['fix']}" for i, m in enumerate(q.get("marks") or []) if m["wrong"])
+    if t == "sa_arrange":
+        return q.get("sentence", "")
+    if t == "sa_summary":
+        ans = q.get("answers") or ["", ""]
+        return f"(A) {ans[0]}  (B) {ans[1] if len(ans) > 1 else ''}"
+    if t in ("grammar", "definition"):
+        wrong = [i for i, m in enumerate(q.get("marks") or []) if m["wrong"]]
+        return CIRCLED[wrong[0]] if wrong else "?"
     if q["type"] == "vocab":
         wrong = [i for i, m in enumerate(q["marks"]) if m["wrong"]]
         return CIRCLED[wrong[0]] if wrong else "?"
@@ -245,6 +330,11 @@ FORMATS = {
     "irrelevant": '"irrelevant": {"sentence": "지문 소재와 관련 있어 보이지만 글의 흐름과 무관한 영어 문장 하나", "explain": "..."}',
     "summary": '"summary": {"summary": "글 전체를 요약한 영어 한 문장, 빈칸 두 곳을 (A), (B)로", "choices": [["A보기","B보기"] 5쌍], "answer": 1~5, "explain": "..."}',
     "match": '"match": {"ask": "wrong" 또는 "right", "choices": ["한국어 진술 5개, 지문 순서대로"], "answer": 1~5, "explain": "..."}  // wrong이면 불일치가 정확히 1개',
+    "grammar": '"grammar": {"passage": "어법상 틀린 곳 하나를 끼워 넣은 지문 전체 (나머지는 원문 그대로)", "marks": [{"text": "밑줄 부분(지문 글자 그대로, 1~3단어)", "wrong": false, "fix": "", "why": "어법 포인트"}, ... 정확히 5개, 앞에서부터 순서대로, 틀린 것 정확히 1개(wrong: true, fix: 올바른 형태)], "explain": "..."}  // 수일치·관계사·분사·to부정사/동명사·대명사·병렬·시제·태 같은 내신 단골 어법',
+    "definition": '"definition": {"marks": [{"text": "지문 속 내용어(글자 그대로, 1단어)", "definition": "영어 풀이 (영영사전식, 10단어 안팎)", "wrong": false, "fix": ""}, ... 정확히 5개, 지문에 나오는 순서대로, 적절하지 않은 풀이 정확히 1개(wrong: true, 그럴듯하지만 이 문맥의 뜻이 아닌 풀이, fix: 맞는 풀이)], "explain": "..."}',
+    "sa_grammar": '"sa_grammar": {"passage": "어법상 틀린 곳 두 개를 끼워 넣은 지문 전체 (나머지는 원문 그대로)", "marks": [{"text": "밑줄 부분(지문 글자 그대로, 1~3단어)", "wrong": false, "fix": "", "why": "어법 포인트"}, ... 정확히 5개, 순서대로, 틀린 것 정확히 2개(wrong: true, fix: 올바른 형태)], "explain": "..."}',
+    "sa_arrange": '"sa_arrange": {"sentence": "지문 속 구문이 중요한 문장 하나 (글자 그대로, 8~18단어)", "korean": "그 문장의 자연스러운 우리말 뜻", "point": "출제 구문 (예: 관계대명사 what, 가주어-진주어)", "explain": "..."}',
+    "sa_summary": '"sa_summary": {"summary": "글 전체를 요약한 영어 한 문장, 빈칸 두 곳을 (A), (B)로", "answers": ["(A) 답: 지문에 나온 말 글자 그대로 1~2단어", "(B) 답"], "explain": "..."}',
     "vocab": '"vocab": {"passage": "낱말 하나를 문맥과 반대·부적절한 낱말로 바꾼 지문 전체", "marks": [{"text": "밑줄 낱말(지문 글자 그대로, 1~2단어)", "wrong": false, "fix": "", "why": "..."}, ... 정확히 5개, 앞에서부터 순서대로, 틀린 것 정확히 1개(wrong: true, fix: 원래 알맞은 낱말)], "explain": "..."}',
 }
 
@@ -257,3 +347,39 @@ def ai_prompt(passage: str, types: list[str], level: str, fix_notes: list[str] |
         lines.append("\n직전 답의 문제점 (이 유형들은 규칙에 맞게 다시):\n- " + "\n- ".join(fix_notes))
     lines.append("\n지문:\n" + passage.strip())
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------- 새 유형 화면용 (PDF·워드·온라인 시험 공통)
+
+def view(q: dict, text: str) -> dict | None:
+    """어법·영영풀이·서술형 → {kind, stem, passage([u]밑줄), box, box_title, choices, lines}. 예전 유형은 None."""
+    t = q["type"]
+    if t not in ("grammar", "definition") + SA_TYPES:
+        return None
+    out = {"kind": "sa" if t in SA_TYPES else "mc", "stem": STEMS[t], "passage": "", "box": "", "box_title": "", "choices": [], "lines": 0}
+    if t in ("grammar", "sa_grammar", "definition"):
+        sym = CIRCLED if t == "grammar" else LETTERS
+        pieces = place_marks(q.get("passage", ""), q.get("marks") or []) or [{"text": q.get("passage", ""), "mark": None}]
+        out["passage"] = "".join(pc["text"] if pc["mark"] is None else f"{sym[pc['mark']]}[u]{pc['text']}[/u]" for pc in pieces)
+    if t == "definition":
+        out["choices"] = [f"{LETTERS[i]} {m['text']}: {m.get('definition', '')}" for i, m in enumerate(q.get("marks") or [])]
+    elif t == "sa_grammar":
+        out["lines"] = 2
+    elif t == "sa_arrange":
+        out["passage"] = f"{q.get('before', '')}(A) [u]{q.get('korean', '')}[/u]{q.get('after', '')}"
+        out["box"], out["box_title"] = " / ".join(q.get("words") or []), "<보기>"
+        out["lines"] = 2
+    elif t == "sa_summary":
+        out["passage"] = text
+        out["box"], out["box_title"] = q.get("summary", "").replace("(A)", "(A) ________").replace("(B)", "(B) ________"), "요약문"
+        out["lines"] = 1
+    return out
+
+
+def rich(text: str):
+    import html as _h
+
+    from markupsafe import Markup
+
+    t = _h.escape(text or "").replace("[u]", "<u>").replace("[/u]", "</u>")
+    return Markup(t.replace("\n", "<br>"))

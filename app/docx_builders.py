@@ -1,4 +1,5 @@
 """기능별 워드 파일 (PDF와 같은 구성)."""
+import re
 import random
 
 from docx.shared import Cm, Pt
@@ -216,6 +217,22 @@ def variant_docx(vs, academy):
         doc.num(p, n)
         doc.run(p, vspec.STEMS["match_" + q["ask"]] if t == "match" else vspec.STEMS[t], bold=True, size=9.3)
         doc.run(p, f"  [지문 {q['p'] + 1}]", size=7.5, color=INK_3)
+        v = vspec.view(q, text)
+        if v:  # 어법·영영풀이·서술형
+            def marked(bp, txt):
+                for k, part in enumerate(re.split(r"\[u\]|\[/u\]", txt)):
+                    if part:
+                        doc.run(bp, part, size=9.2, underline=k % 2 == 1)
+            if v["passage"]:
+                doc.box(lambda bp, v=v: marked(bp, v["passage"]))
+            if v["box"]:
+                doc.box(lambda bp, v=v: doc.run(bp, (v["box_title"] + "  " if v["box_title"] else "") + v["box"], size=9.2))
+            if v["choices"]:
+                choices(v["choices"])
+            for _ in range(v["lines"]):
+                doc.para("_" * 48, size=9, color=INK_3, space_after=2)
+            doc.para(space_after=4)
+            continue
         if t in ("topic", "title", "gist", "match"):
             doc.box(lambda bp: doc.run(bp, text, size=9.2))
             choices(q["choices"])
@@ -276,6 +293,10 @@ def variant_docx(vs, academy):
         doc.run(p, f"  [{vspec.TYPES[q['type']]} · 지문 {q['p'] + 1}]", size=8, color=INK_3)
         if q["type"] == "blank":
             doc.para("빈칸: " + q["phrase"], size=8.8, color=INK_2, indent_cm=0.6, space_after=1)
+        if q["type"] in ("grammar", "sa_grammar", "definition"):
+            for m in q["marks"]:
+                if m["wrong"]:
+                    doc.para(f"{m['text']} → {m['fix']}" + (f" · {m['why']}" if m.get("why") else ""), size=8.8, color=INK_2, indent_cm=0.6, space_after=1)
         if q["type"] == "vocab":
             for m in q["marks"]:
                 if m["wrong"]:

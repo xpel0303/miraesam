@@ -193,6 +193,22 @@ def _variant(prompt: str) -> dict:
                 if len(picks) == 5:
                     break
             out[t] = {"passage": passage, "marks": [{"text": w, "wrong": i == 2, "fix": w + "(원래)" if i == 2 else "", "why": "[가짜]"} for i, w in enumerate(picks)], "explain": "[가짜] 해설"}
+        elif t in ("grammar", "sa_grammar", "definition"):
+            picks = []
+            for w in words:
+                if w not in picks:
+                    picks.append(w)
+                if len(picks) == 5:
+                    break
+            bad = {1, 3} if t == "sa_grammar" else {2}
+            out[t] = {"passage": passage, "marks": [{"text": w, "wrong": i in bad, "fix": w + "(고침)" if i in bad else "", "why": "[가짜]",
+                                                     "definition": f"[fake] meaning of {w}"} for i, w in enumerate(picks)], "explain": "[가짜] 해설"}
+        elif t == "sa_arrange":
+            sents = re.split(r"(?<=[.!?])\s+", passage)
+            sent = max(sents, key=lambda x: -abs(len(x.split()) - 12))
+            out[t] = {"sentence": sent, "korean": "[가짜] 그 문장의 우리말 뜻", "point": "[가짜] 구문", "explain": "[가짜] 해설"}
+        elif t == "sa_summary":
+            out[t] = {"summary": "The passage says (A) matters for (B).", "answers": [words[0], words[1]], "explain": "[가짜] 해설"}
     return out
 
 

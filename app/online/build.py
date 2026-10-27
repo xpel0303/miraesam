@@ -51,11 +51,21 @@ def from_paper(qs: list[dict]) -> list[dict]:
 
 def from_variant(vs) -> list[dict]:
     qs = [q for q in (vs.questions or []) if not vspec.validate(q)]
-    mc_pts, _ = _points(len(qs), 0)
+    n_sa = sum(1 for q in qs if q["type"] in vspec.SA_TYPES)
+    mc_pts, sa_pts = _points(len(qs) - n_sa, n_sa)
     out = []
     for n, q in enumerate(qs, 1):
         t = q["type"]
         text = vs.passages[q.get("p", 0)]["text"] if vs.passages else ""
+        v = vspec.view(q, text)
+        if v:  # 어법·영영풀이·서술형
+            ans = vspec.answer_text(q)
+            sa = v["kind"] == "sa"
+            out.append({"kind": v["kind"], "answer": ans if sa else (str(C.index(ans) + 1) if ans in C else ""),
+                        "points": sa_pts if sa else mc_pts, "type": vspec.TYPES.get(t, t),
+                        "source": (vs.passages[q.get("p", 0)].get("title") or f"지문 {q.get('p', 0) + 1}") if vs.passages else "",
+                        "content": _content(n, v["stem"], v["passage"], v["box"], v["choices"] or (list(C) if t == "grammar" else []))})
+            continue
         stem = vspec.STEMS["match_" + q.get("ask", "wrong")] if t == "match" else vspec.STEMS[t]
         passage, box, choices = text, "", list(q.get("choices") or [])
         if t == "blank":

@@ -26,6 +26,7 @@
   table.pairs { font-size: 8.8pt; margin-top: 2pt; }
   table.pairs td, table.pairs th { border: 0; padding: 0.5pt 4pt; }
   table.pairs th { background: none; font-weight: 700; color: var(--ink-2); }
+  .wline { border-bottom: 0.6pt solid var(--ink-3); height: 17pt; }
   .ans { break-before: page; }
   .ans .row { break-inside: avoid; margin: 0 0 6pt; font-size: 8.8pt; line-height: 1.5; }
   .ans .why { color: var(--ink-2); }
@@ -43,6 +44,15 @@
 {% for q in qs %}
   {% set n = loop.index %}{% set t = q.type %}
   <div class="q">
+    {% if q.view %}{% set v = q.view %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ v.stem }} <span class="src">[지문 {{ q.p + 1 }}{% if q.ptitle %} · {{ q.ptitle }}{% endif %}]</span></div>
+    {% if v.passage %}<div class="box">{{ rich(v.passage) }}</div>{% endif %}
+    {% if v.box %}<div class="sum">{% if v.box_title %}<div style="text-align:center;font-weight:700;font-size:8.5pt">{{ v.box_title }}</div>{% endif %}{{ v.box }}</div>{% endif %}
+    {% if v.choices %}{{ choices(v.choices) }}{% endif %}
+    {% for _ in range(v.lines) %}<div class="wline"></div>{% endfor %}
+    {% if v.kind == "sa" and q.type == "sa_grammar" %}<div class="small" style="font-size:8.5pt">기호: ______ → __________ &nbsp; 기호: ______ → __________</div>{% endif %}
+  </div>
+  {% else %}
     <div class="stem"><span class="n">{{ n }}.</span>{{ stems["match_" ~ q.ask] if t == "match" else stems[t] }}
       <span class="src">[지문 {{ q.p + 1 }}{% if q.ptitle %} · {{ q.ptitle }}{% endif %}]</span></div>
     {% set text = vs.passages[q.p].text %}
@@ -69,6 +79,7 @@
       <div class="box">{% for pc in q.pieces %}{% if pc.mark is none %}{{ pc.text }}{% else %}<span class="mk">{{ circled[pc.mark] }}</span><span class="u">{{ pc.text }}</span>{% endif %}{% endfor %}</div>
     {% endif %}
   </div>
+  {% endif %}
 {% endfor %}
 </div>
 
@@ -82,6 +93,9 @@
       <span class="src">[{{ types[q.type] }} · 지문 {{ q.p + 1 }}]</span>
       {% if q.type == "order" %}<span> {{ orders[q.answer - 1] }}</span>{% endif %}
       {% if q.type == "blank" %}<div class="why">빈칸: {{ q.phrase }}</div>{% endif %}
+      {% if q.type in ("grammar", "sa_grammar") %}{% for m in q.marks if m.wrong %}<div class="why">{{ m.text }} → <b>{{ m.fix }}</b>{% if m.why %} · {{ m.why }}{% endif %}</div>{% endfor %}{% endif %}
+      {% if q.type == "definition" %}{% for m in q.marks if m.wrong %}<div class="why">{{ m.text }}: {{ m.fix }}</div>{% endfor %}{% endif %}
+      {% if q.type == "sa_arrange" and q.point %}<div class="why">출제 구문: {{ q.point }}</div>{% endif %}
       {% if q.type == "vocab" %}{% for m in q.marks if m.wrong %}<div class="why">{{ m.text }} → <b>{{ m.fix }}</b>{% if m.why %} · {{ m.why }}{% endif %}</div>{% endfor %}{% endif %}
       {% if q.explain %}<div class="why">{{ q.explain }}</div>{% endif %}
     </div>

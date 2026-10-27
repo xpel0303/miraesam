@@ -85,9 +85,10 @@ def render_variant_pdf(ctx: JobContext, set_id: int) -> dict:
             q["pieces"] = place_marks(q["passage"], q["marks"])
         q["answer_text"] = spec.answer_text(q)
         q["ptitle"] = vs.passages[q["p"]].get("title", "")
+        q["view"] = spec.view(q, vs.passages[q["p"]]["text"])
     ctx.step("PDF 만드는 중", 90)
     pdf = render_pdf("pdf/variant.html", {"academy": academy, "vs": vs, "qs": qs, "stems": spec.STEMS, "types": spec.TYPES,
-                                          "circled": CIRCLED, "letters": LETTERS, "orders": spec.ORDER_CHOICES, "doc_title": vs.title})
+                                          "circled": CIRCLED, "letters": LETTERS, "orders": spec.ORDER_CHOICES, "doc_title": vs.title, "rich": spec.rich})
     fid = ctx.save_file(f"{vs.title}_변형문제.pdf", "application/pdf", pdf)
     with session_scope() as db:
         row = db.get(VariantSet, set_id)
