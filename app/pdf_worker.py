@@ -22,3 +22,32 @@ def count_pages(htmls: list[str], base_url: str) -> list[int]:
         out.append(len(doc.pages))
         del doc
     return out
+
+
+def first_fit(groups: list[list[str]], base_url: str) -> list[int]:
+    """그룹마다 (큰 글씨 → 작은 글씨 순서의 HTML들) 한 쪽에 들어가는 첫 번째(가장 큰) 것의 번호. 이분 탐색."""
+    from weasyprint import HTML
+    from weasyprint.text.fonts import FontConfiguration
+
+    fc = FontConfiguration()  # 글꼴을 한 번만 읽고 계속 씀 (훨씬 빠름)
+
+    def pages(h):
+        doc = HTML(string=h, base_url=base_url).render(font_config=fc)
+        n = len(doc.pages)
+        del doc
+        return n
+
+    out = []
+    for hs in groups:
+        lo, hi = 0, len(hs) - 1
+        if pages(hs[hi]) > 1:
+            out.append(hi)
+            continue
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if pages(hs[mid]) <= 1:
+                hi = mid
+            else:
+                lo = mid + 1
+        out.append(lo)
+    return out

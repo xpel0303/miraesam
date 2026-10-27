@@ -1,65 +1,65 @@
 {% extends "pdf/_base.html" %}
 {# 지문 한쪽 정리: 지문마다 1쪽(지문 및 해석 · 핵심 정리 · 주요 어휘) + 2쪽(한 줄 해석) #}
 {% set CIR = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳" %}
+{% set SCALES = [1.45, 1.36, 1.27, 1.19, 1.12, 1.05, 1.0, 0.94, 0.88, 0.82] %}
 {% block style %}
+  @font-face { font-family: "NanumSquareRound"; font-weight: 400; src: url("{{ font_dir }}/NanumSquareRoundR.woff2") format("woff2"); }
+  @font-face { font-family: "NanumSquareRound"; font-weight: 700; src: url("{{ font_dir }}/NanumSquareRoundB.woff2") format("woff2"); }
+  @font-face { font-family: "NanumSquareRound"; font-weight: 800; src: url("{{ font_dir }}/NanumSquareRoundEB.woff2") format("woff2"); }
+  html { font-family: "NanumSquareRound", "Nanum Gothic", sans-serif; }
   :root { --pk: #e8418c; --pk-bg: #fbe0ed; }
   .psg { break-before: page; }
   .psg.first { break-before: auto; }
-  .banner { background: var(--pk); color: #fff; border-radius: 20pt; text-align: center; padding: 9pt 14pt 8pt; margin: 0 0 13pt; }
-  .banner .t { font-size: 15pt; font-weight: 800; }
-  .banner .l { font-size: 10.5pt; margin-left: 6pt; font-weight: 700; }
-  .pill { display: inline-block; background: var(--pk); color: #fff; font-weight: 800; font-size: 9pt; border-radius: 11pt; padding: 2.5pt 13pt; margin: 2pt 0 5pt 3pt; }
-  .box { border: 0.8pt solid var(--pk); border-radius: 15pt; padding: 10pt 12pt; margin: 0 0 10pt; }
+  .banner { background: var(--pk); color: #fff; text-align: center; }
+  .banner .t { font-weight: 800; }
+  .banner .l { margin-left: 6pt; font-weight: 700; }
+  .pill { display: inline-block; background: var(--pk); color: #fff; font-weight: 800; }
+  .box { border: 0.8pt solid var(--pk); }
   .pass { display: table; width: 100%; table-layout: fixed; }
   .pass > div { display: table-cell; vertical-align: top; text-align: justify; }
-  .pass .en { width: 53%; padding-right: 10pt; border-right: 0.8pt solid var(--pk); font-size: 8.9pt; line-height: 1.75; }
-  .pass .ko { width: 47%; padding-left: 10pt; font-size: 8.3pt; line-height: 1.75; }
+  .pass .en { width: 53%; border-right: 0.8pt solid var(--pk); }
+  .pass .ko { width: 47%; }
   table.key td, table.voc td { border: 0; }
-  table.key td { padding: 3.5pt 3pt; font-size: 8.8pt; line-height: 1.65; }
-  table.key td.k { width: 52pt; color: var(--pk); font-weight: 800; text-align: center; vertical-align: middle; font-size: 9.3pt; }
-  table.voc td { padding: 2.6pt 5pt; font-size: 8.7pt; }
+  table.key td.k { color: var(--pk); font-weight: 800; text-align: center; vertical-align: middle; white-space: nowrap; }
   table.voc td.sep { border-left: 0.6pt dotted var(--pk); }
   table.voc td.mid { border-left: 0.8pt solid var(--pk); }
+  table.voc td.w { font-weight: 700; }
   .keep { break-inside: avoid; }
   .lines-page { break-before: page; }
   table.ln { border-collapse: separate; border-spacing: 0; table-layout: fixed; }
-  table.ln td { border: 0; padding: 7pt 11pt; line-height: 1.7; vertical-align: top; }
+  table.ln td { border: 0; vertical-align: top; }
   table.ln tr { break-inside: avoid; }
-  table.ln td.l { width: 57%; border-left: 0.8pt solid var(--pk); border-right: 0.8pt solid var(--pk); font-size: 8.9pt; padding-left: 13pt; }
-  table.ln td.r { width: 43%; background: var(--pk-bg); font-size: 8.3pt; }
-  table.ln td.l .no { display: inline-block; min-width: 11pt; height: 11pt; line-height: 11pt; padding: 0 2pt; border: 0.7pt solid var(--ink); border-radius: 6pt;
-    text-align: center; font-size: 7pt; margin-right: 4pt; vertical-align: 1pt; }
-  table.ln tr.top td { padding: 0; height: 9pt; }
-  table.ln tr.top td.l { border-top: 0.8pt solid var(--pk); border-top-left-radius: 15pt; }
-  table.ln tr.top td.r { border-top-right-radius: 15pt; }
-  table.ln tr.bot td { padding: 0; height: 9pt; }
-  table.ln tr.bot td.l { border-bottom: 0.8pt solid var(--pk); border-bottom-left-radius: 15pt; }
-  table.ln tr.bot td.r { border-bottom-right-radius: 15pt; }
-  /* 글자 크기 단계 (한 쪽에 맞게) — 1쪽: .a1~.a3, 한 줄 해석: .b1~.b3 */
-  .a1 .banner { padding: 7pt 12pt 6pt; margin-bottom: 9pt; } .a1 .banner .t { font-size: 13.5pt; }
-  .a1 .box { padding: 8pt 11pt; margin-bottom: 7pt; }
-  .a1 .pass .en { font-size: 8.4pt; line-height: 1.62; } .a1 .pass .ko { font-size: 7.9pt; line-height: 1.62; }
-  .a1 table.key td { padding: 2.5pt 3pt; font-size: 8.4pt; line-height: 1.55; } .a1 table.voc td { padding: 2pt 5pt; font-size: 8.2pt; }
-  .a2 .banner { padding: 5pt 12pt 4pt; margin-bottom: 7pt; border-radius: 14pt; } .a2 .banner .t { font-size: 12pt; }
-  .a2 .pill { font-size: 8pt; padding: 1.5pt 11pt; margin: 0 0 3pt 3pt; }
-  .a2 .box { padding: 6pt 10pt; margin-bottom: 5pt; border-radius: 11pt; }
-  .a2 .pass .en { font-size: 7.9pt; line-height: 1.5; } .a2 .pass .ko { font-size: 7.4pt; line-height: 1.5; }
-  .a2 table.key td { padding: 1.5pt 3pt; font-size: 7.9pt; line-height: 1.45; } .a2 table.voc td { padding: 1.3pt 5pt; font-size: 7.7pt; }
-  .a3 .banner { padding: 4pt 12pt 3pt; margin-bottom: 5pt; border-radius: 12pt; } .a3 .banner .t { font-size: 11pt; } .a3 .banner .l { font-size: 9pt; }
-  .a3 .pill { font-size: 7.5pt; padding: 1pt 10pt; margin: 0 0 2pt 3pt; }
-  .a3 .box { padding: 5pt 9pt; margin-bottom: 4pt; border-radius: 9pt; }
-  .a3 .pass .en { font-size: 7.3pt; line-height: 1.42; } .a3 .pass .ko { font-size: 6.9pt; line-height: 1.42; }
-  .a3 table.key td { padding: 1pt 3pt; font-size: 7.3pt; line-height: 1.38; } .a3 table.voc td { padding: 0.8pt 5pt; font-size: 7.2pt; }
-  .b1 table.ln td { padding: 5.5pt 10pt; line-height: 1.58; } .b1 table.ln td.l { font-size: 8.4pt; } .b1 table.ln td.r { font-size: 7.9pt; }
-  .b2 table.ln td { padding: 4pt 9pt; line-height: 1.48; } .b2 table.ln td.l { font-size: 7.9pt; } .b2 table.ln td.r { font-size: 7.4pt; }
-  .b3 table.ln td { padding: 2.8pt 8pt; line-height: 1.4; } .b3 table.ln td.l { font-size: 7.3pt; } .b3 table.ln td.r { font-size: 6.9pt; }
-  .b1 table.ln tr.top td, .b2 table.ln tr.top td, .b3 table.ln tr.top td, .b1 table.ln tr.bot td, .b2 table.ln tr.bot td, .b3 table.ln tr.bot td { padding: 0; height: 7pt; }
+  table.ln td.l { width: 57%; border-left: 0.8pt solid var(--pk); border-right: 0.8pt solid var(--pk); }
+  table.ln td.r { width: 43%; background: var(--pk-bg); }
+  table.ln td.l .no { display: inline-block; text-align: center; border: 0.7pt solid var(--ink); font-weight: 700; margin-right: 4pt; }
+  table.ln tr.top td, table.ln tr.bot td { padding: 0; }
+  table.ln tr.top td.l { border-top: 0.8pt solid var(--pk); }
+  table.ln tr.bot td.l { border-bottom: 0.8pt solid var(--pk); }
+  {# 글자 크기 단계: 0 = 가장 크게 … 끝 = 가장 작게. 지문마다 한 쪽에 들어가는 가장 큰 단계를 골라 씀 #}
+  {% for k in range(SCALES|length) %}{% set x = SCALES[k] %}{% set lh = 1.78 if x >= 1 else 1.78 - (1 - x) * 1.9 %}
+  .a{{ k }} .banner { border-radius: {{ 20 * x }}pt; padding: {{ 9 * x }}pt 14pt {{ 8 * x }}pt; margin: 0 0 {{ 12 * x }}pt; }
+  .a{{ k }} .banner .t { font-size: {{ 15 * x }}pt; } .a{{ k }} .banner .l { font-size: {{ 10.5 * x }}pt; }
+  .a{{ k }} .pill, .b{{ k }} .pill { font-size: {{ 9 * x }}pt; border-radius: {{ 11 * x }}pt; padding: {{ 2.5 * x }}pt {{ 13 * x }}pt; margin: {{ 2 * x }}pt 0 {{ 5 * x }}pt 3pt; }
+  .a{{ k }} .box { border-radius: {{ 15 * x }}pt; padding: {{ 10 * x }}pt {{ 12 * x }}pt; margin: 0 0 {{ 9 * x }}pt; }
+  .a{{ k }} .pass .en { font-size: {{ 8.9 * x }}pt; line-height: {{ lh }}; padding-right: {{ 10 * x }}pt; }
+  .a{{ k }} .pass .ko { font-size: {{ 8.4 * x }}pt; line-height: {{ lh }}; padding-left: {{ 10 * x }}pt; }
+  .a{{ k }} table.key td { padding: {{ 3.2 * x }}pt 3pt; font-size: {{ 8.8 * x }}pt; line-height: {{ lh - 0.1 }}; }
+  .a{{ k }} table.key td.k { width: {{ 54 * x }}pt; font-size: {{ 9.3 * x }}pt; }
+  .a{{ k }} table.voc td { padding: {{ 2.6 * x }}pt 5pt; font-size: {{ 8.7 * x }}pt; }
+  .a{{ k }} .box.vbox { padding: {{ 7 * x }}pt 10pt; border-radius: {{ 12 * x }}pt; }
+  .b{{ k }} table.ln td { padding: {{ 7 * x }}pt {{ 11 * x }}pt; line-height: {{ lh - 0.05 }}; }
+  .b{{ k }} table.ln td.l { font-size: {{ 8.9 * x }}pt; padding-left: {{ 13 * x }}pt; } .b{{ k }} table.ln td.r { font-size: {{ 8.4 * x }}pt; }
+  .b{{ k }} table.ln td.l .no { min-width: {{ 11.5 * x }}pt; height: {{ 11.5 * x }}pt; line-height: {{ 11.5 * x }}pt; border-radius: {{ 6 * x }}pt; font-size: {{ 7 * x }}pt; padding: 0 {{ 2 * x }}pt; vertical-align: {{ 1 * x }}pt; }
+  .b{{ k }} table.ln tr.top td, .b{{ k }} table.ln tr.bot td { height: {{ 9 * x }}pt; padding: 0; }
+  .b{{ k }} table.ln tr.top td.l { border-top-left-radius: {{ 15 * x }}pt; } .b{{ k }} table.ln tr.top td.r { border-top-right-radius: {{ 15 * x }}pt; }
+  .b{{ k }} table.ln tr.bot td.l { border-bottom-left-radius: {{ 15 * x }}pt; } .b{{ k }} table.ln tr.bot td.r { border-bottom-right-radius: {{ 15 * x }}pt; }
+  {% endfor %}
 {% endblock %}
 
 {% block body %}
 {% for p in passages %}{% set o = p.out %}
 {% set part = part or "all" %}
-<div class="psg{% if loop.first %} first{% endif %} a{{ p.z1 or 0 }} b{{ p.z2 or 0 }}">
+<div class="psg{% if loop.first %} first{% endif %} a{{ p.z1 if p.z1 is not none else 6 }} b{{ p.z2 if p.z2 is not none else 6 }}">
   {% if part != "p2" %}
   <div class="banner"><span class="t">{{ s.title }}</span><span class="l">{{ p.title or ((item_offset or 0) + loop.index) ~ "번" }}</span></div>
 
@@ -79,11 +79,11 @@
   {% if o.vocab %}{% set half = ((o.vocab|length) / 2)|round(0, "ceil")|int %}
   <div class="keep">
     <div class="pill">주요 어휘</div>
-    <div class="box" style="padding:7pt 10pt;border-radius:12pt"><table class="voc">
+    <div class="box vbox"><table class="voc">
       <colgroup><col style="width:21%"><col style="width:29%"><col style="width:21%"><col style="width:29%"></colgroup>
       {% for i in range(half) %}{% set a = o.vocab[i] %}{% set b = o.vocab[i + half] if i + half < o.vocab|length else none %}
-      <tr><td>{{ a.word }}</td><td class="sep">[{{ a.pos }}] {{ a.meaning }}</td>
-        <td class="mid">{{ b.word if b else "" }}</td><td class="sep">{% if b %}[{{ b.pos }}] {{ b.meaning }}{% endif %}</td></tr>
+      <tr><td class="w">{{ a.word }}</td><td class="sep">[{{ a.pos }}] {{ a.meaning }}</td>
+        <td class="mid w">{{ b.word if b else "" }}</td><td class="sep">{% if b %}[{{ b.pos }}] {{ b.meaning }}{% endif %}</td></tr>
       {% endfor %}
     </table></div>
   </div>

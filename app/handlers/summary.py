@@ -7,7 +7,7 @@ from .. import llm
 from ..db import session_scope
 from ..jobs import JobContext, job_handler
 from ..models import Academy, StoredFile, SummarySet
-from ..pdf import page_counts, render_pdf
+from ..pdf import first_fit, render_pdf
 from ..summary import spec
 
 
@@ -38,30 +38,24 @@ def _one(key, model, p: dict, level: str) -> dict:
     return {"out": out, "warnings": warns + [e for e in errs if "문장" not in e][:4], "status": "done", "error": None}
 
 
-LEVELS = 4  # 0 = 기본 크기 … 3 = 가장 촘촘하게
+LEVELS = 10  # pdf/summary.html 의 SCALES 개수 (0 = 가장 크게)
 
 
 def _fit(academy, s, ps: list[dict], show_lines: bool, chunk: int = 6):
-    """지문마다 1쪽(지문·해석·핵심 정리·어휘)과 2쪽(한 줄 해석)이 각각 한 쪽에 들어가는 가장 큰 글자 크기를 고름."""
+    """지문마다 1쪽(지문·해석·핵심 정리·어휘)과 2쪽(한 줄 해석)이 각각 한 쪽에 꽉 차게 들어가는 가장 큰 글자 크기를 고름."""
     for start in range(0, len(ps), chunk):
         part = ps[start:start + chunk]
-        ctxs = []
+        groups = []
         for p in part:
-            for z in range(LEVELS):
-                ctxs.append({"academy": academy, "s": s, "passages": [{**p, "z1": z, "z2": z}], "doc_title": s.title, "part": "p1", "show_lines": False})
+            base = {"academy": academy, "s": s, "doc_title": s.title}
+            groups.append([{**base, "passages": [{**p, "z1": z, "z2": z}], "part": "p1", "show_lines": False} for z in range(LEVELS)])
             if show_lines:
-                for z in range(LEVELS):
-                    ctxs.append({"academy": academy, "s": s, "passages": [{**p, "z1": z, "z2": z}], "doc_title": s.title, "part": "p2", "show_lines": True})
-        counts = page_counts("pdf/summary.html", ctxs)
-        k = 0
+                groups.append([{**base, "passages": [{**p, "z1": z, "z2": z}], "part": "p2", "show_lines": True} for z in range(LEVELS)])
+        got = iter(first_fit("pdf/summary.html", groups))
         for p in part:
-            c1 = counts[k:k + LEVELS]
-            k += LEVELS
-            p["z1"] = next((z for z, n in enumerate(c1) if n <= 1), LEVELS - 1)
+            p["z1"] = next(got)
             if show_lines:
-                c2 = counts[k:k + LEVELS]
-                k += LEVELS
-                p["z2"] = next((z for z, n in enumerate(c2) if n <= 1), LEVELS - 1)
+                p["z2"] = next(got)
 
 
 def render_summary_pdf(ctx: JobContext, set_id: int) -> dict:

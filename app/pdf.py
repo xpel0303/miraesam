@@ -39,6 +39,19 @@ def page_counts(template: str, ctxs: list[dict]) -> list[int]:
         return pdf_worker.count_pages(htmls, str(BASE_DIR))
 
 
+def first_fit(template: str, groups: list[list[dict]]) -> list[int]:
+    """그룹마다 한 쪽에 들어가는 첫 설정의 번호 (설정은 큰 글씨부터 작은 글씨 순서)."""
+    from . import pdf_worker
+
+    tpl = templates.env.get_template(template)
+    hg = [[tpl.render(font_dir=FONT_DIR, **c) for c in g] for g in groups]
+    try:
+        with mp.get_context("spawn").Pool(1) as pool:
+            return pool.apply(pdf_worker.first_fit, (hg, str(BASE_DIR)))
+    except (OSError, mp.ProcessError):
+        return pdf_worker.first_fit(hg, str(BASE_DIR))
+
+
 def _pages(pdf: bytes) -> int:
     import pypdfium2 as pdfium
 
