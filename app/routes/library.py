@@ -135,9 +135,18 @@ def remove(pid: int, request: Request, teacher: Teacher = Depends(current_teache
 
 # ---------------- 자료 만들기 화면에서 불러오기 ----------------
 
+def natural_key(p: Passage):
+    """불러오기 순서: 분류별로, 제목을 '사람이 읽는 순서'로 (2번 < 10번 < 21번, 교과서 1과 < 교과서 4과). 제목이 같으면 넣은 순서."""
+    import re
+
+    t = (p.title or p.source or "").strip().lower()
+    parts = tuple((0, int(x), "") if x.isdigit() else (1, 0, x) for x in re.split(r"(\d+)", t) if x)
+    return (p.group or "", parts, p.id)
+
+
 @router.get("/api/passages")
 def api_list(q: str = "", group: str = "", teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
-    items = db.execute(_query(db, teacher, q, group).limit(200)).scalars()
+    items = sorted(db.execute(_query(db, teacher, q, group).limit(500)).scalars(), key=natural_key)
     return {"groups": [g for g, _ in _groups(db, teacher) if g],
             "items": [{"id": p.id, "title": p.title, "text": p.text, "source": p.source, "group": p.group,
                        "words": len(p.text.split())} for p in items]}

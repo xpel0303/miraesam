@@ -24,6 +24,7 @@
       </div>
       <div class="picker-list" data-list><p class="muted small">불러오는 중…</p></div>
       <div class="picker-foot">
+        <label class="small" data-allwrap style="font-weight:400;margin:0"><input type="checkbox" data-all> 전체 선택</label>
         <span class="small muted" data-count>고른 지문 0개</span>
         <a class="small" href="/library" target="_blank" rel="noopener">보관함 열기</a>
         <button class="btn" value="ok" data-ok disabled>넣기</button>
@@ -31,7 +32,8 @@
     </form>`;
   document.body.appendChild(dlg);
   const $ = (s) => dlg.querySelector(s);
-  const list = $("[data-list]"), q = $("[data-q]"), grp = $("[data-group]"), ok = $("[data-ok]"), count = $("[data-count]");
+  const list = $("[data-list]"), q = $("[data-q]"), grp = $("[data-group]"), ok = $("[data-ok]"), count = $("[data-count]"), all = $("[data-all]");
+  if (single) $("[data-allwrap]").hidden = true;
   let items = [], picked = [], timer = null, groupsLoaded = false;
   const cache = {};
 
@@ -54,13 +56,20 @@
     items.forEach((p) => (cache[p.id] = p));
     if (!groupsLoaded) { data.groups.forEach((g) => grp.insertAdjacentHTML("beforeend", `<option>${esc(g)}</option>`)); groupsLoaded = true; }
     draw();
+    sync();
   }
   function sync() {
     picked = [...list.querySelectorAll("[name=pick]:checked")].map((x) => +x.value).concat(picked.filter((id) => !items.some((p) => p.id === id)));
     if (single) picked = picked.slice(0, 1);
     count.textContent = `고른 지문 ${picked.length}개`;
     ok.disabled = !picked.length;
+    const boxes = [...list.querySelectorAll("[name=pick]")];
+    all.checked = boxes.length > 0 && boxes.every((x) => x.checked);
   }
+  all.addEventListener("change", () => {
+    list.querySelectorAll("[name=pick]").forEach((x) => (x.checked = all.checked));
+    sync();
+  });
   list.addEventListener("change", sync);
   q.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(load, 250); });
   grp.addEventListener("change", load);
