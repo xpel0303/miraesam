@@ -18,11 +18,25 @@
     </div>
 
     <div data-kind="passage">
-      <div class="field"><label for="passage">영어 지문</label><textarea id="passage" name="passage" rows="9" placeholder="지문을 붙여 넣으면 시험에 나올 만한 단어를 골라 뜻·유의어·반의어·예문까지 채워요">{{ form.passage or '' }}</textarea></div>
-      <div class="field" style="max-width:200px"><label for="count">뽑을 단어 수</label><input type="text" id="count" name="count" inputmode="numeric" value="{{ form.count or 20 }}"><span class="hint">5~60개</span></div>
+      <div class="field" style="max-width:260px"><label for="count">지문마다 뽑을 단어 수</label><input type="text" id="count" name="count" inputmode="numeric" value="{{ form.count or 10 }}"><span class="hint">2~60개 · 앞 지문과 겹치는 단어는 빼요 (전체 {{ max }}개까지)</span></div>
     </div>
+  </section>
 
-    <div data-kind="list">
+  <div data-kind="passage">
+    <div id="passages">
+      {% for r in form.passages or [{}] %}
+      <section class="panel passage-card">
+        <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
+        <div class="field"><label>제목 <span class="hint">선택 (예: 3월 모고 22번)</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+        <div class="field"><label>영어 지문</label><textarea name="p_text" rows="7" placeholder="시험에 나올 만한 단어를 골라 뜻·유의어·반의어·예문까지 채워요">{{ r.text or '' }}</textarea></div>
+      </section>
+      {% endfor %}
+    </div>
+    <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
+  </div>
+  <section class="panel" data-kind="list" style="margin-top:0">
+
+    <div>
       <div class="field"><label for="listtext">한 줄에 하나 <span class="hint">"단어" 또는 "단어 | 뜻". 엑셀 두 칸을 그대로 붙여도 됩니다. 적어 둔 뜻은 그대로 쓰고, 빈칸만 AI가 채워요.</span></label>
         <textarea id="listtext" name="listtext" rows="10" placeholder="affect | ~에 영향을 주다&#10;resilient&#10;look forward to">{{ form.listtext or '' }}</textarea></div>
       <label style="font-weight:400"><input type="checkbox" name="fill_ai" value="1" {% if form.fill_ai is not defined or form.fill_ai %}checked{% endif %}> 비어 있는 뜻·품사·유의어·반의어·예문을 AI로 채우기</label>
@@ -37,5 +51,12 @@
   };
   document.querySelectorAll('input[name=kind]').forEach(r => r.addEventListener('change', sync));
   sync();
+  const MAX = {{ maxp }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
+  function renumber() { const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => { c.querySelector("[data-num]").textContent = i + 1; c.querySelector("[data-remove]").hidden = cards.length === 1; });
+    addBtn.disabled = cards.length >= MAX; document.getElementById("count-note").textContent = `${cards.length} / ${MAX}개`; }
+  addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
+  box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
+  renumber();
 </script>
 {% endblock %}

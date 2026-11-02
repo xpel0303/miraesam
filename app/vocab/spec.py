@@ -3,6 +3,23 @@ import random
 import re
 
 MAX_WORDS = 200
+MAX_PASSAGES = 30
+SEP = "\n\n[[지문]]\n\n"  # 여러 지문을 source_text 한 칸에 저장할 때 구분
+
+
+def join_passages(ps: list[dict]) -> str:
+    return SEP.join(f"{p.get('title', '')}\n{p['text']}" for p in ps)
+
+
+def split_passages(text: str) -> list[dict]:
+    if "[[지문]]" not in (text or ""):
+        return [{"title": "", "text": text or ""}] if (text or "").strip() else []
+    out = []
+    for part in text.split(SEP):
+        title, _, body = part.partition("\n")
+        if body.strip():
+            out.append({"title": title.strip(), "text": body.strip()})
+    return out
 CHUNK = 25  # AI에 한 번에 채워 달라고 하는 단어 수 (많으면 답이 잘려서 나눔)
 FIELDS = ("word", "pos", "meaning", "syn", "ant", "example", "example_ko")
 

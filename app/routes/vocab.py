@@ -46,7 +46,8 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher)):
-    return render(request, "vocab/new.html", {"teacher": teacher, "form": {"kind": "passage", "count": 20}, "levels": LEVELS, "max": spec.MAX_WORDS, "active": "vocab"})
+    return render(request, "vocab/new.html", {"teacher": teacher, "form": {"kind": "passage", "count": 10, "passages": [{}]}, "levels": LEVELS, "max": spec.MAX_WORDS,
+                                                 "maxp": spec.MAX_PASSAGES, "active": "vocab"})
 
 
 @router.post("")
@@ -56,18 +57,26 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     title = str(f.get("title", "")).strip()[:120] or "단어장"
     level = str(f.get("level") or "")
     level = level if level in LEVELS else ""
-    passage = str(f.get("passage", "")).strip()
+    titles, texts = f.getlist("p_title"), f.getlist("p_text")
+    ps = [{"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "text": str(x).replace("\r", "").strip()}
+          for i, x in enumerate(texts) if str(x).strip()]
+    passage = spec.join_passages(ps)
     listtext = str(f.get("listtext", "")).strip()
     try:
-        count = max(5, min(60, int(f.get("count") or 20)))
+        count = max(2, min(60, int(f.get("count") or 10)))
     except ValueError:
-        count = 20
+        count = 10
     errors, words = [], []
     if kind == "passage":
-        if not passage:
-            errors.append("지문을 넣어 주세요.")
-        elif len(passage) > 8000:
-            errors.append("지문이 너무 깁니다. 8000자 이하로 나눠 주세요.")
+        if not ps:
+            errors.append("지문을 하나 이상 넣어 주세요.")
+        if len(ps) > spec.MAX_PASSAGES:
+            errors.append(f"지문은 한 번에 {spec.MAX_PASSAGES}개까지입니다.")
+        for i, p in enumerate(ps, 1):
+            if len(p["text"]) > 8000:
+                errors.append(f"지문 {i}이 너무 깁니다 (8000자까지).")
+        if ps and count * len(ps) > spec.MAX_WORDS:
+            count = max(2, spec.MAX_WORDS // len(ps))
     else:
         words = [spec.clean_entry(w) for w in spec.parse_list(listtext)]
         if not words:
@@ -77,8 +86,9 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     if needs_ai and fill and not teacher.gemini_key_enc:
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 넣거나, 'AI로 빈칸 채우기'를 꺼 주세요.")
     if errors:
-        form = {"kind": kind, "title": title, "level": level, "passage": passage, "listtext": listtext, "count": count, "fill_ai": fill}
-        return render(request, "vocab/new.html", {"teacher": teacher, "form": form, "errors": errors, "levels": LEVELS, "max": spec.MAX_WORDS, "active": "vocab"}, 400)
+        form = {"kind": kind, "title": title, "level": level, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)] or [{}],
+                "listtext": listtext, "count": count, "fill_ai": fill}
+        return render(request, "vocab/new.html", {"teacher": teacher, "form": form, "errors": errors, "levels": LEVELS, "max": spec.MAX_WORDS, "maxp": spec.MAX_PASSAGES, "active": "vocab"}, 400)
 
     wl = WordList(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, source_kind=kind,
                   source_text=passage, level=level, words=words, status="done" if not (needs_ai and fill) else "waiting")
