@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}문법뱅크 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px">
+  <h1>문법뱅크</h1>
+  <div>
+    <a class="btn ghost" href="/bank/cart">담은 문항 {{ cart|length }}</a>
+    {% if teacher.role == "owner" %}<a class="btn ghost" href="/bank/import">가져오기</a>{% endif %}
+  </div>
+</div>
+<p class="lead">대분류·세부·난이도로 골라 담으면 2단 시험지(PDF·워드)와 정답지를 만들어요. 교재 문항 원문이라 학원 내부 출제용으로만 쓰세요.</p>
+
+{% if empty %}
+<div class="panel empty"><p>아직 문법뱅크 자료가 없어요.</p>{% if teacher.role == "owner" %}<a class="btn" href="/bank/import">문항 파일 가져오기</a>{% else %}<p class="muted">원장 계정이 문항 파일을 가져오면 열려요.</p>{% endif %}</div>
+{% else %}
+<form method="get" action="/bank" class="panel">
+  <div class="row">
+    <div class="field"><label for="cat">대분류</label>
+      <select id="cat" name="cat"><option value="">전체</option>{% for c, n in fac.cats.items() %}<option value="{{ c }}" {% if f.cat == c %}selected{% endif %}>{{ c }} ({{ n }})</option>{% endfor %}</select></div>
+    <div class="field"><label for="subcat">세부</label>
+      <select id="subcat" name="subcat"><option value="">전체</option>{% for c, subs in fac.subs.items() %}{% if not f.cat or f.cat == c %}{% for s, n in subs %}<option value="{{ s }}" {% if f.subcat == s %}selected{% endif %}>{{ s }} ({{ n }})</option>{% endfor %}{% endif %}{% endfor %}</select></div>
+    <div class="field"><label for="level">난이도</label>
+      <select id="level" name="level"><option value="">전체</option>{% for l in ["하","중","상"] %}<option {% if f.level == l %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="row">
+    <div class="field"><label for="book">교재</label>
+      <select id="book" name="book"><option value="">전체</option>{% for b, n in fac.books %}<option value="{{ b }}" {% if f.book == b %}selected{% endif %}>{{ b }} ({{ n }})</option>{% endfor %}</select></div>
+    <div class="field"><label for="src">정답 출처</label>
+      <select id="src" name="src"><option value="">전체</option>{% for s, n in fac.srcs %}<option value="{{ s }}" {% if f.src == s %}selected{% endif %}>{{ s }} ({{ n }})</option>{% endfor %}</select></div>
+    <div class="field"><label for="qtype">문항 유형</label>
+      <select id="qtype" name="qtype"><option value="">전체</option>{% for s, n in fac.qtypes %}<option value="{{ s }}" {% if f.qtype == s %}selected{% endif %}>{{ s }} ({{ n }})</option>{% endfor %}</select></div>
+    <div class="field"><label for="q">본문 검색</label><input type="text" id="q" name="q" value="{{ f.q }}" placeholder="단어·표현"></div>
+  </div>
+  <button class="btn" type="submit">찾기</button> <a class="btn ghost" href="/bank">초기화</a>
+  <span class="muted small">{{ total|int }}문항 / 전체 {{ total_all }}</span>
+</form>
+
+<form method="post" action="/bank/pick" class="panel" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  {% for k, v in f.items() %}{% if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+  <span>지금 조건에서 무작위로</span><input type="text" name="n" value="10" inputmode="numeric" style="width:70px"><span>문항 담기</span>
+  <button class="btn ghost" type="submit">담기</button>
+</form>
+
+<form method="post" action="/bank/add">
+  <input type="hidden" name="back" value="/bank?{{ qs }}{% if qs %}&{% endif %}page={{ page }}">
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th></th><th>문항</th><th>분류</th><th>난이도</th><th>출처</th></tr></thead>
+    <tbody>{% for r in rows %}
+      <tr>
+        <td><input type="checkbox" name="id" value="{{ r.id }}" {% if r.id in cart %}checked disabled{% endif %}></td>
+        <td class="wrap" style="white-space:pre-line">{% if r.head %}<b>{{ r.head }}</b>
+{% endif %}{{ r.stem[:400] }}{% if r.answer %}<div class="small muted">정답: {{ r.answer[:120] }}{% if r.src == "확인 필요" %} (확인 필요){% endif %}</div>{% endif %}</td>
+        <td class="small wrap">{{ r.cat }}<br><span class="muted">{{ r.subcat }}</span></td>
+        <td>{{ r.level }}</td>
+        <td class="small">{{ r.src }}</td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  <p><button class="btn" type="submit">고른 문항 담기</button></p>
+</form>
+
+<nav class="small" style="display:flex;gap:10px;align-items:center">
+  {% if page > 1 %}<a href="/bank?{{ qs }}{% if qs %}&{% endif %}page={{ page - 1 }}">← 이전</a>{% endif %}
+  <span>{{ page }} / {{ pages }}</span>
+  {% if page < pages %}<a href="/bank?{{ qs }}{% if qs %}&{% endif %}page={{ page + 1 }}">다음 →</a>{% endif %}
+</nav>
+{% endif %}
+{% endblock %}

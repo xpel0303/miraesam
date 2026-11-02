@@ -452,3 +452,43 @@ def paraphrase_docx(s, academy, views, show_compare: bool):
                 doc.para()
                 doc.table(["원문", "변형"], [[c["from"], c["to"]] for c in v["changes"]], [8.9, 8.9], size=8.6)
     return doc.response(f"{s.title}_지문변형.docx")
+
+
+# ---------------------------------------------------------------- 문법뱅크
+
+def bank_docx(academy, title, qs, answers=True, expl=False):
+    doc = Doc(academy, title)
+    doc.title(title)
+    p = doc.para(size=9, space_after=8)
+    doc.run(p, "반:                    이름:                    점수:", size=9, color=INK_2)
+    doc.columns(2)
+    for n, q in enumerate(qs, 1):
+        p = doc.para(keep=True, space_after=2)
+        doc.num(p, n)
+        if q["head"]:
+            doc.run(p, q["head"], bold=True, size=9.5)
+        if q["passage"]:
+            doc.box(lambda bp, q=q: doc.run(bp, q["passage"], size=9))
+        for line in service_lines(q["stem"]):
+            doc.para(line, size=9.5, space_after=1)
+        if q["choices"]:
+            for line in service_lines(q["choices"]):
+                doc.para(line, hanging_cm=0.5, size=9.5, space_after=0)
+        doc.para(space_after=5)
+    if answers:
+        doc.new_section(1)
+        doc.section_head("정답" + (" · 해설" if expl else ""))
+        doc.columns(2)
+        for n, q in enumerate(qs, 1):
+            p = doc.para(space_after=2)
+            doc.num(p, n)
+            doc.run(p, q["answer"] or "-", bold=True, size=9.5)
+            if q["src"] == "확인 필요":
+                doc.run(p, "  (확인 필요)", size=8, color=INK_3)
+            if expl and q["expl"]:
+                doc.para(q["expl"], size=8.5, color=INK_2, indent_cm=0.6)
+    return doc
+
+
+def service_lines(text):
+    return [t for t in re.split(r"\n+", text or "") if t.strip()]
