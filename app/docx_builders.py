@@ -150,25 +150,38 @@ def comprehension_docx(wb, academy, answer: bool):
 
 # ---------------------------------------------------------------- 단어장 · 시험지
 
-def vocab_list_docx(wl, academy, hide: str = "", show_example: bool = True):
+def vocab_list_docx(wl, academy, hide: str = "", show_example: bool = True, page_src: bool = False):
+    from .vocab import spec as vs
+
     doc = Doc(academy, f"{wl.title} · 단어장")
-    doc.title(wl.title, f"단어 {len(wl.words)}개" + (" · 뜻 쓰기 연습" if hide == "meaning" else " · 단어 쓰기 연습" if hide == "word" else ""))
+    tail = " · 뜻 쓰기 연습" if hide == "meaning" else " · 단어 쓰기 연습" if hide == "word" else ""
     header = ["#", "단어", "뜻", "유의어 / 반의어"] + (["예문"] if show_example else [])
     widths = [0.9, 3.6, 4.4, 3.2] + ([5.7] if show_example else [])
-    rows = []
-    prev = None
-    for i, w in enumerate(wl.words, 1):
-        if w.get("src") and w.get("src") != prev:  # 지문별 제목 줄
-            rows.append(["", "■ " + w["src"], "", ""] + ([""] if show_example else []))
-        prev = w.get("src")
-        sa = " / ".join(x for x in (("= " + w["syn"]) if w.get("syn") else "", ("↔ " + w["ant"]) if w.get("ant") else "") if x)
-        word = "" if hide == "word" else w["word"] + (f"  {w['pos']}" if w.get("pos") else "")
-        meaning = "" if hide == "meaning" else w.get("meaning", "")
-        row = [str(i), word, meaning, sa]
-        if show_example:
-            row.append(w.get("example", "") + ("" if hide == "meaning" or not w.get("example_ko") else "\n" + w["example_ko"]))
-        rows.append(row)
-    doc.table(header, rows, widths, size=9)
+
+    def rows_for(ws, src_rows):
+        rows, prev = [], None
+        for i, w in enumerate(ws, 1):
+            if src_rows and w.get("src") and w.get("src") != prev:  # 지문별 제목 줄
+                rows.append(["", "■ " + w["src"], "", ""] + ([""] if show_example else []))
+            prev = w.get("src")
+            sa = " / ".join(x for x in (("= " + w["syn"]) if w.get("syn") else "", ("↔ " + w["ant"]) if w.get("ant") else "") if x)
+            word = "" if hide == "word" else w["word"] + (f"  {w['pos']}" if w.get("pos") else "")
+            meaning = "" if hide == "meaning" else w.get("meaning", "")
+            row = [str(i), word, meaning, sa]
+            if show_example:
+                row.append(w.get("example", "") + ("" if hide == "meaning" or not w.get("example_ko") else "\n" + w["example_ko"]))
+            rows.append(row)
+        return rows
+
+    if page_src and len(vs.sources(wl.words)) > 1:
+        for gi, g in enumerate(vs.by_source(wl.words)):
+            if gi:
+                doc.page_break()
+            doc.title(wl.title + (f" · {g['src']}" if g["src"] else ""), f"단어 {len(g['words'])}개" + tail)
+            doc.table(header, rows_for(g["words"], False), widths, size=9)
+    else:
+        doc.title(wl.title, f"단어 {len(wl.words)}개" + tail)
+        doc.table(header, rows_for(wl.words, True), widths, size=9)
     return doc.response(f"{wl.title}_단어장.docx")
 
 

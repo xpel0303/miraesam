@@ -187,7 +187,8 @@ async def pdf(lid: int, request: Request, teacher: Teacher = Depends(current_tea
         title = f"단어 시험지 · {wl.title}"
     else:
         hide = str(f.get("hide") or "")
-        payload = {"list_id": wl.id, "kind": "list", "show_example": f.get("show_example") == "1", "hide": hide if hide in ("meaning", "word") else ""}
+        payload = {"list_id": wl.id, "kind": "list", "show_example": f.get("show_example") == "1", "hide": hide if hide in ("meaning", "word") else "",
+                   "page_src": f.get("page_src") == "1"}
         title = f"단어장 PDF · {wl.title}"
     job = enqueue(db, academy_id=wl.academy_id, teacher_id=teacher.id, kind="vocab_pdf", title=title, payload=payload)
     return _go(f"/vocab/{lid}?pdf_job={job.id}#pdf")
@@ -210,7 +211,7 @@ def _test_opts(wl, mode, count, per, layout, srcs, pick_src):
 
 
 @router.get("/{lid}/docx")
-def docx(lid: int, request: Request, kind: str = "list", hide: str = "", show_example: str = "", mode: str = "en_ko", count: str = "", shuffle: str = "",
+def docx(lid: int, request: Request, kind: str = "list", hide: str = "", show_example: str = "", page_src: str = "", mode: str = "en_ko", count: str = "", shuffle: str = "",
          per: str = "", layout: str = "", pick_src: str = "",
          teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     wl = _own(db, lid, teacher)
@@ -223,7 +224,7 @@ def docx(lid: int, request: Request, kind: str = "list", hide: str = "", show_ex
             flash(request, "출제할 지문을 하나 이상 골라 주세요.", "error")
             return _go(f"/vocab/{lid}#pdf")
         return vocab_test_docx(wl, academy, opts, shuffle == "1", secrets.randbits(31))
-    return vocab_list_docx(wl, academy, hide if hide in ("meaning", "word") else "", show_example == "1")
+    return vocab_list_docx(wl, academy, hide if hide in ("meaning", "word") else "", show_example == "1", page_src == "1")
 
 
 @router.post("/{lid}/classes")

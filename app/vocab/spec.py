@@ -205,6 +205,15 @@ def sources(words: list[dict]) -> list[str]:
     return out
 
 
+def by_source(words: list[dict]) -> list[dict]:
+    """지문별로 묶기 → [{src, words}] (지문 나온 순서대로)."""
+    out: dict[str, list[dict]] = {}
+    for w in words:
+        if w.get("word"):
+            out.setdefault(w.get("src") or "", []).append(w)
+    return [{"src": k, "words": v} for k, v in out.items()]
+
+
 LAYOUTS = {"together": "한 시험지에 지문별로 나눠서", "pages": "지문마다 따로 시험지 (쪽마다 이름·점수)", "mixed": "지문 구분 없이 섞어서"}
 
 

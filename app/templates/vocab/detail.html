@@ -23,6 +23,7 @@
       <div class="field"><select name="hide" aria-label="가리기">
         <option value="">전부 보이기</option><option value="meaning">뜻 가리기 (뜻 쓰기 연습)</option><option value="word">단어 가리기 (단어 쓰기 연습)</option></select></div>
       <label style="font-weight:400"><input type="checkbox" name="show_example" value="1" checked> 예문 넣기</label>
+      {% if sources|length > 1 %}<br><label style="font-weight:400"><input type="checkbox" name="page_src" value="1" checked> 지문마다 새 페이지 (번호도 지문마다 1번부터)</label>{% endif %}
       <button class="btn small" type="submit" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>단어장 PDF</button>
       <button class="btn ghost small" type="submit" formaction="/vocab/{{ wl.id }}/docx" formmethod="get" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>워드로</button>
     </form>

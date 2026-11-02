@@ -11,16 +11,18 @@
   .sa { font-size: 8pt; color: var(--ink-2); }
   .ex { font-size: 8.3pt; color: var(--ink-2); margin-top: 2pt; }
   .ex i { font-style: normal; color: var(--ink-3); display: block; }
+  .pg { break-before: page; }
+  .hsub { font-size: 0.75em; color: var(--brand); }
   .blankcell { border-bottom: 0.6pt dashed var(--ink-3); height: 12pt; }
 {% endblock %}
 {% block body %}
-<h1>{{ title }}</h1>
-<div class="sub">{{ today }} · 단어 {{ words|length }}개{% if hide == "meaning" %} · 뜻 쓰기 연습{% elif hide == "word" %} · 단어 쓰기 연습{% endif %}</div>
+{% set sub_tail %}{% if hide == "meaning" %} · 뜻 쓰기 연습{% elif hide == "word" %} · 단어 쓰기 연습{% endif %}{% endset %}
+{% macro table(ws, src_rows) %}
 <table class="v">
   <thead><tr><th class="no">#</th><th style="width:22%">단어</th><th style="width:26%">뜻</th><th style="width:18%">유의어 / 반의어</th>{% if show_example %}<th>예문</th>{% endif %}</tr></thead>
   <tbody>
-  {% for w in words %}
-    {% if w.src and (loop.first or words[loop.index0 - 1].src != w.src) %}<tr><td colspan="{{ 5 if show_example else 4 }}" style="background:var(--fill);font-weight:800;color:var(--brand)">{{ w.src }}</td></tr>{% endif %}
+  {% for w in ws %}
+    {% if src_rows and w.src and (loop.first or ws[loop.index0 - 1].src != w.src) %}<tr><td colspan="{{ 5 if show_example else 4 }}" style="background:var(--fill);font-weight:800;color:var(--brand)">{{ w.src }}</td></tr>{% endif %}
     <tr>
       <td class="no">{{ loop.index }}</td>
       <td>{% if hide == "word" %}<div class="blankcell"></div>{% else %}<span class="w">{{ w.word }}</span>{% endif %} {% if w.pos %}<span class="pos">{{ w.pos }}</span>{% endif %}</td>
@@ -31,4 +33,18 @@
   {% endfor %}
   </tbody>
 </table>
+{% endmacro %}
+{% if groups %}
+  {% for g in groups %}
+  <div class="{{ 'pg' if not loop.first else '' }}">
+    <h1>{{ title }}{% if g.src %} <span class="hsub">· {{ g.src }}</span>{% endif %}</h1>
+    <div class="sub">{{ today }} · 단어 {{ g.words|length }}개{{ sub_tail }}</div>
+    {{ table(g.words, false) }}
+  </div>
+  {% endfor %}
+{% else %}
+<h1>{{ title }}</h1>
+<div class="sub">{{ today }} · 단어 {{ words|length }}개{{ sub_tail }}</div>
+{{ table(words, true) }}
+{% endif %}
 {% endblock %}

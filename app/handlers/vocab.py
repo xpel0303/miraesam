@@ -101,7 +101,8 @@ def make_pdf(ctx: JobContext) -> dict:
     else:
         ctx.step("단어장 만드는 중", 60)
         pdf = render_pdf("pdf/vocab_list.html", {"academy": academy, "title": title, "words": words, "doc_title": f"{title} · 단어장", "today": today,
-                                                 "show_example": p.get("show_example", True), "hide": p.get("hide", "")})
+                                                 "show_example": p.get("show_example", True), "hide": p.get("hide", ""),
+                                                 "groups": spec.by_source(words) if p.get("page_src") and len(spec.sources(words)) > 1 else None})
         name = f"{title}_단어장.pdf"
     fid = ctx.save_file(name, "application/pdf", pdf)
     return {"file_id": fid, "filename": name}
