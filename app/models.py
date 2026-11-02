@@ -290,6 +290,26 @@ class SentenceSet(Base):
     teacher: Mapped["Teacher | None"] = relationship()
 
 
+class TextbookSet(Base):
+    """본문 워크북 (10단계). passages: [{title, text, rows[{n, en, ko, en_blanks, ko_blanks, verbs, grammar, chunks, shuffled, keywords}],
+    odd[{n, text, wrong}], status, error, warnings}]   options: {lesson, book, level, sections[]}"""
+
+    __tablename__ = "textbook_sets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(120))
+    options: Mapped[dict] = mapped_column(JSON, default=dict)
+    passages: Mapped[list] = mapped_column(JSON, default=list)
+    file_id: Mapped[int | None] = mapped_column(ForeignKey("stored_files.id"), nullable=True)
+    last_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+    teacher: Mapped["Teacher | None"] = relationship()
+
+
 class SummarySet(Base):
     """지문 정리 (지문 한쪽 정리). passages: [{title, text, out{title, topic, purpose, summary[3], translation, vocab[], sentences[{en[], ko[]}]},
     status, error, warnings}]   options: {level, show_lines}"""

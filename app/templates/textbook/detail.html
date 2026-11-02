@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ s.title }} · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/textbook">본문 워크북</a></p>
+<h1>{{ s.title }}</h1>
+<p class="lead">문단 {{ s.passages|length }}개{% if s.options.lesson %} · Lesson {{ s.options.lesson }}{% endif %}{% if s.options.book %} · {{ s.options.book }}{% endif %} · {{ s.created_at|kst("%Y-%m-%d") }}</p>
+
+{% if busy %}<div class="job" data-job-id="{{ job.id }}" data-reload></div>
+{% elif job and job.status == "failed" %}<div class="flash error" role="alert">{{ job.error }}</div>{% endif %}
+
+<section class="panel">
+  <div class="panel-head"><h2>PDF</h2></div>
+  {% if not busy %}
+  {% if all_done %}<form method="post" action="/textbook/{{ s.id }}/render">
+    <div class="actions" style="margin-bottom:6px">{% for k, name, _ in spec.SECTIONS %}<label class="small" style="font-weight:400;margin:0 10px 4px 0"><input type="checkbox" name="sections" value="{{ k }}" {% if k in (s.options.sections or spec.SECTION_KEYS) %}checked{% endif %}> {{ loop.index }} {{ name }}</label>{% endfor %}</div>
+    <label class="small" style="font-weight:400"><input type="checkbox" name="show_key" value="1" {% if s.options.show_key %}checked{% endif %}> 정답 넣기</label>
+    <button class="btn {{ '' if s.options.dirty else 'ghost' }} small" type="submit">PDF 다시 만들기</button></form>
+  {% else %}<form method="post" action="/textbook/{{ s.id }}/retry"><button class="btn small" type="submit">못 만든 문단 이어서 만들기</button></form>{% endif %}
+  {% endif %}
+  {% if s.file_id %}<div class="actions" style="margin-top:8px"><a class="btn" href="/files/{{ s.file_id }}" target="_blank" rel="noopener">본문 워크북 PDF</a></div>
+    {% if s.options.dirty %}<p class="small" style="margin:10px 0 0;color:var(--err)">고친 내용이 아직 PDF에 반영되지 않았어요.</p>{% endif %}
+  {% elif busy %}<p class="muted small" style="margin:0">다 만들면 여기에 PDF가 생겨요.</p>{% endif %}
+</section>
+
+{% for p in s.passages %}{% set idx = loop.index0 %}
+<section class="panel" id="p{{ idx }}">
+  <div class="panel-head"><h2>{{ p.title or ("문단 " ~ (idx + 1)) }}</h2>
+    <span class="tag">{% if p.status == "done" %}문장 {{ p.rows|length }}개{% elif p.status == "making" %}만드는 중{% elif p.status == "failed" %}실패{% else %}대기{% endif %}</span></div>
+  {% if p.status == "failed" and p.error %}<div class="flash error">{{ p.error }}</div>{% endif %}
+  {% if p.warnings %}<details class="small"><summary>확인해 볼 점 {{ p.warnings|length }}개</summary><ul>{% for w in p.warnings %}<li>{{ w }}</li>{% endfor %}</ul></details>{% endif %}
+  {% if p.status == "done" %}
+    <div class="table-wrap"><table class="list small">
+      <thead><tr><th>#</th><th>영문 (빈칸 낱말 굵게)</th><th>해석</th><th>어법</th></tr></thead>
+      <tbody>{% for r in p.rows %}<tr>
+        <td>{{ r.n }}</td>
+        <td class="wrap">{% for x in spec.marked(r.en, r.en_blanks) %}{% if x.hit %}<b>{{ x.t }}</b>{% else %}{{ x.t }}{% endif %}{% endfor %}</td>
+        <td class="wrap">{{ r.ko }}</td>
+        <td class="wrap">{% for g in r.grammar %}{{ g.text }} ↔ {{ g.wrong }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% if p.odd %}<p class="small">어색한 곳: {% for o in p.odd %}{{ o.text }} → <b>{{ o.wrong }}</b>{% if not loop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+    <details><summary class="small"><b>해석 고치기</b></summary>
+      <form method="post" action="/textbook/{{ s.id }}/passages/{{ idx }}" style="margin-top:10px">
+        <div class="field"><label>소제목</label><input type="text" name="p_title" value="{{ p.title or '' }}"></div>
+        <div class="field"><label>해석 <span class="hint">한 줄에 한 문장, 순서대로</span></label><textarea name="ko" rows="{{ p.rows|length + 1 }}">{% for r in p.rows %}{{ r.ko }}
+{% endfor %}</textarea></div>
+        <button class="btn small" type="submit" {% if busy %}disabled{% endif %}>저장</button>
+      </form></details>
+  {% endif %}
+  {% if not busy and p.status in ("done", "failed") %}
+    <form method="post" action="/textbook/{{ s.id }}/regenerate/{{ idx }}" style="margin-top:12px" onsubmit="return confirm('이 문단을 새로 만들까요? 고친 내용은 사라집니다.')">
+      <button class="btn ghost small" type="submit">이 문단만 다시 만들기</button></form>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if not busy %}<form method="post" action="/textbook/{{ s.id }}/delete" onsubmit="return confirm('지울까요?')"><button class="btn danger small" type="submit">지우기</button></form>{% endif %}
+<script>
+  document.addEventListener("job:done", (e) => { if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600); });
+  const watch = document.querySelector("[data-reload]");
+  if (watch) new MutationObserver(() => { if (watch.classList.contains("failed")) setTimeout(() => location.reload(), 1500); }).observe(watch, { attributes: true, attributeFilter: ["class"] });
+</script>
+{% endblock %}

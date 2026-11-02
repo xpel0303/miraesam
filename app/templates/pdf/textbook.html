@@ -1,0 +1,109 @@
+{% extends "pdf/_base.html" %}
+{# 본문 워크북 10단계 + 정답 #}
+{% block style %}
+  @font-face { font-family: "NanumSquareRound"; font-weight: 400; src: url("{{ font_dir }}/NanumSquareRoundR.woff2") format("woff2"); }
+  @font-face { font-family: "NanumSquareRound"; font-weight: 700; src: url("{{ font_dir }}/NanumSquareRoundB.woff2") format("woff2"); }
+  @font-face { font-family: "NanumSquareRound"; font-weight: 800; src: url("{{ font_dir }}/NanumSquareRoundEB.woff2") format("woff2"); }
+  html { font-family: "NanumSquareRound", "Nanum Gothic", sans-serif; font-size: 9.6pt; }
+  :root { --gr: #1f8a5b; --gr-bg: #e7f4ec; --hl: #c0392b; --hl2: #2a5bd7; }
+  .sec { break-before: page; }
+  .sec.first { break-before: auto; }
+  .bar { display: flex; align-items: center; gap: 8pt; border-bottom: 1.2pt solid var(--gr); padding-bottom: 5pt; margin-bottom: 8pt; }
+  .bar .lsn { border: 1pt solid var(--gr); color: var(--gr); border-radius: 10pt; padding: 1pt 9pt; font-weight: 800; font-size: 10pt; }
+  .bar .nm { background: var(--gr); color: #fff; border-radius: 10pt; padding: 2pt 12pt; font-weight: 800; font-size: 11.5pt; }
+  .bar .wb { background: #f6e9a8; border-radius: 8pt; padding: 1pt 8pt; font-size: 8.5pt; font-weight: 700; }
+  .bar .bk { margin-left: auto; font-size: 8.5pt; font-weight: 700; color: var(--ink-2); }
+  .ins { font-size: 9pt; font-weight: 700; margin: 0 0 9pt; }
+  .ins:before { content: "◗ "; color: var(--gr); }
+  .ph { background: var(--gr-bg); border-radius: 5pt; padding: 3pt 8pt; margin: 10pt 0 6pt; font-weight: 800; font-size: 9.5pt; break-after: avoid; }
+  .ph .k { display: inline-block; background: var(--gr); color: #fff; border-radius: 3pt; padding: 0 5pt; margin-right: 6pt; }
+  table.two { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.two td { border: 0; border-bottom: 0.4pt dotted var(--line); padding: 3.5pt 5pt; vertical-align: top; line-height: 1.6; }
+  table.two td.e { width: 57%; } table.two td.k { width: 43%; font-size: 8.8pt; color: var(--ink-2); }
+  .hit { color: var(--hl); font-weight: 700; text-decoration: underline; text-underline-offset: 1.5pt; }
+  .hitk { color: var(--hl2); font-weight: 700; }
+  .it { margin: 0 0 9pt; break-inside: avoid; line-height: 1.65; }
+  .it .q { font-weight: 400; }
+  .it .q b.no { color: var(--gr); margin-right: 3pt; }
+  .it .a { margin: 2pt 0 0 14pt; }
+  .bl { display: inline-block; min-width: 60pt; border-bottom: 0.7pt solid var(--ink); }
+  .ch { font-weight: 800; color: var(--ink); }
+  .ln { border-bottom: 0.6pt solid var(--line); height: 16pt; margin-left: 14pt; }
+  .kw { text-align: right; font-size: 8.5pt; color: var(--ink-2); margin: 1pt 0; }
+  .wl { margin-left: 14pt; line-height: 2.1; }
+  .wl span { display: inline-block; width: 46pt; border-bottom: 0.6pt solid var(--ink-3); margin-right: 4pt; height: 11pt; }
+  .para { border: 0.7pt solid var(--line); border-radius: 5pt; padding: 7pt 9pt; text-align: justify; line-height: 1.75; margin: 0 0 4pt; }
+  .oans { margin: 2pt 0 12pt 6pt; line-height: 2; }
+  table.chk { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table.chk td { border: 0; vertical-align: top; padding: 0 6pt; }
+  table.chk td.e { width: 64%; line-height: 1.95; text-align: justify; border-right: 0.6pt solid var(--line); }
+  table.chk td.k { width: 36%; font-size: 8.3pt; color: var(--ink-2); line-height: 1.7; }
+  sup.n { color: var(--gr); font-weight: 800; font-size: 6.5pt; }
+  .key { columns: 2; column-gap: 14pt; font-size: 8.4pt; line-height: 1.55; }
+  .key h3 { font-size: 9.5pt; color: var(--gr); margin: 6pt 0 3pt; break-after: avoid; }
+  .key div { break-inside: avoid; }
+{% endblock %}
+
+{% macro bar(k, name) %}
+<div class="bar"><span class="lsn">Lesson {{ s.options.lesson or "" }}</span><span class="nm">{{ name }}</span><span class="wb">워크북 {{ k }}</span><span class="bk">{{ s.options.book or s.title }}</span></div>
+{% endmacro %}
+{% macro mk(parts, cls="hit") %}{% for x in parts %}{% if x.hit %}<span class="{{ cls }}">{{ x.t }}</span>{% else %}{{ x.t }}{% endif %}{% endfor %}{% endmacro %}
+{% macro blanks(parts) %}{% for x in parts %}{% if x.hit %}<span class="bl"></span>{% else %}{{ x.t }}{% endif %}{% endfor %}{% endmacro %}
+{% macro head(p, i) %}<div class="ph"><span class="k">{{ i }}</span>{{ p.title or ("문단 " ~ i) }}</div>{% endmacro %}
+
+{% block body %}
+{% set ns = namespace(first=true) %}
+{% for key, name, ins in sections %}{% set wk = spec.SECTION_KEYS.index(key) + 1 %}
+<div class="sec{% if ns.first %} first{% endif %}">{% set ns.first = false %}
+  {{ bar(wk, name) }}
+  <p class="ins">{{ ins }}</p>
+  {% for p in passages %}{% set pi = loop.index %}
+    {% if key not in ("s7", "s10") %}{{ head(p, pi) }}{% endif %}
+    {% if key == "s1" %}
+      <table class="two">{% for r in p.rows %}<tr><td class="e"><b style="color:var(--gr)">{{ r.no }}</b> {{ mk(spec.marked(r.en, r.en_blanks)) }}</td><td class="k">{{ mk(spec.blanked_ko(r.ko, r.ko_blanks), "hitk") }}</td></tr>{% endfor %}</table>
+    {% elif key == "s2" %}
+      {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.en }}</div><div class="a">{{ blanks(spec.blanked_ko(r.ko, r.ko_blanks)) }}</div></div>{% endfor %}
+    {% elif key == "s3" %}
+      {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.ko }}</div><div class="a">{{ blanks(spec.marked(r.en, r.en_blanks)) }}</div></div>{% endfor %}
+    {% elif key == "s4" %}
+      {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.en }}</div><div class="ln"></div><div class="ln"></div></div>{% endfor %}
+    {% elif key == "s5" %}
+      {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.ko }}</div><div class="a">{{ mk(spec.verb_line(r.en, r.verbs), "ch") }}</div></div>{% endfor %}
+    {% elif key == "s6" %}
+      {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.ko }}</div><div class="a">{{ mk(spec.grammar_line(r.en, r.grammar), "ch") }}</div></div>{% endfor %}
+    {% elif key == "s7" %}
+      {% if p.odd %}
+      <div class="it"><div class="q"><b class="no">{{ pi }}</b> 다음 글에서 문맥상 어색한 낱말 {{ p.odd|length }}개를 찾아 바르게 고쳐 쓰시오.</div></div>
+      {% if p.title %}<p style="font-weight:800;margin:0 0 3pt">{{ p.title }}</p>{% endif %}
+      <div class="para">{{ spec.odd_paragraph(p.rows, p.odd) }}</div>
+      <div class="oans">{% for o in p.odd %}({{ loop.index }}) ______________________ → ______________________<br>{% endfor %}</div>
+      {% endif %}
+    {% elif key == "s8" %}
+      {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.ko }}</div><div class="a">({{ r.shuffled|join(" / ") }})</div><div class="ln"></div></div>{% endfor %}
+    {% elif key == "s9" %}
+      {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.ko }}</div>{% if r.keywords %}<div class="kw">{{ r.keywords|join(", ") }}</div>{% endif %}
+        <div class="wl">{% for _ in range(spec.word_count(r.en)) %}<span></span>{% endfor %}</div></div>{% endfor %}
+    {% elif key == "s10" %}
+      {{ head(p, pi) }}
+      <table class="chk"><tr><td class="e">{% for line in p.check %}{% for x in line %}{% if x.hit %}{% if x.blank %}<span class="bl"></span>{% else %}<b>{{ x.t }}</b>{% endif %}<sup class="n">{{ x.no }})</sup>{% else %}{{ x.t }}{% endif %}{% endfor %} {% endfor %}</td>
+        <td class="k">{% for r in p.rows %}{{ r.ko }} {% endfor %}</td></tr></table>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endfor %}
+
+{% if show_key %}
+<div class="sec">
+  {{ bar("", "Answer Key") }}
+  <div class="key">
+  {% for key, name, _ in sections %}{% set wk = spec.SECTION_KEYS.index(key) + 1 %}
+    {% if key != "s1" %}
+    <h3>워크북 {{ wk }} {{ name }}</h3>
+    {% if key == "s7" %}{% for a in answers.s7 %}<div>{{ loop.index }}) {{ a }}</div>{% endfor %}
+    {% else %}{% for a in answers[key] %}{% if a %}<div>{{ loop.index }}) {{ a }}</div>{% endif %}{% endfor %}{% endif %}
+    {% endif %}
+  {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

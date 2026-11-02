@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}본문 워크북 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>본문 워크북</h1><a class="btn" href="/textbook/new">새 본문 워크북</a></div>
+<p class="lead">교과서·부교재 본문 한 과를 넣으면 10단계 연습지(본문 해석지 → 빈칸 → 해석 → 동사형 → 어법 선택 → 어색한 곳 → 순서배열 → 영작 → Check)와 정답을 한 PDF로 만들어요.</p>
+{% if sets %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>제목</th><th>지문</th><th>만든 사람</th><th>만든 날</th><th></th></tr></thead>
+  <tbody>{% for s in sets %}
+    <tr><td class="wrap"><a href="/textbook/{{ s.id }}"><b>{{ s.title }}</b></a>
+        {% if s.passages|selectattr("status", "in", ["waiting", "making"])|list %} <span class="tag">만드는 중</span>{% elif s.passages|selectattr("status", "equalto", "failed")|list %} <span class="tag" style="color:var(--err)">일부 실패</span>{% endif %}</td>
+      <td>{{ s.passages|length }}개</td><td>{{ s.teacher.name if s.teacher else "" }}</td><td class="muted small">{{ s.created_at|kst("%Y-%m-%d") }}</td>
+      <td>{% if s.file_id %}<a href="/files/{{ s.file_id }}" target="_blank" rel="noopener">PDF</a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 만든 본문 워크북이 없어요.</p><a class="btn" href="/textbook/new">첫 워크북 만들기</a></div>
+{% endif %}
+{% endblock %}

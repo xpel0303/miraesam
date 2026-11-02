@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}새 본문 워크북 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>새 본문 워크북</h1>
+<p class="lead">한 과의 본문을 문단(소제목)별로 나눠 넣어 주세요. 문장 번호는 문단을 이어서 1번부터 매겨져요.</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+<form method="post" action="/textbook">
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: Lesson 4 Looking to Nature for Help"></div>
+      <div class="field"><label for="lesson">과 <span class="hint">머리말 'Lesson ○'</span></label><input type="text" id="lesson" name="lesson" value="{{ form.lesson or '' }}" placeholder="예: 4"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="book">교재 <span class="hint">머리말 오른쪽</span></label><input type="text" id="book" name="book" value="{{ form.book or '' }}" placeholder="예: NE능률(민병천) 공통영어2"></div>
+      <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>넣을 워크북</label>
+      <div class="actions">{% for k, name, _ in spec.SECTIONS %}<label style="font-weight:400;margin:0 12px 4px 0"><input type="checkbox" name="sections" value="{{ k }}" {% if k in form.sections %}checked{% endif %}> {{ loop.index }} {{ name }}</label>{% endfor %}</div></div>
+    <label style="font-weight:400"><input type="checkbox" name="show_key" value="1" {% if form.show_key %}checked{% endif %}> 맨 뒤에 정답(Answer Key) 넣기</label>
+  </section>
+  <div id="passages">
+    {% for r in form.passages %}
+    <section class="panel passage-card">
+      <div class="panel-head"><h2>문단 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 문단 빼기</button></div>
+      <div class="field"><label>소제목 <span class="hint">선택. 예: Dealing with Plastic Waste</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+      <div class="field"><label>영어 본문</label><textarea name="p_text" rows="8">{{ r.text or '' }}</textarea></div>
+    </section>
+    {% endfor %}
+  </div>
+  <p><button class="btn ghost" type="button" id="add-passage">문단 추가</button> <span class="small muted" id="count-note"></span></p>
+  <button class="btn" type="submit">워크북 만들기</button>
+  <p class="small muted" style="margin-top:8px">문장 10개에 1분쯤 걸려요. 창을 닫아도 계속 만들어요.</p>
+</form>
+<script>
+  const MAX = {{ spec.MAX_PASSAGES }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
+  function renumber() { const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => { c.querySelector("[data-num]").textContent = i + 1; c.querySelector("[data-remove]").hidden = cards.length === 1; });
+    addBtn.disabled = cards.length >= MAX; document.getElementById("count-note").textContent = `${cards.length} / ${MAX}개`; }
+  addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
+  box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
+  renumber();
+</script>
+{% endblock %}

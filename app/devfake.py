@@ -118,6 +118,8 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
         return _paraphrase(prompt)
     if system and "내용이해 워크북" in system:
         return _comprehension(prompt)
+    if system and "본문 워크북" in system:
+        return _textbook(prompt)
     if system and "지문 정리본" in system:
         return _summary(prompt)
     if system and "지문 분석본" in system:
@@ -331,3 +333,21 @@ def _summary(prompt: str) -> dict:
             "summary": ["[가짜] 첫째 줄 요약.", "[가짜] 둘째 줄 요약.", "[가짜] 셋째 줄 요약."],
             "translation": "[가짜 해석] " + "자연스러운 우리말 해석이 여기 들어갑니다. " * max(3, len(rows)),
             "vocab": [{"word": w, "pos": "명", "meaning": "[가짜] 뜻"} for w in words], "sentences": rows}
+
+
+def _textbook(prompt: str) -> dict:
+    sents = re.findall(r"^\[(\d+)\] (.+)$", prompt, re.M)
+    rows, odd = [], []
+    for n, sent in sents:
+        w = sent.split()
+        long = [x.strip(".,") for x in w if len(x.strip(".,")) >= 6][:2]
+        verbs = [x for x in w if x in ("is", "are", "was", "were", "has", "have", "can", "will")][:1]
+        rows.append({"n": int(n), "ko": f"[가짜 해석] {n}번 문장은 핵심어와 내용을 담고 있다.", "en_blanks": long, "ko_blanks": ["핵심어", "내용"],
+                     "verbs": [{"text": v, "base": "be"} for v in verbs], "grammar": [{"text": v, "wrong": v + "x"} for v in verbs],
+                     "chunks": [" ".join(w[i:i + 3]) for i in range(0, len(w), 3)], "keywords": [x.lower() for x in long]})
+        if len(odd) < 3 and long:
+            odd.append({"n": int(n), "text": long[0], "wrong": "WRONG"})
+    out = {"sentences": rows}
+    if '"odd"' in prompt:
+        out["odd"] = odd
+    return out
