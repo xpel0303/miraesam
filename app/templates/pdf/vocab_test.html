@@ -1,38 +1,63 @@
 {% extends "pdf/_base.html" %}
-{# 단어 시험지 + 답지(맨 뒤 페이지) #}
+{# 단어 시험지 (쓰기·객관식·예문 빈칸, 지문별 묶음) + 답지(맨 뒤 페이지) #}
 {% block style %}
   .info { display: table; width: 100%; margin: 6pt 0 10pt; font-size: 9pt; }
   .info span { display: table-cell; border-bottom: 0.6pt solid var(--ink-2); padding: 3pt 0; }
   .info span + span { padding-left: 10pt; }
   .dir { font-size: 9.5pt; font-weight: 700; margin-bottom: 6pt; }
+  .gh { font-size: 10pt; font-weight: 800; color: var(--brand); border-bottom: 0.8pt solid var(--brand); padding-bottom: 2pt; margin: 10pt 0 6pt; break-after: avoid; }
   .cols { columns: 2; column-gap: 18pt; }
-  .q { break-inside: avoid; display: table; width: 100%; margin: 0 0 7pt; }
-  .q > * { display: table-cell; vertical-align: bottom; }
-  .n { width: 22pt; color: var(--brand); font-weight: 800; }
-  .show { width: 44%; font-weight: 700; padding-right: 6pt; }
-  .show.ko { font-weight: 400; font-size: 9pt; }
-  .line { border-bottom: 0.6pt solid var(--ink-2); }
+  .q { break-inside: avoid; margin: 0 0 8pt; font-size: 9.3pt; line-height: 1.5; }
+  .row { display: table; width: 100%; }
+  .row > * { display: table-cell; vertical-align: bottom; }
+  .n { width: 20pt; color: var(--brand); font-weight: 800; }
+  .show { font-weight: 700; padding-right: 6pt; }
+  .show.ko { font-weight: 400; }
+  .line { border-bottom: 0.6pt solid var(--ink-2); width: 45%; }
+  .tag { font-size: 7pt; color: var(--ink-3); }
+  .ch { margin: 2pt 0 0 20pt; font-size: 8.8pt; }
+  .ch span { display: inline-block; margin-right: 9pt; }
+  .sent { margin-left: 20pt; }
+  .sko { margin-left: 20pt; font-size: 8.3pt; color: var(--ink-2); }
+  .sline { margin: 3pt 0 0 20pt; border-bottom: 0.6pt solid var(--ink-2); width: 45%; height: 12pt; }
   .ans { break-before: page; }
-  .ans .q { margin-bottom: 3pt; font-size: 9pt; }
-  .ans .line { border: 0; color: var(--ink); font-weight: 700; }
+  .ans .k { font-size: 8.8pt; margin: 0 0 2.5pt; break-inside: avoid; }
 {% endblock %}
 {% block body %}
 <h1>{{ title }} 단어 시험</h1>
-<div class="info"><span>반:</span><span>이름:</span><span>점수: &nbsp;&nbsp;&nbsp;&nbsp;/ {{ qs|length }}</span></div>
-<div class="dir">{% if mode == "en_ko" %}영어 단어의 뜻을 쓰시오.{% elif mode == "ko_en" %}우리말 뜻에 맞는 영어 단어를 쓰시오.{% else %}영어는 뜻을, 우리말은 영어 단어를 쓰시오.{% endif %}</div>
-<div class="cols">
-  {% for q in qs %}
-    <div class="q"><span class="n">{{ loop.index }}</span><span class="show {{ 'ko' if q.dir == 'ko_en' else '' }}">{{ q.show }}</span><span class="line">&nbsp;</span></div>
+<div class="info"><span>반:</span><span>이름:</span><span>점수: &nbsp;&nbsp;&nbsp;&nbsp;/ {{ n }}</span></div>
+{% if mode in dirs %}<div class="dir">{{ dirs[mode] }}</div>{% elif mode == "mix" %}<div class="dir">영어는 뜻을, 우리말은 영어 단어를 쓰시오.</div>{% endif %}
+{% set ns = namespace(k=0) %}
+{% for g in groups %}
+  {% if g.src %}<div class="gh">{{ g.src }}</div>{% endif %}
+  <div class="cols">
+  {% for q in g.qs %}{% set ns.k = ns.k + 1 %}
+    <div class="q">
+      {% if q.kind == "write" %}
+        <div class="row"><span class="n">{{ ns.k }}</span><span class="show {{ 'ko' if q.mode == 'ko_en' else '' }}">{{ q.show }}</span><span class="line">&nbsp;</span></div>
+      {% elif q.kind == "mc" %}
+        <div class="row"><span class="n">{{ ns.k }}</span><span class="show {{ 'ko' if q.mode == 'mc_ko' else '' }}">{{ q.show }}{% if mode == "all" %} <span class="tag">고르기</span>{% endif %}</span></div>
+        <div class="ch">{% for c in q.choices %}<span>{{ circled[loop.index0] }} {{ c }}</span>{% endfor %}</div>
+      {% else %}
+        <div class="row"><span class="n">{{ ns.k }}</span><span>{{ q.show }}</span></div>
+        {% if q.ko %}<div class="sko">{{ q.ko }}</div>{% endif %}
+        {% if q.choices %}<div class="ch">{% for c in q.choices %}<span>{{ circled[loop.index0] }} {{ c }}</span>{% endfor %}</div>{% else %}<div class="sline"></div>{% endif %}
+      {% endif %}
+    </div>
   {% endfor %}
-</div>
+  </div>
+{% endfor %}
 
 <div class="ans">
   <h1>정답</h1>
   <div class="sub">{{ title }} 단어 시험 · {{ today }}</div>
   <div class="cols" style="margin-top:8pt">
-    {% for q in qs %}
-      <div class="q"><span class="n">{{ loop.index }}</span><span class="show {{ 'ko' if q.dir == 'ko_en' else '' }}">{{ q.show }}</span><span class="line">{{ q.answer }}</span></div>
+  {% set ns.k = 0 %}
+  {% for g in groups %}{% if g.src %}<div class="k" style="font-weight:800;color:var(--brand)">{{ g.src }}</div>{% endif %}
+    {% for q in g.qs %}{% set ns.k = ns.k + 1 %}
+      <div class="k"><b>{{ ns.k }}.</b> {% if q.ans_no %}{{ circled[q.ans_no - 1] }} {% endif %}{{ q.answer }}{% if q.kind != "sent" %} <span class="tag">({{ q.show }})</span>{% endif %}</div>
     {% endfor %}
+  {% endfor %}
   </div>
 </div>
 {% endblock %}

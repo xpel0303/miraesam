@@ -120,7 +120,7 @@ def detail(lid: int, request: Request, pdf_job: int | None = None, teacher: Teac
     top_miss = sorted(miss.items(), key=lambda kv: -kv[1])[:10]
     return render(request, "vocab/detail.html", {
         "teacher": teacher, "wl": wl, "job": job, "busy": _busy(db, wl), "classes": classes, "assigned": assigned,
-        "results": results, "top_miss": top_miss, "modes": spec.QUIZ_MODES, "pdf_job": pdf_job, "active": "vocab",
+        "results": results, "top_miss": top_miss, "modes": spec.QUIZ_MODES, "test_modes": spec.TEST_MODES, "pdf_job": pdf_job, "active": "vocab",
         "blank_count": sum(1 for w in wl.words if spec.blank_needed(w)),
     })
 
@@ -183,8 +183,8 @@ async def pdf(lid: int, request: Request, teacher: Teacher = Depends(current_tea
         except ValueError:
             count = len(wl.words)
         mode = str(f.get("mode") or "en_ko")
-        payload = {"list_id": wl.id, "kind": "test", "mode": mode if mode in ("en_ko", "ko_en", "mix") else "en_ko",
-                   "count": count, "shuffle": f.get("shuffle") == "1", "seed": secrets.randbits(31)}
+        payload = {"list_id": wl.id, "kind": "test", "mode": mode if mode in spec.TEST_MODES else "en_ko",
+                   "count": count, "shuffle": f.get("shuffle") == "1", "seed": secrets.randbits(31), "by_src": f.get("by_src") == "1"}
         title = f"단어 시험지 · {wl.title}"
     else:
         hide = str(f.get("hide") or "")
@@ -195,15 +195,15 @@ async def pdf(lid: int, request: Request, teacher: Teacher = Depends(current_tea
 
 
 @router.get("/{lid}/docx")
-def docx(lid: int, kind: str = "list", hide: str = "", show_example: str = "", mode: str = "en_ko", count: int = 0, shuffle: str = "",
+def docx(lid: int, kind: str = "list", hide: str = "", show_example: str = "", mode: str = "en_ko", count: int = 0, shuffle: str = "", by_src: str = "",
          teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     wl = _own(db, lid, teacher)
     if not wl.words:
         raise HTTPException(404, "단어가 없어요.")
     academy = db.get(Academy, wl.academy_id)
     if kind == "test":
-        return vocab_test_docx(wl, academy, mode if mode in ("en_ko", "ko_en", "mix") else "en_ko",
-                               max(1, min(len(wl.words), count or len(wl.words))), shuffle == "1", secrets.randbits(31))
+        return vocab_test_docx(wl, academy, mode if mode in spec.TEST_MODES else "en_ko",
+                               max(1, min(len(wl.words), count or len(wl.words))), shuffle == "1", secrets.randbits(31), by_src == "1")
     return vocab_list_docx(wl, academy, hide if hide in ("meaning", "word") else "", show_example == "1")
 
 

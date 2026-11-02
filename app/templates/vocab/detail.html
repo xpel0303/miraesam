@@ -30,10 +30,11 @@
       <input type="hidden" name="kind" value="test">
       <h3>단어 시험지 <span class="small muted" style="font-weight:400">답지는 맨 뒤 페이지</span></h3>
       <div class="row" style="grid-template-columns: 1fr 100px">
-        <div class="field"><select name="mode" aria-label="문제 방향"><option value="en_ko">영어 → 뜻 쓰기</option><option value="ko_en">뜻 → 영어 쓰기</option><option value="mix">섞어서</option></select></div>
+        <div class="field"><select name="mode" aria-label="문제 방식">{% for k, v in test_modes.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
         <div class="field"><input type="text" name="count" inputmode="numeric" value="{{ wl.words|length }}" aria-label="문항 수"></div>
       </div>
       <label style="font-weight:400"><input type="checkbox" name="shuffle" value="1" checked> 순서 섞기 (누를 때마다 다른 시험지)</label>
+      {% if wl.words|selectattr("src")|list %}<br><label style="font-weight:400"><input type="checkbox" name="by_src" value="1" checked> 지문별로 나눠서 출제</label>{% endif %}
       <button class="btn small" type="submit" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>시험지 PDF</button>
       <button class="btn ghost small" type="submit" formaction="/vocab/{{ wl.id }}/docx" formmethod="get" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>워드로</button>
     </form>
@@ -85,7 +86,7 @@
         {% for w in wl.words %}
           <tr>
             <td class="muted">{{ loop.index }}</td>
-            <td><input type="text" name="word" value="{{ w.word }}" aria-label="단어" style="min-width:120px;font-weight:700"></td>
+            <td><input type="text" name="word" value="{{ w.word }}" aria-label="단어" style="min-width:120px;font-weight:700"><input type="hidden" name="src" value="{{ w.src or '' }}">{% if w.src %}<div class="small muted">{{ w.src }}</div>{% endif %}</td>
             <td><input type="text" name="pos" value="{{ w.pos }}" aria-label="품사" style="width:60px"></td>
             <td class="wrap"><input type="text" name="meaning" value="{{ w.meaning }}" aria-label="뜻"></td>
             <td><input type="text" name="syn" value="{{ w.syn }}" aria-label="유의어" style="min-width:110px"></td>
@@ -98,7 +99,7 @@
       </table>
     </div>
     <template id="row-tpl"><tr><td class="muted">새</td>
-      <td><input type="text" name="word" aria-label="단어" style="min-width:120px;font-weight:700"></td><td><input type="text" name="pos" aria-label="품사" style="width:60px"></td>
+      <td><input type="text" name="word" aria-label="단어" style="min-width:120px;font-weight:700"><input type="hidden" name="src" value=""></td><td><input type="text" name="pos" aria-label="품사" style="width:60px"></td>
       <td class="wrap"><input type="text" name="meaning" aria-label="뜻"></td><td><input type="text" name="syn" aria-label="유의어" style="min-width:110px"></td>
       <td><input type="text" name="ant" aria-label="반의어" style="min-width:90px"></td>
       <td class="wrap"><input type="text" name="example" aria-label="예문"><input type="text" name="example_ko" aria-label="예문 해석" style="margin-top:4px"></td><td></td></tr></template>

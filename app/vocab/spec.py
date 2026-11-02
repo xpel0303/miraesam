@@ -21,7 +21,7 @@ def split_passages(text: str) -> list[dict]:
             out.append({"title": title.strip(), "text": body.strip()})
     return out
 CHUNK = 25  # AI에 한 번에 채워 달라고 하는 단어 수 (많으면 답이 잘려서 나눔)
-FIELDS = ("word", "pos", "meaning", "syn", "ant", "example", "example_ko")
+FIELDS = ("word", "pos", "meaning", "syn", "ant", "example", "example_ko", "src")  # src: 어느 지문에서 뽑았는지
 
 QUIZ_MODES = {
     "mc_en": "영어 보고 뜻 고르기 (객관식)",
@@ -146,3 +146,99 @@ def grade(words: list[dict], mode: str, idx: int, given: str) -> bool:
         if g == m or (len(m) >= 2 and m in g) or (len(g) >= 3 and g in m):
             return True
     return False
+
+
+# ---------------------------------------------------------------- 종이 시험지
+
+TEST_MODES = {
+    "en_ko": "영어 → 뜻 쓰기",
+    "ko_en": "뜻 → 영어 쓰기",
+    "mix": "쓰기 (영어·뜻 섞어서)",
+    "mc_en": "영어 → 뜻 고르기 (객관식)",
+    "mc_ko": "뜻 → 영어 고르기 (객관식)",
+    "sent": "예문 빈칸에 알맞은 단어 쓰기",
+    "sent_mc": "예문 빈칸에 알맞은 단어 고르기 (객관식)",
+    "all": "골고루 섞기 (쓰기·객관식·예문 빈칸)",
+}
+TEST_DIRS = {
+    "en_ko": "영어 단어의 뜻을 쓰시오.",
+    "ko_en": "우리말 뜻에 맞는 영어 단어를 쓰시오.",
+    "mc_en": "영어 단어의 뜻으로 알맞은 것을 고르시오.",
+    "mc_ko": "우리말 뜻에 맞는 영어 단어를 고르시오.",
+    "sent": "빈칸에 들어갈 알맞은 단어를 쓰시오. (필요하면 형태를 바꿀 것)",
+    "sent_mc": "빈칸에 들어갈 알맞은 단어를 고르시오.",
+}
+CIRCLED = "①②③④⑤"
+
+
+def blank_sentence(w: dict) -> tuple[str, str] | None:
+    """예문에서 그 단어(변형 포함)를 찾아 빈칸으로 → (빈칸 예문, 예문 속 형태). 못 찾으면 None."""
+    ex, word = w.get("example") or "", (w.get("word") or "").strip()
+    if not ex or not word:
+        return None
+    parts = word.split()
+    stem = parts[0]
+    if len(stem) > 4 and stem[-1] in "ey":
+        stem = stem[:-1]
+    pat = r"\b" + re.escape(stem) + r"[a-z]*" + "".join(r"\s+" + re.escape(x) + r"[a-z]*" for x in parts[1:]) + r"\b"
+    m = re.search(pat, ex, re.I)
+    if not m:
+        return None
+    return ex[: m.start()] + "__________" + ex[m.end():], m.group(0)
+
+
+def _choices(rng, right: str, pool: list[str]) -> tuple[list[str], int]:
+    others = [x for x in dict.fromkeys(pool) if x and x != right]
+    rng.shuffle(others)
+    opts = others[:4] + [right]
+    rng.shuffle(opts)
+    return opts, opts.index(right) + 1
+
+
+def test_items(words: list[dict], mode: str, count: int, shuffle: bool, seed: int, by_src: bool) -> list[dict]:
+    """시험지 → [{src, qs[{kind, mode, show, ko, choices, answer, ans_no}]}]. 지문별이면 지문 순서대로 묶고, 그 안에서 섞음."""
+    rng = random.Random(seed)
+    pool = [w for w in words if w.get("word") and w.get("meaning")]
+    if mode in ("sent", "sent_mc"):
+        pool = [w for w in pool if blank_sentence(w)]
+    groups: dict[str, list[dict]] = {}
+    for w in pool:
+        groups.setdefault((w.get("src") or "") if by_src else "", []).append(w)
+    total = sum(len(g) for g in groups.values()) or 1
+    out = []
+    cycle = ["en_ko", "mc_en", "ko_en", "mc_ko", "sent", "sent_mc"]
+    k = 0
+    for src, ws in groups.items():
+        n = max(1, round(count * len(ws) / total)) if count < total else len(ws)
+        picked = rng.sample(ws, min(n, len(ws))) if shuffle else ws[:n]
+        qs = []
+        for w in picked:
+            m = mode
+            if mode == "mix":
+                m = rng.choice(["en_ko", "ko_en"])
+            elif mode == "all":
+                m = cycle[k % len(cycle)]
+                k += 1
+                if m.startswith("sent") and not blank_sentence(w):
+                    m = "mc_en"
+            q = {"mode": m, "show": "", "ko": "", "choices": [], "answer": "", "ans_no": 0}
+            if m == "en_ko":
+                q.update(kind="write", show=w["word"], answer=w["meaning"])
+            elif m == "ko_en":
+                q.update(kind="write", show=w["meaning"], answer=w["word"])
+            elif m == "mc_en":
+                opts, no = _choices(rng, w["meaning"], [x["meaning"] for x in pool])
+                q.update(kind="mc", show=w["word"], choices=opts, ans_no=no, answer=w["meaning"])
+            elif m == "mc_ko":
+                opts, no = _choices(rng, w["word"], [x["word"] for x in pool])
+                q.update(kind="mc", show=w["meaning"], choices=opts, ans_no=no, answer=w["word"])
+            else:
+                sent, form = blank_sentence(w)
+                q.update(kind="sent", show=sent, ko=w.get("example_ko", ""), answer=form)
+                if m == "sent_mc":
+                    opts, no = _choices(rng, w["word"], [x["word"] for x in pool])
+                    q.update(choices=opts, ans_no=no, answer=w["word"])
+            qs.append(q)
+        if qs:
+            out.append({"src": src, "qs": qs})
+    return out

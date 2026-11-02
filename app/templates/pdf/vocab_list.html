@@ -20,6 +20,7 @@
   <thead><tr><th class="no">#</th><th style="width:22%">단어</th><th style="width:26%">뜻</th><th style="width:18%">유의어 / 반의어</th>{% if show_example %}<th>예문</th>{% endif %}</tr></thead>
   <tbody>
   {% for w in words %}
+    {% if w.src and (loop.first or words[loop.index0 - 1].src != w.src) %}<tr><td colspan="{{ 5 if show_example else 4 }}" style="background:var(--fill);font-weight:800;color:var(--brand)">{{ w.src }}</td></tr>{% endif %}
     <tr>
       <td class="no">{{ loop.index }}</td>
       <td>{% if hide == "word" %}<div class="blankcell"></div>{% else %}<span class="w">{{ w.word }}</span>{% endif %} {% if w.pos %}<span class="pos">{{ w.pos }}</span>{% endif %}</td>

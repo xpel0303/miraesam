@@ -47,7 +47,7 @@ def build(ctx: JobContext) -> dict:
             for n, p in enumerate(ps, 1):  # 지문마다 따로 뽑고, 앞 지문에 나온 단어는 빼기
                 ctx.step(f"{p['title'] or f'지문 {n}'}에서 단어 {count}개 고르는 중 ({n}/{len(ps)})", int(10 + 80 * (n - 1) / max(1, len(ps))))
                 got = _ask(key, model, spec.extract_prompt(p["text"], count + 3, level), count + 3)
-                new = [w for w in got if w["word"].lower() not in seen][:count]
+                new = [{**w, "src": p["title"] or f"지문 {n}"} for w in got if w["word"].lower() not in seen][:count]
                 seen |= {w["word"].lower() for w in new}
                 words += new
                 _set(list_id, words=[dict(w) for w in words])  # 지문마다 저장
@@ -90,16 +90,12 @@ def make_pdf(ctx: JobContext) -> dict:
     today = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
 
     if p.get("kind") == "test":
-        rng = random.Random(p.get("seed") or 1)
-        pool = [w for w in words if w.get("meaning")]
-        picked = rng.sample(pool, min(int(p.get("count") or len(pool)), len(pool))) if p.get("shuffle", True) else pool[: int(p.get("count") or len(pool))]
         mode = p.get("mode", "en_ko")
-        qs = []
-        for w in picked:
-            m = mode if mode != "mix" else rng.choice(["en_ko", "ko_en"])
-            qs.append({"show": w["word"] if m == "en_ko" else w["meaning"], "answer": w["meaning"] if m == "en_ko" else w["word"], "dir": m})
+        groups = spec.test_items(words, mode, int(p.get("count") or len(words)), p.get("shuffle", True), p.get("seed") or 1, p.get("by_src", True))
         ctx.step("시험지 만드는 중", 60)
-        pdf = render_pdf("pdf/vocab_test.html", {"academy": academy, "title": title, "qs": qs, "doc_title": f"{title} · 단어 시험", "today": today, "mode": mode})
+        pdf = render_pdf("pdf/vocab_test.html", {"academy": academy, "title": title, "groups": groups, "n": sum(len(g["qs"]) for g in groups),
+                                                 "doc_title": f"{title} · 단어 시험", "today": today, "mode": mode, "dirs": spec.TEST_DIRS,
+                                                 "circled": spec.CIRCLED})
         name = f"{title}_단어시험.pdf"
     else:
         ctx.step("단어장 만드는 중", 60)

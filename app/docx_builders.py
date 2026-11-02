@@ -156,7 +156,11 @@ def vocab_list_docx(wl, academy, hide: str = "", show_example: bool = True):
     header = ["#", "단어", "뜻", "유의어 / 반의어"] + (["예문"] if show_example else [])
     widths = [0.9, 3.6, 4.4, 3.2] + ([5.7] if show_example else [])
     rows = []
+    prev = None
     for i, w in enumerate(wl.words, 1):
+        if w.get("src") and w.get("src") != prev:  # 지문별 제목 줄
+            rows.append(["", "■ " + w["src"], "", ""] + ([""] if show_example else []))
+        prev = w.get("src")
         sa = " / ".join(x for x in (("= " + w["syn"]) if w.get("syn") else "", ("↔ " + w["ant"]) if w.get("ant") else "") if x)
         word = "" if hide == "word" else w["word"] + (f"  {w['pos']}" if w.get("pos") else "")
         meaning = "" if hide == "meaning" else w.get("meaning", "")
@@ -168,22 +172,35 @@ def vocab_list_docx(wl, academy, hide: str = "", show_example: bool = True):
     return doc.response(f"{wl.title}_단어장.docx")
 
 
-def vocab_test_docx(wl, academy, mode: str, count: int, shuffle: bool, seed: int):
-    rng = random.Random(seed)
-    pool = [w for w in wl.words if w.get("meaning")]
-    picked = rng.sample(pool, min(count, len(pool))) if shuffle else pool[:count]
-    qs = []
-    for w in picked:
-        m = mode if mode != "mix" else rng.choice(["en_ko", "ko_en"])
-        qs.append((w["word"], w["meaning"]) if m == "en_ko" else (w["meaning"], w["word"]))
+def vocab_test_docx(wl, academy, mode: str, count: int, shuffle: bool, seed: int, by_src: bool = True):
+    from .vocab import spec as vs
+
+    groups = vs.test_items(wl.words, mode, count, shuffle, seed, by_src)
+    total = sum(len(g["qs"]) for g in groups)
     doc = Doc(academy, f"{wl.title} · 단어 시험")
     doc.title(f"{wl.title} 단어 시험")
-    doc.para("반:                    이름:                    점수:        / " + str(len(qs)), size=9, color=INK_2, space_after=6)
-    doc.para({"en_ko": "영어 단어의 뜻을 쓰시오.", "ko_en": "우리말 뜻에 맞는 영어 단어를 쓰시오."}.get(mode, "영어는 뜻을, 우리말은 영어 단어를 쓰시오."), bold=True, space_after=6)
-    doc.table(["#", "문제", "답", "#", "문제", "답"], _two_cols([(str(i), s, "") for i, (s, _) in enumerate(qs, 1)]), [0.8, 4.2, 3.9, 0.8, 4.2, 3.9], size=9.5)
-    doc.new_section(cols=1)
+    doc.para("반:                    이름:                    점수:        / " + str(total), size=9, color=INK_2, space_after=6)
+    if mode in vs.TEST_DIRS:
+        doc.para(vs.TEST_DIRS[mode], bold=True, space_after=6)
+    n, key = 0, []
+    for g in groups:
+        if g["src"]:
+            doc.para(f"■ {g['src']}", bold=True, size=10, space_after=3)
+        for q in g["qs"]:
+            n += 1
+            head = f"{n}. " + ("" if mode in vs.TEST_DIRS else f"[{vs.TEST_DIRS[q['mode']]}] ") + q["show"]
+            doc.para(head, size=9.5, space_after=1, keep=True)
+            if q["kind"] == "sent" and q["ko"]:
+                doc.para("   " + q["ko"], size=8.5, color=INK_2, space_after=1)
+            if q["choices"]:
+                doc.para("   " + "   ".join(f"{vs.CIRCLED[i]} {c}" for i, c in enumerate(q["choices"])), size=9, space_after=4)
+            else:
+                doc.para("   답: ______________________", size=9, color=INK_3, space_after=4)
+            key.append(f"{n}. " + (f"{vs.CIRCLED[q['ans_no'] - 1]} " if q["ans_no"] else "") + q["answer"])
+    doc.new_section(cols=2)
     doc.title("정답", f"{wl.title} 단어 시험")
-    doc.table(["#", "문제", "정답", "#", "문제", "정답"], _two_cols([(str(i), s, a) for i, (s, a) in enumerate(qs, 1)]), [0.8, 4.2, 3.9, 0.8, 4.2, 3.9], size=9)
+    for k in key:
+        doc.para(k, size=9, space_after=1)
     return doc.response(f"{wl.title}_단어시험.docx")
 
 
