@@ -20,7 +20,7 @@ from ..web import current_teacher, flash, owner_only, render
 router = APIRouter(prefix="/bank")
 PER_PAGE = 30
 MAX_CART = 80  # 세션 쿠키에 id 목록을 담으므로 상한을 둠
-FILTERS = ("cat", "subcat", "level", "book", "src", "qtype", "q")
+FILTERS = ("cat", "subcat", "level", "status", "q")
 
 
 def _go(url: str):
@@ -41,7 +41,7 @@ def _cart(request: Request) -> list[str]:
 
 
 def _load(db: Session, ids: list[str]) -> list[BankQuestion]:
-    by = {q.id: q for q in db.execute(select(BankQuestion).where(BankQuestion.id.in_(ids))).scalars()} if ids else {}
+    by = {q.id: q for q in db.execute(select(BankQuestion).where(BankQuestion.id.in_(ids), BankQuestion.review != "del")).scalars()} if ids else {}
     return [by[i] for i in ids if i in by]
 
 
@@ -167,3 +167,44 @@ async def import_run(request: Request, file: UploadFile, teacher: Teacher = Depe
     request.session["bank_cart"] = []
     flash(request, f"문법뱅크 {n:,}문항을 가져왔어요.")
     return _go("/bank")
+
+
+REVIEW_PER_PAGE = 10
+
+
+@router.get("/review")
+def review(request: Request, page: int = 1, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """검수 화면: 문항을 큼직하게 보고 정상 / 고치기 / 삭제."""
+    f = _filters(request.query_params)
+    if not f["status"]:
+        f["status"] = "todo"
+    stmt = service.apply_filters(select(BankQuestion), f)
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    pages = max(1, ceil(total / REVIEW_PER_PAGE))
+    page = max(1, min(page, pages))
+    rows = db.execute(stmt.order_by(BankQuestion.ord).offset((page - 1) * REVIEW_PER_PAGE).limit(REVIEW_PER_PAGE)).scalars().all()
+    stats = dict(db.execute(select(BankQuestion.review, func.count()).group_by(BankQuestion.review)).all())
+    return render(request, "bank/review.html", {
+        "teacher": teacher, "rows": [service.display(r) for r in rows], "f": f, "fac": service.facets(db), "total": total,
+        "page": page, "pages": pages, "stats": stats, "qs": _qs(f), "active": "grammar_bank"})
+
+
+@router.post("/review/{qid}")
+async def review_save(qid: str, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    q = db.get(BankQuestion, qid)
+    if q is None:
+        raise HTTPException(404, "문항을 찾을 수 없습니다.")
+    f = await request.form()
+    act = str(f.get("act") or "")
+    if act in ("ok", "del", "todo"):
+        q.review = "" if act == "todo" else act
+    if act in ("save",) or f.get("edited") == "1":
+        for k in ("instr", "stem", "choices", "answer", "passage"):
+            if k in f:
+                setattr(q, k, str(f.get(k)).replace("\r\n", "\n").strip())
+        q.review = "fixed"
+    db.commit()
+    back = str(f.get("back") or "/bank/review")
+    if not back.startswith("/bank"):
+        back = "/bank/review"
+    return _go(back)

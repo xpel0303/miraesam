@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}문법뱅크 검수 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>문법뱅크 검수</h1><a class="btn ghost" href="/bank">← 문법뱅크</a></div>
+<p class="lead">문항을 하나씩 보고 <b>정상</b> / <b>고치기</b> / <b>삭제</b> 중 하나를 누르세요. 고치거나 삭제한 문항은 다시 가져와도 그대로 남고, 삭제한 문항은 문법뱅크와 시험지에서 빠집니다.
+  미검수 {{ stats.get("", 0) }} · 정상 {{ stats.get("ok", 0) }} · 고침 {{ stats.get("fixed", 0) }} · 삭제 {{ stats.get("del", 0) }}</p>
+
+<form method="get" action="/bank/review" class="panel">
+  <div class="row">
+    <div class="field"><label for="status">상태</label>
+      <select id="status" name="status">{% for v, l in [("todo","미검수"),("ok","정상"),("fixed","고침"),("del","삭제")] %}<option value="{{ v }}" {% if f.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="cat">대분류</label>
+      <select id="cat" name="cat"><option value="">전체</option>{% for c, n in fac.cats.items() %}<option value="{{ c }}" {% if f.cat == c %}selected{% endif %}>{{ c }} ({{ n }})</option>{% endfor %}</select></div>
+    <div class="field"><label for="subcat">세부</label>
+      <select id="subcat" name="subcat"><option value="">전체</option>{% for c, subs in fac.subs.items() %}{% for s, n in subs %}<option value="{{ s }}" data-cat="{{ c }}" {% if f.subcat == s %}selected{% endif %}>{{ s }} ({{ n }})</option>{% endfor %}{% endfor %}</select></div>
+    <div class="field"><label for="level">난이도</label>
+      <select id="level" name="level"><option value="">전체</option>{% for l in ["하","중","상"] %}<option {% if f.level == l %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  </div>
+  <button class="btn" type="submit">찾기</button> <span class="muted small">{{ total }}문항</span>
+</form>
+<script>
+(function () {
+  var cat = document.getElementById("cat"), sub = document.getElementById("subcat");
+  function sync() { Array.prototype.forEach.call(sub.options, function (o) { if (!o.value) return; var s = !cat.value || o.dataset.cat === cat.value; o.hidden = !s; o.disabled = !s; }); if (sub.selectedOptions[0] && sub.selectedOptions[0].disabled) sub.value = ""; }
+  cat.addEventListener("change", function () { sub.value = ""; sync(); }); sync();
+})();
+</script>
+
+{% for r in rows %}
+<section class="panel" id="q{{ loop.index }}">
+  <div class="small muted" style="margin-bottom:6px">{{ r.cat }} › {{ r.subcat }} · 난이도 {{ r.level }} · {{ r.book }}{% if r.page %} p.{{ r.page }}{% endif %} · {{ r.id }}
+    {% if r.review == "ok" %}<span class="tag">정상</span>{% elif r.review == "fixed" %}<span class="tag">고침</span>{% elif r.review == "del" %}<span class="tag" style="color:var(--err)">삭제</span>{% endif %}</div>
+  <div style="white-space:pre-line;line-height:1.7;font-size:1.02rem">{% if r.head %}<b>{{ r.head }}</b>
+{% endif %}{% if r.passage %}<div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0">{{ r.passage }}</div>{% endif %}{{ r.stem }}{% if r.choices %}
+{{ r.choices }}{% endif %}</div>
+  <div style="margin-top:8px;padding:6px 10px;background:var(--surface-2, #f5f5f4);border-radius:6px"><b>정답</b> {{ r.answer or "—" }}{% if r.src == "확인 필요" %} <span class="tag">확인 필요</span>{% elif r.src == "AI 풀이" %} <span class="muted small">(AI 풀이)</span>{% endif %}</div>
+
+  <form method="post" action="/bank/review/{{ r.id }}" style="margin-top:10px">
+    <input type="hidden" name="back" value="/bank/review?{{ qs }}&page={{ page }}#q{{ loop.index }}">
+    <details>
+      <summary class="small">내용 고치기</summary>
+      <div class="field"><label>발문</label><textarea name="instr" rows="2">{{ r.raw_instr }}</textarea></div>
+      <div class="field"><label>문제</label><textarea name="stem" rows="4">{{ r.raw_stem }}</textarea></div>
+      <div class="field"><label>보기</label><textarea name="choices" rows="4">{{ r.raw_choices }}</textarea></div>
+      <div class="field"><label>정답</label><input type="text" name="answer" value="{{ r.answer }}"></div>
+      <button class="btn small" name="act" value="save">고친 내용 저장</button>
+    </details>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn" name="act" value="ok">정상</button>
+      <button class="btn ghost" name="act" value="del">삭제</button>
+      {% if r.review %}<button class="btn ghost" name="act" value="todo">미검수로</button>{% endif %}
+    </div>
+  </form>
+</section>
+{% else %}
+<div class="panel empty"><p>이 조건에 해당하는 문항이 없어요.</p></div>
+{% endfor %}
+
+<nav class="small" style="display:flex;gap:10px;align-items:center">
+  {% if page > 1 %}<a href="/bank/review?{{ qs }}&page={{ page - 1 }}">← 이전</a>{% endif %}
+  <span>{{ page }} / {{ pages }}</span>
+  {% if page < pages %}<a href="/bank/review?{{ qs }}&page={{ page + 1 }}">다음 →</a>{% endif %}
+</nav>
+{% endblock %}

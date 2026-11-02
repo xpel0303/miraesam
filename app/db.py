@@ -49,6 +49,7 @@ ADDED_COLUMNS = [
     ("academies", "lt_token", "VARCHAR(16)", "NULL"),  # 레벨테스트 공용 링크
     ("jobs", "started_at", "TIMESTAMP WITH TIME ZONE", "NULL"),  # 예상 소요시간 계산용
     ("jobs", "start_progress", "INTEGER", "0"),
+    ("bank_questions", "review", "VARCHAR(6)", "''"),  # 문법뱅크 검수 상태
     ("jobs", "finished_at", "TIMESTAMP WITH TIME ZONE", "NULL"),
 ]
 
