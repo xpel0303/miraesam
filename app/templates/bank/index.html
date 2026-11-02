@@ -60,8 +60,8 @@
     <tbody>{% for r in rows %}
       <tr>
         <td><input type="checkbox" name="id" value="{{ r.id }}" {% if r.id in cart %}checked disabled{% endif %}></td>
-        <td class="wrap" style="white-space:pre-line">{% if r.head %}<b>{{ r.head }}</b>
-{% endif %}{{ r.stem[:400] }}{% if r.answer %}<div class="small muted">정답: {{ r.answer[:120] }}{% if r.src == "확인 필요" %} (확인 필요){% endif %}</div>{% endif %}</td>
+        <td class="wrap" style="white-space:pre-line">{% if r.head %}<b>{{ r.head|fmt }}</b>
+{% endif %}{{ r.stem[:400]|fmt }}{% if r.answer %}<div class="small muted">정답: {{ r.answer[:120] }}{% if r.src == "확인 필요" %} (확인 필요){% endif %}</div>{% endif %}</td>
         <td class="small wrap">{{ r.cat }}<br><span class="muted">{{ r.subcat }}</span></td>
         <td>{{ r.level }}</td>
       </tr>{% endfor %}</tbody>

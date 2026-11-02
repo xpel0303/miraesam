@@ -456,24 +456,41 @@ def paraphrase_docx(s, academy, views, show_compare: bool):
 
 # ---------------------------------------------------------------- 문법뱅크
 
+def _rich_run(doc, p, text, size=9.5, bold=False):
+    from .bank.service import rich
+
+    for seg, under in rich(text):
+        r = doc.run(p, seg, bold=bold, size=size, underline=under)
+
+
 def bank_docx(academy, title, qs, answers=True, expl=False):
+    from .bank.service import segments
     doc = Doc(academy, title)
     doc.title(title)
     p = doc.para(size=9, space_after=8)
     doc.run(p, "반:                    이름:                    점수:", size=9, color=INK_2)
     doc.columns(2)
+
+    def rich_para(text, **kw):
+        p = doc.para(**kw)
+        for t, u in segments(text):
+            doc.run(p, t, underline=u, size=kw.get("size"))
+        return p
+
     for n, q in enumerate(qs, 1):
         p = doc.para(keep=True, space_after=2)
         doc.num(p, n)
         if q["head"]:
-            doc.run(p, q["head"], bold=True, size=9.5)
+            for t, u in segments(q["head"]):
+                doc.run(p, t, bold=True, underline=u, size=9.5)
         if q["passage"]:
-            doc.box(lambda bp, q=q: doc.run(bp, q["passage"], size=9))
+            doc.box(lambda bp, q=q: [doc.run(bp, t, underline=u, size=9) for t, u in segments(q["passage"])])
         for line in service_lines(q["stem"]):
-            doc.para(line, size=9.5, space_after=1)
-        if q["choices"]:
-            for line in service_lines(q["choices"]):
-                doc.para(line, hanging_cm=0.5, size=9.5, space_after=0)
+            rich_para(line, size=9.5, space_after=1)
+        for line in service_lines(q["choices"]):
+            rich_para(line, hanging_cm=0.5, size=9.5, space_after=0)
+        for _ in range(q["lines"]):
+            doc.blank_line(0)
         doc.para(space_after=5)
     if answers:
         doc.new_section(1)

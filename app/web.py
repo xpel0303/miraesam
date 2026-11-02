@@ -38,6 +38,13 @@ def _u(text) -> Markup:
 
 templates.env.filters["u"] = _u
 
+from .bank.service import rich as _rich  # noqa: E402
+
+templates.env.filters["bt"] = _rich  # 문법뱅크 문항: 〔…〕 밑줄
+
+
+templates.env.filters["fmt"] = _rich
+
 
 class LoginRequired(Exception):
     """로그인 안 된 화면 요청 → 로그인 화면으로 보냄 (main.py 에서 처리)."""

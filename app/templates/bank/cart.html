@@ -12,13 +12,28 @@
   <button class="btn" type="submit" formaction="/bank/sheet.pdf">PDF 받기</button>
   <button class="btn ghost" type="submit" formaction="/bank/sheet.docx">워드 받기</button>
 </form>
+<form method="post" action="/bank/homework" class="panel">
+  <h2>숙제로 내기</h2>
+  <p class="small muted">보기를 고르는 문항 {{ auto }}개는 학생이 번호를 눌러 제출하면 자동 채점돼요. 번호는 시험지 번호와 같아요. 그 밖의 문항은 서술형이라 종이로 풀고 선생님이 확인합니다.</p>
+  {% if classes %}
+  <div class="row">
+    <div class="field"><label for="hwtitle">숙제 이름</label><input type="text" id="hwtitle" name="title" value="문법 숙제"></div>
+    <div class="field"><label for="due">마감일</label><input type="text" id="due" name="due" placeholder="2026-11-10" inputmode="numeric"></div>
+    <div class="field"><label for="pass">통과 점수(%)</label><input type="text" id="pass" name="pass" value="0" inputmode="numeric"></div>
+  </div>
+  <div class="field"><label>반</label>{% for c in classes %}<label style="font-weight:400;margin-right:12px"><input type="checkbox" name="class_id" value="{{ c.id }}"> {{ c.name }}</label>{% endfor %}</div>
+  <label style="font-weight:400"><input type="checkbox" name="written" value="1" checked> 서술형은 '종이 답안 확인' 할 일로 넣기</label><br>
+  <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" checked> 제출 후 정답 보여 주기</label>
+  <p><button class="btn" type="submit">숙제로 내기</button></p>
+  {% else %}<p class="muted">학생 명단에서 반을 먼저 만들어 주세요.</p>{% endif %}
+</form>
 <form method="post" action="/bank/cart" class="panel" style="display:flex;gap:8px">
   <button class="btn ghost small" name="act" value="shuffle">순서 섞기</button>
   <button class="btn ghost small" name="act" value="clear">모두 비우기</button>
 </form>
 <form method="post" action="/bank/cart">
   <div class="table-wrap"><table class="list"><tbody>{% for q in qs %}
-    <tr><td>{{ loop.index }}</td><td class="wrap" style="white-space:pre-line">{{ q.stem[:300] }}<div class="small muted">{{ q.cat }} · {{ q.subcat }} · {{ q.level }} · 정답: {{ q.answer[:80] }}</div></td>
+    <tr><td>{{ loop.index }}</td><td class="wrap" style="white-space:pre-line">{{ q.stem[:300]|fmt }}<div class="small muted">{{ q.cat }} · {{ q.subcat }} · {{ q.level }} · 정답: {{ q.answer[:80] }}</div></td>
     <td><input type="checkbox" name="id" value="{{ q.id }}"></td></tr>{% endfor %}</tbody></table></div>
   <p><button class="btn ghost" name="act" value="remove">체크한 문항 빼기</button></p>
 </form>

@@ -30,9 +30,9 @@
 <section class="panel" id="q{{ loop.index }}">
   <div class="small muted" style="margin-bottom:6px">{{ r.cat }} › {{ r.subcat }} · 난이도 {{ r.level }} · {{ r.book }}{% if r.page %} p.{{ r.page }}{% endif %} · {{ r.id }}
     {% if r.review == "ok" %}<span class="tag">정상</span>{% elif r.review == "fixed" %}<span class="tag">고침</span>{% elif r.review == "del" %}<span class="tag" style="color:var(--err)">삭제</span>{% endif %}</div>
-  <div style="white-space:pre-line;line-height:1.7;font-size:1.02rem">{% if r.head %}<b>{{ r.head }}</b>
-{% endif %}{% if r.passage %}<div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0">{{ r.passage }}</div>{% endif %}{{ r.stem }}{% if r.choices %}
-{{ r.choices }}{% endif %}</div>
+  <div style="white-space:pre-line;line-height:1.7;font-size:1.02rem">{% if r.head %}<b>{{ r.head|fmt }}</b>
+{% endif %}{% if r.passage %}<div style="border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:6px 0">{{ r.passage|fmt }}</div>{% endif %}{{ r.stem|fmt }}{% if r.choices %}
+{{ r.choices|fmt }}{% endif %}</div>
   <div style="margin-top:8px;padding:6px 10px;background:var(--surface-2, #f5f5f4);border-radius:6px"><b>정답</b> {{ r.answer or "—" }}{% if r.src == "확인 필요" %} <span class="tag">확인 필요</span>{% elif r.src == "AI 풀이" %} <span class="muted small">(AI 풀이)</span>{% endif %}</div>
 
   <form method="post" action="/bank/review/{{ r.id }}" style="margin-top:10px">
