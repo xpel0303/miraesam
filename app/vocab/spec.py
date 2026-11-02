@@ -195,10 +195,28 @@ def _choices(rng, right: str, pool: list[str]) -> tuple[list[str], int]:
     return opts, opts.index(right) + 1
 
 
-def test_items(words: list[dict], mode: str, count: int, shuffle: bool, seed: int, by_src: bool) -> list[dict]:
-    """시험지 → [{src, qs[{kind, mode, show, ko, choices, answer, ans_no}]}]. 지문별이면 지문 순서대로 묶고, 그 안에서 섞음."""
+def sources(words: list[dict]) -> list[str]:
+    """단어장에 들어 있는 지문 이름(나온 순서대로). 지문 표시가 없는 단어는 ''."""
+    out: list[str] = []
+    for w in words:
+        s = w.get("src") or ""
+        if w.get("word") and s not in out:
+            out.append(s)
+    return out
+
+
+LAYOUTS = {"together": "한 시험지에 지문별로 나눠서", "pages": "지문마다 따로 시험지 (쪽마다 이름·점수)", "mixed": "지문 구분 없이 섞어서"}
+
+
+def test_items(words: list[dict], mode: str, count: int, shuffle: bool, seed: int, by_src: bool,
+               srcs: list[str] | None = None, per_src: bool = False) -> list[dict]:
+    """시험지 → [{src, qs[{kind, mode, show, ko, choices, answer, ans_no}]}]. 지문별이면 지문 순서대로 묶고, 그 안에서 섞음.
+    srcs: 출제할 지문만 (None이면 전부). per_src: count를 지문마다 문항 수로 씀."""
     rng = random.Random(seed)
     pool = [w for w in words if w.get("word") and w.get("meaning")]
+    if srcs is not None:
+        keep = set(srcs)
+        pool = [w for w in pool if (w.get("src") or "") in keep]
     if mode in ("sent", "sent_mc"):
         pool = [w for w in pool if blank_sentence(w)]
     groups: dict[str, list[dict]] = {}
@@ -209,7 +227,10 @@ def test_items(words: list[dict], mode: str, count: int, shuffle: bool, seed: in
     cycle = ["en_ko", "mc_en", "ko_en", "mc_ko", "sent", "sent_mc"]
     k = 0
     for src, ws in groups.items():
-        n = max(1, round(count * len(ws) / total)) if count < total else len(ws)
+        if per_src and by_src:
+            n = min(count, len(ws))
+        else:
+            n = max(1, round(count * len(ws) / total)) if count < total else len(ws)
         picked = rng.sample(ws, min(n, len(ws))) if shuffle else ws[:n]
         qs = []
         for w in picked:

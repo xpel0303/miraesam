@@ -29,18 +29,40 @@
     <form method="post" action="/vocab/{{ wl.id }}/pdf">
       <input type="hidden" name="kind" value="test">
       <h3>단어 시험지 <span class="small muted" style="font-weight:400">답지는 맨 뒤 페이지</span></h3>
-      <div class="row" style="grid-template-columns: 1fr 100px">
-        <div class="field"><select name="mode" aria-label="문제 방식">{% for k, v in test_modes.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
-        <div class="field"><input type="text" name="count" inputmode="numeric" value="{{ wl.words|length }}" aria-label="문항 수"></div>
+      <div class="field"><select name="mode" aria-label="문제 방식">{% for k, v in test_modes.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      {% set multi = sources|length > 1 %}
+      {% if multi %}
+      <div class="field"><label>출제할 지문 <span class="hint">고른 지문의 단어만 나와요</span></label>
+        <input type="hidden" name="pick_src" value="1">
+        <div class="src-pick">
+          <label class="small" style="font-weight:700"><input type="checkbox" data-src-all checked> 전체 선택</label>
+          {% for s in sources %}<label class="small" style="font-weight:400"><input type="checkbox" name="srcs" value="{{ s }}" checked> {{ s or "지문 표시 없음" }} <span class="muted">({{ wl.words|selectattr("word")|selectattr("src", "equalto", s)|list|length if s else wl.words|rejectattr("src")|selectattr("word")|list|length }})</span></label>{% endfor %}
+        </div></div>
+      <div class="field"><label>묶는 방식</label><select name="layout">{% for k, v in layouts.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      {% endif %}
+      <div class="row" style="grid-template-columns: {{ '150px 100px' if multi else '100px' }}; align-items:end">
+        {% if multi %}<div class="field"><label>문항 수</label><select name="per"><option value="all">전체에서</option><option value="src">지문마다</option></select></div>{% endif %}
+        <div class="field">{% if not multi %}<label>문항 수</label>{% endif %}<input type="text" name="count" inputmode="numeric" value="{{ wl.words|length }}" aria-label="문항 수" data-count></div>
       </div>
-      <label style="font-weight:400"><input type="checkbox" name="shuffle" value="1" checked> 순서 섞기 (누를 때마다 다른 시험지)</label>
-      {% if wl.words|selectattr("src")|list %}<br><label style="font-weight:400"><input type="checkbox" name="by_src" value="1" checked> 지문별로 나눠서 출제</label>{% endif %}
+      <label style="font-weight:400"><input type="checkbox" name="shuffle" value="1" checked> 순서 섞기 (누를 때마다 다른 시험지)</label><br>
       <button class="btn small" type="submit" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>시험지 PDF</button>
       <button class="btn ghost small" type="submit" formaction="/vocab/{{ wl.id }}/docx" formmethod="get" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>워드로</button>
     </form>
   </div>
   {% if pdf_job %}<div class="job" data-job-id="{{ pdf_job }}"></div>{% endif %}
 </section>
+<style>.src-pick{display:flex;flex-wrap:wrap;gap:4px 14px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px 10px}.src-pick label{margin:0}</style>
+<script>
+(() => {
+  const all = document.querySelector("[data-src-all]"); if (!all) return;
+  const boxes = [...document.querySelectorAll("input[name=srcs]")];
+  const per = document.querySelector("select[name=per]"), cnt = document.querySelector("[data-count]");
+  const total = {{ wl.words|length }};
+  all.addEventListener("change", () => boxes.forEach(b => b.checked = all.checked));
+  boxes.forEach(b => b.addEventListener("change", () => all.checked = boxes.every(x => x.checked)));
+  per.addEventListener("change", () => { cnt.value = per.value === "src" ? 10 : total; });
+})();
+</script>
 
 <section class="panel" id="classes">
   <h2>반에 내주기</h2>

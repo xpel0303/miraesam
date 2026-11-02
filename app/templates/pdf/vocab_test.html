@@ -21,15 +21,21 @@
   .sko { margin-left: 20pt; font-size: 8.3pt; color: var(--ink-2); }
   .sline { margin: 3pt 0 0 20pt; border-bottom: 0.6pt solid var(--ink-2); width: 45%; height: 12pt; }
   .ans { break-before: page; }
+  .pg { break-before: page; }
+  .hsub { font-size: 0.75em; color: var(--brand); }
   .ans .k { font-size: 8.8pt; margin: 0 0 2.5pt; break-inside: avoid; }
 {% endblock %}
 {% block body %}
-<h1>{{ title }} 단어 시험</h1>
+{% macro head(sub, n) %}
+<h1>{{ title }} 단어 시험{% if sub %} <span class="hsub">· {{ sub }}</span>{% endif %}</h1>
 <div class="info"><span>반:</span><span>이름:</span><span>점수: &nbsp;&nbsp;&nbsp;&nbsp;/ {{ n }}</span></div>
 {% if mode in dirs %}<div class="dir">{{ dirs[mode] }}</div>{% elif mode == "mix" %}<div class="dir">영어는 뜻을, 우리말은 영어 단어를 쓰시오.</div>{% endif %}
+{% endmacro %}
+{% if not pages %}{{ head("", n) }}{% endif %}
 {% set ns = namespace(k=0) %}
 {% for g in groups %}
-  {% if g.src %}<div class="gh">{{ g.src }}</div>{% endif %}
+  {% if pages %}{% set ns.k = 0 %}<div class="{{ 'pg' if not loop.first else '' }}">{{ head(g.src, g.qs|length) }}</div>
+  {% elif g.src %}<div class="gh">{{ g.src }}</div>{% endif %}
   <div class="cols">
   {% for q in g.qs %}{% set ns.k = ns.k + 1 %}
     <div class="q">
@@ -53,7 +59,7 @@
   <div class="sub">{{ title }} 단어 시험 · {{ today }}</div>
   <div class="cols" style="margin-top:8pt">
   {% set ns.k = 0 %}
-  {% for g in groups %}{% if g.src %}<div class="k" style="font-weight:800;color:var(--brand)">{{ g.src }}</div>{% endif %}
+  {% for g in groups %}{% if pages %}{% set ns.k = 0 %}{% endif %}{% if g.src %}<div class="k" style="font-weight:800;color:var(--brand)">{{ g.src }}</div>{% endif %}
     {% for q in g.qs %}{% set ns.k = ns.k + 1 %}
       <div class="k"><b>{{ ns.k }}.</b> {% if q.ans_no %}{{ circled[q.ans_no - 1] }} {% endif %}{{ q.answer }}{% if q.kind != "sent" %} <span class="tag">({{ q.show }})</span>{% endif %}</div>
     {% endfor %}

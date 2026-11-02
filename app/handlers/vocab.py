@@ -91,11 +91,12 @@ def make_pdf(ctx: JobContext) -> dict:
 
     if p.get("kind") == "test":
         mode = p.get("mode", "en_ko")
-        groups = spec.test_items(words, mode, int(p.get("count") or len(words)), p.get("shuffle", True), p.get("seed") or 1, p.get("by_src", True))
+        groups = spec.test_items(words, mode, int(p.get("count") or len(words)), p.get("shuffle", True), p.get("seed") or 1, p.get("by_src", True),
+                                 p.get("srcs"), p.get("per_src", False))
         ctx.step("시험지 만드는 중", 60)
         pdf = render_pdf("pdf/vocab_test.html", {"academy": academy, "title": title, "groups": groups, "n": sum(len(g["qs"]) for g in groups),
                                                  "doc_title": f"{title} · 단어 시험", "today": today, "mode": mode, "dirs": spec.TEST_DIRS,
-                                                 "circled": spec.CIRCLED})
+                                                 "circled": spec.CIRCLED, "pages": p.get("layout") == "pages"})
         name = f"{title}_단어시험.pdf"
     else:
         ctx.step("단어장 만드는 중", 60)

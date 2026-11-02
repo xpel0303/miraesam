@@ -120,7 +120,8 @@ def detail(lid: int, request: Request, pdf_job: int | None = None, teacher: Teac
     top_miss = sorted(miss.items(), key=lambda kv: -kv[1])[:10]
     return render(request, "vocab/detail.html", {
         "teacher": teacher, "wl": wl, "job": job, "busy": _busy(db, wl), "classes": classes, "assigned": assigned,
-        "results": results, "top_miss": top_miss, "modes": spec.QUIZ_MODES, "test_modes": spec.TEST_MODES, "pdf_job": pdf_job, "active": "vocab",
+        "results": results, "top_miss": top_miss, "modes": spec.QUIZ_MODES, "test_modes": spec.TEST_MODES,
+        "sources": spec.sources(wl.words), "layouts": spec.LAYOUTS, "pdf_job": pdf_job, "active": "vocab",
         "blank_count": sum(1 for w in wl.words if spec.blank_needed(w)),
     })
 
@@ -178,13 +179,11 @@ async def pdf(lid: int, request: Request, teacher: Teacher = Depends(current_tea
         flash(request, "단어가 없어요.", "error")
         return _go(f"/vocab/{lid}")
     if kind == "test":
-        try:
-            count = max(1, min(len(wl.words), int(f.get("count") or len(wl.words))))
-        except ValueError:
-            count = len(wl.words)
-        mode = str(f.get("mode") or "en_ko")
-        payload = {"list_id": wl.id, "kind": "test", "mode": mode if mode in spec.TEST_MODES else "en_ko",
-                   "count": count, "shuffle": f.get("shuffle") == "1", "seed": secrets.randbits(31), "by_src": f.get("by_src") == "1"}
+        opts = _test_opts(wl, f.get("mode"), f.get("count"), f.get("per"), f.get("layout"), f.getlist("srcs"), f.get("pick_src") == "1")
+        if opts is None:
+            flash(request, "출제할 지문을 하나 이상 골라 주세요.", "error")
+            return _go(f"/vocab/{lid}#pdf")
+        payload = {"list_id": wl.id, "kind": "test", **opts, "shuffle": f.get("shuffle") == "1", "seed": secrets.randbits(31)}
         title = f"단어 시험지 · {wl.title}"
     else:
         hide = str(f.get("hide") or "")
@@ -194,16 +193,36 @@ async def pdf(lid: int, request: Request, teacher: Teacher = Depends(current_tea
     return _go(f"/vocab/{lid}?pdf_job={job.id}#pdf")
 
 
+def _test_opts(wl, mode, count, per, layout, srcs, pick_src):
+    """시험지 옵션 정리. 지문을 하나도 안 고르면 None."""
+    mode = str(mode or "en_ko")
+    layout = layout if layout in spec.LAYOUTS else "together"
+    have = spec.sources(wl.words)
+    chosen = [s for s in have if s in set(srcs)] if pick_src else None
+    if chosen is not None and not chosen:
+        return None
+    try:
+        count = max(1, min(len(wl.words), int(count or len(wl.words))))
+    except ValueError:
+        count = len(wl.words)
+    return {"mode": mode if mode in spec.TEST_MODES else "en_ko", "count": count, "per_src": per == "src",
+            "by_src": layout != "mixed", "layout": layout, "srcs": chosen}
+
+
 @router.get("/{lid}/docx")
-def docx(lid: int, kind: str = "list", hide: str = "", show_example: str = "", mode: str = "en_ko", count: int = 0, shuffle: str = "", by_src: str = "",
+def docx(lid: int, request: Request, kind: str = "list", hide: str = "", show_example: str = "", mode: str = "en_ko", count: str = "", shuffle: str = "",
+         per: str = "", layout: str = "", pick_src: str = "",
          teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     wl = _own(db, lid, teacher)
     if not wl.words:
         raise HTTPException(404, "단어가 없어요.")
     academy = db.get(Academy, wl.academy_id)
     if kind == "test":
-        return vocab_test_docx(wl, academy, mode if mode in spec.TEST_MODES else "en_ko",
-                               max(1, min(len(wl.words), count or len(wl.words))), shuffle == "1", secrets.randbits(31), by_src == "1")
+        opts = _test_opts(wl, mode, count, per, layout, request.query_params.getlist("srcs"), pick_src == "1")
+        if opts is None:
+            flash(request, "출제할 지문을 하나 이상 골라 주세요.", "error")
+            return _go(f"/vocab/{lid}#pdf")
+        return vocab_test_docx(wl, academy, opts, shuffle == "1", secrets.randbits(31))
     return vocab_list_docx(wl, academy, hide if hide in ("meaning", "word") else "", show_example == "1")
 
 

@@ -172,24 +172,39 @@ def vocab_list_docx(wl, academy, hide: str = "", show_example: bool = True):
     return doc.response(f"{wl.title}_단어장.docx")
 
 
-def vocab_test_docx(wl, academy, mode: str, count: int, shuffle: bool, seed: int, by_src: bool = True):
+def vocab_test_docx(wl, academy, opts: dict, shuffle: bool, seed: int):
     from .vocab import spec as vs
 
-    groups = vs.test_items(wl.words, mode, count, shuffle, seed, by_src)
+    mode = opts["mode"]
+    pages = opts.get("layout") == "pages"
+    groups = vs.test_items(wl.words, mode, opts["count"], shuffle, seed, opts["by_src"], opts.get("srcs"), opts.get("per_src", False))
     total = sum(len(g["qs"]) for g in groups)
     doc = Doc(academy, f"{wl.title} · 단어 시험")
-    doc.title(f"{wl.title} 단어 시험")
-    doc.para("반:                    이름:                    점수:        / " + str(total), size=9, color=INK_2, space_after=6)
-    if mode in vs.TEST_DIRS:
-        doc.para(vs.TEST_DIRS[mode], bold=True, space_after=6)
+
+    def head(sub, n):
+        doc.title(f"{wl.title} 단어 시험" + (f" · {sub}" if sub else ""))
+        doc.para("반:                    이름:                    점수:        / " + str(n), size=9, color=INK_2, space_after=6)
+        if mode in vs.TEST_DIRS:
+            doc.para(vs.TEST_DIRS[mode], bold=True, space_after=6)
+
+    if not pages:
+        head("", total)
     n, key = 0, []
-    for g in groups:
-        if g["src"]:
+    for gi, g in enumerate(groups):
+        if pages:
+            if gi:
+                doc.page_break()
+            head(g["src"], len(g["qs"]))
+            n = 0
+            if g["src"]:
+                key.append(f"■ {g['src']}")
+        elif g["src"]:
             doc.para(f"■ {g['src']}", bold=True, size=10, space_after=3)
+            key.append(f"■ {g['src']}")
         for q in g["qs"]:
             n += 1
-            head = f"{n}. " + ("" if mode in vs.TEST_DIRS else f"[{vs.TEST_DIRS[q['mode']]}] ") + q["show"]
-            doc.para(head, size=9.5, space_after=1, keep=True)
+            head_t = f"{n}. " + ("" if mode in vs.TEST_DIRS else f"[{vs.TEST_DIRS[q['mode']]}] ") + q["show"]
+            doc.para(head_t, size=9.5, space_after=1, keep=True)
             if q["kind"] == "sent" and q["ko"]:
                 doc.para("   " + q["ko"], size=8.5, color=INK_2, space_after=1)
             if q["choices"]:
@@ -200,7 +215,7 @@ def vocab_test_docx(wl, academy, mode: str, count: int, shuffle: bool, seed: int
     doc.new_section(cols=2)
     doc.title("정답", f"{wl.title} 단어 시험")
     for k in key:
-        doc.para(k, size=9, space_after=1)
+        doc.para(k, size=9, space_after=1, bold=k.startswith("■"))
     return doc.response(f"{wl.title}_단어시험.docx")
 
 
