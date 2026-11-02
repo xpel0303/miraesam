@@ -13,7 +13,8 @@ from urllib.parse import quote, urlencode
 from ..bank import service
 from ..db import get_db
 from ..docx_builders import bank_docx
-from ..models import Academy, BankQuestion, Teacher
+from ..homework import spec as hspec
+from ..models import Academy, BankQuestion, ClassGroup, Homework, HomeworkClass, Teacher
 from ..pdf import render_pdf
 from ..web import current_teacher, flash, owner_only, render
 
@@ -103,7 +104,9 @@ async def pick(request: Request, teacher: Teacher = Depends(current_teacher), db
 @router.get("/cart")
 def cart_view(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     qs = [service.display(q) for q in _load(db, _cart(request))]
-    return render(request, "bank/cart.html", {"teacher": teacher, "qs": qs, "active": "grammar_bank", "max_cart": MAX_CART})
+    classes = list(db.execute(select(ClassGroup).where(ClassGroup.academy_id == teacher.academy_id, ClassGroup.active.is_(True)).order_by(ClassGroup.name)).scalars())
+    auto = sum(1 for q in qs if service.choice_number(q["answer"]) and q["objective"])
+    return render(request, "bank/cart.html", {"teacher": teacher, "qs": qs, "classes": classes, "auto": auto, "active": "grammar_bank", "max_cart": MAX_CART})
 
 
 @router.post("/cart")
@@ -208,3 +211,42 @@ async def review_save(qid: str, request: Request, teacher: Teacher = Depends(cur
     if not back.startswith("/bank"):
         back = "/bank/review"
     return _go(back)
+
+
+@router.post("/homework")
+async def make_homework(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """담은 문항을 숙제로: 보기 고르는 문항은 번호로 자동 채점, 서술형은 '종이 답안 확인' 할 일로."""
+    f = await request.form()
+    qs = [service.display(q) for q in _load(db, _cart(request))]
+    title = str(f.get("title") or "").strip()[:120]
+    class_ids = {int(x) for x in f.getlist("class_id") if str(x).isdigit()}
+    valid = set(db.execute(select(ClassGroup.id).where(ClassGroup.academy_id == teacher.academy_id, ClassGroup.id.in_(class_ids))).scalars()) if class_ids else set()
+    if not qs or not title or not valid:
+        flash(request, "담은 문항, 숙제 이름, 반을 모두 확인해 주세요.", "error")
+        return _go("/bank/cart")
+    items, written = [], []
+    for n, q in enumerate(qs, 1):
+        k = service.choice_number(q["answer"]) if q["objective"] else None
+        if k:
+            items.append({"n": n, "a": k})
+        else:
+            written.append(n)
+    tasks = []
+    if items:
+        tasks.append(hspec.task_omr(f"{title} · 답 입력", "bank", items, f.get("pass") or 0))
+    if written and f.get("written") == "1":
+        nums = ", ".join(map(str, written))
+        tasks.append(hspec.task_check(f"서술형 {nums}번: 종이에 풀어서 선생님께 확인받기"))
+    if not tasks:
+        flash(request, "숙제로 낼 수 있는 문항이 없어요. (보기를 고르는 문항이 없고 서술형 확인도 꺼져 있어요)", "error")
+        return _go("/bank/cart")
+    due = str(f.get("due") or "").strip()
+    h = Homework(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, due=due if len(due) == 10 else "",
+                 memo=f"문법뱅크 시험지 {len(qs)}문항 (번호는 인쇄한 시험지와 같아요)", tasks=tasks, options={"reveal": f.get("reveal") == "1"})
+    db.add(h)
+    db.flush()
+    for cid in valid:
+        db.add(HomeworkClass(homework_id=h.id, class_id=cid))
+    db.commit()
+    flash(request, f"숙제를 냈어요. 자동 채점 {len(items)}문항" + (f", 서술형 {len(written)}문항은 종이 확인." if written and f.get("written") == "1" else "."))
+    return _go(f"/homework/{h.id}")

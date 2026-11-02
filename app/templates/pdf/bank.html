@@ -13,6 +13,9 @@
   .q .body { white-space: pre-line; }
   .box { border: 0.7pt solid var(--line); border-radius: 3pt; padding: 5pt 7pt; margin: 4pt 0; white-space: pre-line; }
   .ch { white-space: pre-line; margin-top: 2pt; }
+  .q u { text-decoration-thickness: 0.8pt; text-underline-offset: 1.5pt; }
+  .wl { border-bottom: 0.7pt solid var(--ink-3); height: 17pt; margin-top: 3pt; }
+  .wl span { font-size: 8pt; color: var(--ink-3); }
   .ans { break-before: page; }
   .ans .cols { columns: 3; }
   .ans .row { break-inside: avoid; margin: 0 0 4pt; font-size: 8.8pt; }
@@ -28,10 +31,11 @@
 <div class="cols">
 {% for q in qs %}
   <div class="q">
-    {% if q.head %}<div><span class="n">{{ loop.index }}.</span><span class="head-t">{{ q.head }}</span></div>{% endif %}
-    {% if q.passage %}{% if not q.head %}<div><span class="n">{{ loop.index }}.</span></div>{% endif %}<div class="box">{{ q.passage }}</div>{% endif %}
-    <div class="body">{% if not q.head and not q.passage %}<span class="n">{{ loop.index }}.</span>{% endif %}{{ q.stem }}</div>
-    {% if q.choices %}<div class="ch">{{ q.choices }}</div>{% endif %}
+    {% if q.head %}<div><span class="n">{{ loop.index }}.</span><span class="head-t">{{ q.head|fmt }}</span></div>{% endif %}
+    {% if q.passage %}{% if not q.head %}<div><span class="n">{{ loop.index }}.</span></div>{% endif %}<div class="box">{{ q.passage|fmt }}</div>{% endif %}
+    <div class="body">{% if not q.head and not q.passage %}<span class="n">{{ loop.index }}.</span>{% endif %}{{ q.stem|fmt }}</div>
+    {% if q.choices %}<div class="ch">{{ q.choices|fmt }}</div>{% endif %}
+    {% for _ in range(q.lines) %}<div class="wl">{% if loop.first %}<span>답</span>{% endif %}</div>{% endfor %}
   </div>
 {% endfor %}
 </div>
@@ -41,7 +45,7 @@
   <h2>정답{% if expl %} · 해설{% endif %}</h2>
   <div class="cols">
   {% for q in qs %}
-    <div class="row"><span class="n" style="color:var(--brand);font-weight:800">{{ loop.index }}.</span> <span class="a">{{ q.answer or "-" }}</span>{% if q.src == "확인 필요" %} <span class="muted">(확인 필요)</span>{% endif %}
+    <div class="row"><span class="n" style="color:var(--brand);font-weight:800">{{ loop.index }}.</span> <span class="a">{{ q.answer|fmt or "-" }}</span>{% if q.src == "확인 필요" %} <span class="muted">(확인 필요)</span>{% endif %}
       {% if expl and q.expl %}<div class="why">{{ q.expl }}</div>{% endif %}</div>
   {% endfor %}
   </div>
