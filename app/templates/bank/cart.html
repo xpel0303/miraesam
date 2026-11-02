@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}문법뱅크 시험지 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>담은 문항 {{ qs|length }}개</h1><a class="btn ghost" href="/bank">← 문법뱅크</a></div>
+{% if qs %}
+<form method="get" class="panel" id="out">
+  <div class="row">
+    <div class="field"><label for="title">시험지 제목</label><input type="text" id="title" name="title" value="문법 시험지"></div>
+    <div class="field"><label for="answers">정답지</label><select id="answers" name="answers"><option value="1">맨 뒤 페이지에 넣기</option><option value="0">넣지 않기</option></select></div>
+    <div class="field"><label for="expl">해설</label><select id="expl" name="expl"><option value="0">정답만</option><option value="1">해설도</option></select></div>
+  </div>
+  <button class="btn" type="submit" formaction="/bank/sheet.pdf">PDF 받기</button>
+  <button class="btn ghost" type="submit" formaction="/bank/sheet.docx">워드 받기</button>
+</form>
+<form method="post" action="/bank/cart" class="panel" style="display:flex;gap:8px">
+  <button class="btn ghost small" name="act" value="shuffle">순서 섞기</button>
+  <button class="btn ghost small" name="act" value="clear">모두 비우기</button>
+</form>
+<form method="post" action="/bank/cart">
+  <div class="table-wrap"><table class="list"><tbody>{% for q in qs %}
+    <tr><td>{{ loop.index }}</td><td class="wrap" style="white-space:pre-line">{{ q.stem[:300] }}<div class="small muted">{{ q.cat }} · {{ q.subcat }} · {{ q.level }} · 정답: {{ q.answer[:80] }}</div></td>
+    <td><input type="checkbox" name="id" value="{{ q.id }}"></td></tr>{% endfor %}</tbody></table></div>
+  <p><button class="btn ghost" name="act" value="remove">체크한 문항 빼기</button></p>
+</form>
+{% else %}<div class="panel empty"><p>아직 담은 문항이 없어요.</p><a class="btn" href="/bank">문법뱅크에서 고르기</a></div>{% endif %}
+{% endblock %}

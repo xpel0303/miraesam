@@ -650,3 +650,31 @@ class MockSet(Base):
 
     teacher: Mapped["Teacher | None"] = relationship()
     school: Mapped["School | None"] = relationship()
+
+
+class BankQuestion(Base):
+    """문법뱅크 문항 (모든 학원이 함께 쓰는 공용 자료, 선생님 화면에서만 열람).
+
+    교재 원문 그대로 보관하므로 학원 내부 출제용입니다. 학생에게 직접 보내지 않습니다.
+    """
+
+    __tablename__ = "bank_questions"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    ord: Mapped[int] = mapped_column(Integer, index=True, default=0)  # 대분류·세부·난이도 정렬 순서
+    cat: Mapped[str] = mapped_column(String(60), index=True)
+    subcat: Mapped[str] = mapped_column(String(120), index=True, default="")
+    level: Mapped[str] = mapped_column(String(4), index=True, default="중")
+    book: Mapped[str] = mapped_column(String(80), index=True, default="")
+    chapter: Mapped[str] = mapped_column(String(120), default="")
+    unit: Mapped[str] = mapped_column(String(160), default="")
+    no: Mapped[str] = mapped_column(String(12), default="")
+    page: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    qtype: Mapped[str] = mapped_column(String(30), index=True, default="")
+    instr: Mapped[str] = mapped_column(Text, default="")
+    passage: Mapped[str] = mapped_column(Text, default="")
+    stem: Mapped[str] = mapped_column(Text, default="")
+    choices: Mapped[str] = mapped_column(Text, default="")
+    answer: Mapped[str] = mapped_column(Text, default="")
+    expl: Mapped[str] = mapped_column(Text, default="")
+    src: Mapped[str] = mapped_column(String(20), index=True, default="")  # 교재 정답 / AI 풀이 / 해설 기반 / 확인 필요

@@ -35,7 +35,7 @@ FEATURES: list[Feature] = [
     Feature("sentence", "문장 시험지", "수업 자료", "해석·영작·배열·빈칸 문장 단위 시험지", 2, True, "/sentence"),
     Feature("vocab", "단어장", "수업 자료", "지문 단어장, 유의어·반의어, 단어 시험, 학생 퀴즈", 2, True, "/vocab"),
     Feature("grammar", "어법 문제", "수업 자료", "목표어법 문제, 밑줄 5지선다, 어법 개수", 2, True, "/grammar"),
-    Feature("grammar_bank", "문법뱅크", "수업 자료", "개념 학습지와 문법 문항 은행", 2),
+    Feature("grammar_bank", "문법뱅크", "수업 자료", "대분류·세부·난이도로 골라 담아 시험지·정답지 만들기", 2, True, "/bank"),
     Feature("paraphrase", "지문 변형", "수업 자료", "원문을 학교 시험처럼 바꿔 쓰기, 원문 대조", 2, True, "/paraphrase"),
     # 시험 운영
     Feature("exam", "기출 분석", "시험 운영", "시험지 PDF·사진 → 문항 추출, 유형·배점 분석지, 리포트 연결", 1, True, "/exam"),

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}문법뱅크 가져오기 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>문법뱅크 가져오기</h1>
+<p class="lead">현재 {{ "{:,}".format(n) }}문항이 들어 있어요. 통합 JSON을 올리면 기존 문항을 모두 지우고 새로 넣습니다. 파일이 커서 1~2분 걸릴 수 있어요.</p>
+<form method="post" enctype="multipart/form-data" class="panel">
+  <div class="field"><label for="file">문법뱅크_전체통합_정렬.json</label><input type="file" id="file" name="file" accept=".json" required></div>
+  <button class="btn" type="submit">가져오기</button>
+</form>
+{% endblock %}
