@@ -4,6 +4,7 @@
 <div class="panel-head" style="margin-bottom:4px">
   <h1>문법뱅크</h1>
   <div>
+    <a class="btn ghost" href="/bank/review">검수</a>
     <a class="btn ghost" href="/bank/cart">담은 문항 {{ cart|length }}</a>
     {% if teacher.role == "owner" %}<a class="btn ghost" href="/bank/import">가져오기</a>{% endif %}
   </div>

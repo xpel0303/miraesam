@@ -678,3 +678,4 @@ class BankQuestion(Base):
     answer: Mapped[str] = mapped_column(Text, default="")
     expl: Mapped[str] = mapped_column(Text, default="")
     src: Mapped[str] = mapped_column(String(20), index=True, default="")  # 교재 정답 / AI 풀이 / 해설 기반 / 확인 필요
+    review: Mapped[str] = mapped_column(String(6), index=True, default="")  # 검수 상태: "" 미검수 / ok 정상 / fixed 고침 / del 삭제
