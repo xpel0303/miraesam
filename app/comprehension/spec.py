@@ -50,9 +50,23 @@ def answer_words(answer: str) -> list[str]:
     return words
 
 
-def make_given(answer: str, seed=None) -> list[str]:
-    """정답 단어를 섞되, 정답 순서와 같아지지 않게. seed가 없으면 같은 문장은 항상 같은 순서로 섞입니다."""
+def proper_words(text: str) -> set[str]:
+    """지문에서 문장 중간에 대문자로 나온 단어 (사람·나라 이름 등) — 배열 문제에서 대문자를 살려 둘 단어."""
+    out = set()
+    for m in re.finditer(r"(?<![.!?]\s)(?<!^)\b([A-Z][a-zA-Z'-]+)", text or ""):
+        out.add(m.group(1))
+    return out
+
+
+def make_given(answer: str, seed=None, proper: set[str] | None = None) -> list[str]:
+    """정답 단어를 섞되, 정답 순서와 같아지지 않게. seed가 없으면 같은 문장은 항상 같은 순서로 섞입니다.
+    첫 단어는 소문자로 바꿔서 문장 시작이 티 나지 않게 (I, 약어, 지문 속 고유명사는 그대로)."""
     words = answer_words(answer)
+    if words:
+        w = words[0]
+        keep = w == "I" or w[1:2].isupper() or (proper is not None and w in proper) or (proper is None and w in ("I",))
+        if not keep and w[:1].isupper():
+            words[0] = w[:1].lower() + w[1:]
     if len(words) < 2:
         return words
     rng = random.Random(answer if seed is None else seed)
@@ -70,7 +84,7 @@ def norm_words(s: str) -> list[str]:
 
 # ---------------------------------------------------------------- 정리 · 검증
 
-def clean_passage_result(raw: dict) -> dict:
+def clean_passage_result(raw: dict, passage: str = "") -> dict:
     """AI 답을 표준 모양으로 다듬습니다 (O/X 대문자, 빈칸 제거, 작문 단어는 코드로 생성)."""
     out: dict = {}
     for key in ("ox_ko_short", "ox_en_short", "ox_ko_deep", "ox_en_deep"):
@@ -82,6 +96,7 @@ def clean_passage_result(raw: dict) -> dict:
             items.append({"q": str(x.get("q", "")).strip(), "a": a, "why": str(x.get("why", "")).strip()})
         out[key] = items
     comp = []
+    proper = proper_words(passage) if passage else None
     for x in raw.get("compose") or []:
         if not isinstance(x, dict):
             continue
@@ -91,7 +106,8 @@ def clean_passage_result(raw: dict) -> dict:
             {
                 "ko": str(x.get("ko", "")).strip(),
                 "answer": answer,
-                "given": make_given(answer),
+                "given": make_given(answer, proper=proper),
+                "grammar": str(x.get("grammar", "")).strip()[:60],
                 "point": str(x.get("point", "")).strip(),
                 "source": src if src in ("지문", "보충") else ("보충" if src else ""),
             }
@@ -169,14 +185,18 @@ SYSTEM_PROMPT = """당신은 한국 고등학교 영어 내신 문제를 만드�
 
 ## 목표어법 작문 compose (정확히 5문항)
 목표어법이 있을 때:
-1. 지문에서 목표어법이 실제로 쓰인 문장을 찾아 우선 출제합니다 (source: "지문").
-2. 5개에 못 미치면 지문 주제·어휘에 맞는 보충 문장으로 채웁니다 (source: "보충").
-3. 목표어법을 모르면 정답을 만들 수 없는 문장을 고릅니다.
+1. 지문에서 목표어법이 실제로 쓰인 문장을 찾아 우선 출제합니다 (source: "지문"). 지문 문장을 그대로 쓰거나 조금만 줄입니다.
+2. 5개에 못 미치면 보충 문장으로 채웁니다 (source: "보충"). 보충 문장도 반드시 **이 지문의 내용**(나오는 사람·사물·주장·사건)과 지문 어휘로만 만듭니다.
+   지문과 상관없는 새 상황·새 인물(예: 지문에 없는 '그 아이', '내 친구')은 절대 만들지 않습니다. 우리말만 읽어도 이 지문 이야기임을 알 수 있어야 합니다.
+3. 목표어법이 여러 개(/로 구분)면 이 지문에 어울리는 것만 고릅니다. 억지로 모두 쓰지 않습니다. 각 문항의 grammar에 쓴 목표어법 이름을 적습니다.
+4. 목표어법을 모르면 정답을 만들 수 없는 문장을 고릅니다.
 목표어법이 없을 때: 지문의 핵심 문장 5개를 일반 영작으로 냅니다.
 각 문항 필드:
 - ko: 우리말 문장. 영어 정답이 하나로 떨어지도록 구체적으로.
 - answer: 완성 영어 문장 하나 (마침표 포함). 학생은 answer의 단어를 섞어서 받으므로, 다른 어순으로도 맞는 문장이 되지 않게 우리말에 단서를 넣어 한 가지로 고정합니다. 축약형을 쓸지 풀어 쓸지도 answer 그대로 고정됩니다.
 - point: 답지에 실릴 어법 설명 한 줄.
+- grammar: 이 문항이 다루는 목표어법 이름 (목표어법 목록에 적힌 이름 그대로, 없으면 빈 문자열).
+- answer는 12~20단어 안쪽으로. 너무 길면 학생이 배열하기 어렵습니다.
 - source: "지문" 또는 "보충".
 - 단어를 섞은 괄호(given)는 만들지 마세요. 프로그램이 answer로 만듭니다.
 
@@ -192,7 +212,7 @@ SYSTEM_PROMPT = """당신은 한국 고등학교 영어 내신 문제를 만드�
   "ox_en_short": [...],
   "ox_ko_deep": [...],
   "ox_en_deep": [...],
-  "compose": [{"ko": "...", "answer": "...", "point": "...", "source": "지문"}],
+  "compose": [{"ko": "...", "answer": "...", "point": "...", "grammar": "...", "source": "지문"}],
   "vocab": [{"word": "...", "meaning": "..."}]
 }"""
 

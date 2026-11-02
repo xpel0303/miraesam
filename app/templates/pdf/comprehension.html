@@ -66,7 +66,7 @@
       {% set a, b = ns.n, ns.n + cnt - 1 %}
       {% if not answer %}
         <div class="sec"><span class="pill">{{ a }}~{{ b }}</span>{{ instr }}
-          {% if key == "compose" and p.target_grammar and opts.show_grammar %}<span class="gtag">[목표어법: {{ p.target_grammar }}]</span>{% endif %}</div>
+          {% if key == "compose" and p.target_grammar and opts.show_grammar %}{% set used = p.compose|map(attribute="grammar")|select|unique|list %}<span class="gtag">[목표어법: {{ used|join(" / ") if used else p.target_grammar }}]</span>{% endif %}</div>
         {% for x in items %}
           {% set num = a + loop.index0 %}
           {% if key.startswith("ox_") %}
@@ -79,7 +79,7 @@
           {% endif %}
         {% endfor %}
       {% else %}
-        <h4><span class="pill">{{ a }}~{{ b }}</span>{{ labels[key] }}{% if key == "compose" and p.target_grammar %} · {{ p.target_grammar }}{% endif %}</h4>
+        <h4><span class="pill">{{ a }}~{{ b }}</span>{{ labels[key] }}{% if key == "compose" and p.target_grammar %}{% set used = p.compose|map(attribute="grammar")|select|unique|list %} · {{ used|join(" / ") if used else p.target_grammar }}{% endif %}</h4>
         {% for x in items %}
           {% set num = a + loop.index0 %}
           {% if key.startswith("ox_") %}

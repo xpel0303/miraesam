@@ -48,7 +48,7 @@ def _generate_one(ctx: JobContext, key: str, model: str, p: dict) -> dict:
         if not isinstance(raw, dict):
             errors = ["JSON 객체 하나로 답해야 합니다."]
             continue
-        result = spec.clean_passage_result(raw)
+        result = spec.clean_passage_result(raw, p.get("passage", ""))
         merged = {**p, **{k: v for k, v in result.items() if k in spec.SECTION_KEYS}}
         if need_title and result.get("title"):
             merged["title"] = result["title"]
