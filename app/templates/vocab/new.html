@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}새 단어장 · {{ APP_NAME }}{% endblock %}
 {% block main %}
+<style>.go-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;bottom:0;background:var(--bg,#fff);padding:10px 0;z-index:2}</style>
 <h1>새 단어장</h1>
 <p class="lead">단어는 한 단어장에 {{ max }}개까지 넣을 수 있어요.</p>
 {% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
@@ -12,6 +13,7 @@
       <div class="field"><label for="level">대상</label>
         <select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
     </div>
+    <p class="small muted" style="margin:0 0 4px">① 만드는 방법 고르기</p>
     <div class="seg" role="radiogroup" aria-label="만드는 방법" style="max-width:420px">
       <label><input type="radio" name="kind" value="passage" {% if form.kind != "list" %}checked{% endif %}>지문에서 뽑기</label>
       <label><input type="radio" name="kind" value="list" {% if form.kind == "list" %}checked{% endif %}>단어 목록 붙여 넣기</label>
@@ -42,13 +44,27 @@
       <label style="font-weight:400"><input type="checkbox" name="fill_ai" value="1" {% if form.fill_ai is not defined or form.fill_ai %}checked{% endif %}> 비어 있는 뜻·품사·유의어·반의어·예문을 AI로 채우기</label>
     </div>
   </section>
-  <button class="btn" type="submit">단어장 만들기</button>
+  <div class="go-row">
+    <button class="btn" type="submit" id="go">단어 뽑기 시작 ▶</button>
+    <span class="small muted" id="go-note">지문을 넣은 뒤 이 버튼을 눌러야 단어를 뽑기 시작해요. 누르면 진행 막대가 나오는 화면으로 넘어가요.</span>
+  </div>
 </form>
 <script>
   const sync = () => {
     const k = document.querySelector('input[name=kind]:checked').value;
     document.querySelectorAll('[data-kind]').forEach(el => el.hidden = el.dataset.kind !== k);
+    document.getElementById("go").textContent = k === "list" ? "단어장 만들기 ▶" : "단어 뽑기 시작 ▶";
+    document.getElementById("go-note").textContent = k === "list" ? "누르면 단어장 화면으로 넘어가고, 빈칸 채우기 진행 막대가 나와요." : "지문을 넣은 뒤 이 버튼을 눌러야 단어를 뽑기 시작해요. 누르면 진행 막대가 나오는 화면으로 넘어가요.";
   };
+  // 지문을 넣거나 불러오면 시작 버튼을 눈에 띄게
+  const go = document.getElementById("go");
+  document.addEventListener("input", (e) => { if (e.target.name === "p_text" && e.target.value.trim()) { go.classList.add("picked-flash"); setTimeout(() => go.classList.remove("picked-flash"), 1400); } });
+  document.querySelector('form[action="/vocab"]').addEventListener("submit", (e) => {
+    const k = document.querySelector('input[name=kind]:checked').value;
+    if (k === "passage" && ![...document.querySelectorAll("textarea[name=p_text]")].some(t => t.value.trim())) {
+      e.preventDefault(); alert("지문을 먼저 넣어 주세요. (직접 붙여 넣거나 '저장된 지문 불러오기')"); return; }
+    go.disabled = true; go.textContent = "보내는 중…";
+  });
   document.querySelectorAll('input[name=kind]').forEach(r => r.addEventListener('change', sync));
   sync();
   const MAX = {{ maxp }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
