@@ -12,6 +12,9 @@ from ..models import Academy, FlowSet, StoredFile
 from ..pdf import first_fit, render_pdf
 from .analysis import _shrink
 
+# 글씨 크기 고를 때는 진짜 그림 대신 같은 비율(정사각형)의 아주 작은 그림을 넣음.
+# 진짜 그림(장당 수백 KB)을 지문 수 × 크기 단계만큼 복사해 그리면 무료 서버 메모리(512MB)가 넘쳐 서버가 다시 시작됨.
+_SQUARE = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEklEQVR4nGP4+PEjAwwwkcoBAG8eBcUVrMUoAAAAAElFTkSuQmCC")
 LEVELS = 10  # pdf/flow.html 의 SCALES 개수 (0 = 가장 크게)
 
 
@@ -63,7 +66,7 @@ def _draw(ctx: JobContext, set_id: int, only: list[int] | None = None):
             if "API 키" in str(e) or "쓸 수 없습니다" in str(e):
                 break  # 이 키로는 그림을 못 그림 → 나머지는 글 칸으로
             continue
-        fid = ctx.save_file(f"네컷만화_{idx + 1}.jpg", "image/jpeg", _shrink(img, 1400))
+        fid = ctx.save_file(f"네컷만화_{idx + 1}.jpg", "image/jpeg", _shrink(img, 1100))
         _save(set_id, idx, {"img": fid, "img_error": None})
 
 
@@ -91,11 +94,13 @@ def render_flow_pdf(ctx: JobContext, set_id: int) -> dict:
         raise llm.LLMError("PDF에 넣을 지문이 없습니다.")
     ctx.step("한 쪽에 맞게 글자 크기 고르는 중", 88)
     base = {"academy": academy, "s": s, "doc_title": s.title}
-    groups = [[{**base, "passages": [{**p, "z": z}]} for z in range(LEVELS)] for p in ps]
-    for p, z in zip(ps, first_fit("pdf/flow.html", groups)):
-        p["z"] = z
+    light = [{**p, "img_src": _SQUARE if p.get("img_src") else None} for p in ps]
+    for start in range(0, len(ps), 3):  # 몇 개씩 나눠서 (한 번에 다 그리면 메모리가 쌓임)
+        groups = [[{**base, "passages": [{**p, "z": z}]} for z in range(LEVELS)] for p in light[start:start + 3]]
+        for p, z in zip(ps[start:start + 3], first_fit("pdf/flow.html", groups)):
+            p["z"] = z
     ctx.step("PDF 만드는 중", 94)
-    pdf = render_pdf("pdf/flow.html", {**base, "passages": ps}, chunk_key="passages")
+    pdf = render_pdf("pdf/flow.html", {**base, "passages": ps}, chunk_key="passages", chunk=2)
     name = f"{s.title}_흐름분석.pdf"
     fid = ctx.save_file(name, "application/pdf", pdf)
     with session_scope() as db:

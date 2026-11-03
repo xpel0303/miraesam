@@ -158,7 +158,7 @@ def start_workers():
             if job.attempts < MAX_ATTEMPTS:
                 job.status, job.step = "queued", "서버가 다시 시작되어 이어서 처리합니다"
             else:
-                job.status, job.step, job.error = "failed", "실패", "여러 번 시도했지만 끝내지 못했습니다."
+                job.status, job.step, job.error = "failed", "실패", "작업 도중 서버가 여러 번 다시 시작되어 끝내지 못했습니다 (서버 메모리 부족이나 배포 때문일 수 있어요). 만든 내용은 저장돼 있으니 다시 눌러 이어서 만들 수 있어요."
             job.updated_at = now()
     _stop.clear()
     for i in range(max(1, JOB_WORKERS)):
