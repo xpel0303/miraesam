@@ -22,6 +22,7 @@
     <div class="field"><label for="pass">통과 점수(%)</label><input type="text" id="pass" name="pass" value="0" inputmode="numeric"></div>
   </div>
   <div class="field"><label>반</label>{% for c in classes %}<label style="font-weight:400;margin-right:12px"><input type="checkbox" name="class_id" value="{{ c.id }}"> {{ c.name }}</label>{% endfor %}</div>
+  <label style="font-weight:400"><input type="checkbox" name="show_q" value="1"> 학생 화면에 문제 보여 주기 <span class="small muted">(교재 원문이 그대로 보여요. 학원 내부 용도로 쓰세요. 정답은 제출 전에 보이지 않아요)</span></label><br>
   <label style="font-weight:400"><input type="checkbox" name="auto_text" value="1" checked> 짧은 영어 정답은 학생이 직접 써서 자동 채점</label><br>
   <label style="font-weight:400"><input type="checkbox" name="written" value="1" checked> 나머지 서술형은 '종이 답안 확인' 할 일로 넣기</label><br>
   <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" checked> 제출 후 정답 보여 주기</label>

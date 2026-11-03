@@ -214,6 +214,11 @@ async def review_save(qid: str, request: Request, teacher: Teacher = Depends(cur
     return _go(back)
 
 
+def _student_q(q: dict) -> dict:
+    """학생 화면에 보일 문제 (정답·해설은 넣지 않음). 숙제를 낼 때 복사해 두므로 나중에 문항을 고쳐도 숙제는 그대로."""
+    return {k: q[k] for k in ("head", "passage", "stem", "choices")}
+
+
 @router.post("/homework")
 async def make_homework(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     """담은 문항을 숙제로: 보기 고르는 문항은 번호로 자동 채점, 서술형은 '종이 답안 확인' 할 일로."""
@@ -231,8 +236,12 @@ async def make_homework(request: Request, teacher: Teacher = Depends(current_tea
         alts = [] if (q["objective"] or q["src"] == "확인 필요" or q.get("merged")) else hspec.text_alts(q["answer"])
         if k:
             items.append({"n": n, "a": k})
+            if f.get("show_q") == "1":
+                items[-1]["q"] = _student_q(q)
         elif alts and f.get("auto_text") == "1":
             items.append({"n": n, "a": alts[0], "alts": alts, "txt": True})
+            if f.get("show_q") == "1":
+                items[-1]["q"] = _student_q(q)
         else:
             written.append(n)
     tasks = []
