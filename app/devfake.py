@@ -120,6 +120,12 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
         return _comprehension(prompt)
     if system and "본문 워크북" in system:
         return _textbook(prompt)
+    if system and "흐름분석" in system:
+        words = [w for w in re.findall(r"[A-Za-z]{6,}", prompt.split("지문:")[-1])][:8] or ["learning"] * 8
+        return {"title": "[가짜] 흐름 제목", "gist": "[가짜] 핵심 내용 한두 줄, 개조식 정리", "top": "[가짜] 중심 화제",
+                "branches": [{"head": "[가짜] 갈래 1", "body": "[가짜] 첫째 갈래 내용 설명"}, {"head": "[가짜] 갈래 2", "body": "[가짜] 둘째 갈래 내용 설명"}],
+                "result": {"head": "[가짜] 결론", "items": ["[가짜] 항목 하나", "[가짜] 항목 둘", "[가짜] 항목 셋"]},
+                "comic": [{"words": [words[2 * i % len(words)]], "ko": f"[가짜] {i + 1}칸 내용", "scene": "A student thinks about the idea."} for i in range(4)]}
     if system and "지문 정리본" in system:
         return _summary(prompt)
     if system and "지문 분석본" in system:

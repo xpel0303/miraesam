@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}흐름분석 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>흐름분석</h1><a class="btn" href="/flow/new">새 흐름분석</a></div>
+<p class="lead">지문마다 A4 가로 한 장: 왼쪽은 우리말로 <b>분류와 구조화</b>한 흐름도, 오른쪽은 지문의 중요 영어 단어로 그린 <b>네 컷 만화</b>.</p>
+{% if sets %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>제목</th><th>지문</th><th>만든 사람</th><th>만든 날</th><th></th></tr></thead>
+  <tbody>{% for s in sets %}
+    <tr><td class="wrap"><a href="/flow/{{ s.id }}"><b>{{ s.title }}</b></a>
+        {% if s.passages|selectattr("status", "in", ["waiting", "making"])|list %} <span class="tag">만드는 중</span>{% elif s.passages|selectattr("status", "equalto", "failed")|list %} <span class="tag" style="color:var(--err)">일부 실패</span>{% endif %}</td>
+      <td>{{ s.passages|length }}개</td><td>{{ s.teacher.name if s.teacher else "" }}</td><td class="muted small">{{ s.created_at|kst("%Y-%m-%d") }}</td>
+      <td>{% if s.file_id %}<a href="/files/{{ s.file_id }}" target="_blank" rel="noopener">PDF</a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 만든 흐름분석이 없어요.</p><a class="btn" href="/flow/new">첫 흐름분석 만들기</a></div>
+{% endif %}
+{% endblock %}

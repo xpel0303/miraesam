@@ -1,0 +1,89 @@
+{% extends "pdf/_base.html" %}
+{# 흐름분석: 지문마다 A4 가로 한 쪽 — 왼쪽 우리말 분류와 구조화, 오른쪽 네 컷 만화 #}
+{% set SCALES = [1.45, 1.35, 1.25, 1.15, 1.06, 1.0, 0.92, 0.84] %}
+{% set CIR = "①②③④" %}
+{% block style %}
+  @font-face { font-family: "NanumSquareRound"; font-weight: 400; src: url("{{ font_dir }}/NanumSquareRoundR.woff2") format("woff2"); }
+  @font-face { font-family: "NanumSquareRound"; font-weight: 700; src: url("{{ font_dir }}/NanumSquareRoundB.woff2") format("woff2"); }
+  @font-face { font-family: "NanumSquareRound"; font-weight: 800; src: url("{{ font_dir }}/NanumSquareRoundEB.woff2") format("woff2"); }
+  @page { size: A4 landscape; margin: 13mm 13mm 12mm 13mm; }
+  html { font-family: "NanumSquareRound", "Nanum Gothic", sans-serif; }
+  .pdf-header { width: 271mm; }
+  :root { --bl: #2f6fb5; --bl-bg: #cfe0f3; --bx: #3b3b3b; --yl: #fff3a6; }
+  .pg { break-before: page; }
+  .pg.first { break-before: auto; }
+  .wrap { display: table; width: 100%; table-layout: fixed; }
+  .wrap > div { display: table-cell; vertical-align: top; }
+  .L { width: 50%; padding-right: 9mm; border-right: 0.8pt dashed #b9c6d6; }
+  .R { width: 50%; padding-left: 9mm; }
+  .head { display: flex; align-items: baseline; gap: 8pt; border-bottom: 1.4pt solid var(--bl); padding-bottom: 4pt; }
+  .head .no { background: var(--bl); color: #fff; border-radius: 10pt; padding: 1pt 9pt; font-weight: 800; }
+  .head .t { font-weight: 800; }
+  .lab { display: inline-block; background: var(--bl-bg); font-weight: 800; padding: 2pt 10pt; }
+  .gist { line-height: 1.6; }
+  .box { border: 1.1pt solid var(--bx); text-align: center; line-height: 1.5; background: #fff; }
+  .box .h { font-weight: 800; }
+  .arrow { text-align: center; line-height: 1; }
+  .arrow:before { content: "⬇"; font-family: "Nanum Gothic"; }
+  table.br { width: 100%; border-collapse: separate; table-layout: fixed; }
+  table.br td { border: 1.1pt solid var(--bx); vertical-align: top; text-align: left; }
+  table.br td .h { display: block; text-align: center; font-weight: 800; }
+  .res { text-align: left; display: inline-block; }
+  .res .it:before { content: "□"; margin-right: 3pt; font-family: "Nanum Gothic"; }
+  .comic img { width: 100%; border-radius: 8pt; display: block; }
+  table.cap { width: 100%; border-collapse: separate; table-layout: fixed; }
+  table.cap td { border: 0.8pt solid #d8dee8; border-radius: 6pt; vertical-align: top; background: #f7f9fc; }
+  table.cap .w { font-weight: 800; color: var(--bl); }
+  table.cap .n { font-weight: 800; color: var(--bl); margin-right: 3pt; }
+  table.fb { width: 100%; border-collapse: separate; table-layout: fixed; }
+  table.fb td { border: 1pt solid #c9d3e0; border-radius: 8pt; vertical-align: middle; text-align: center; background: #f7f9fc; }
+  table.fb .w { display: block; font-weight: 800; color: var(--bl); }
+  {% for k in range(SCALES|length) %}{% set x = SCALES[k] %}
+  .z{{ k }} .head { font-size: {{ 10 * x }}pt; margin-bottom: {{ 8 * x }}pt; } .z{{ k }} .head .t { font-size: {{ 15 * x }}pt; }
+  .z{{ k }} .lab { font-size: {{ 10.5 * x }}pt; margin: {{ 8 * x }}pt 0 {{ 6 * x }}pt; }
+  .z{{ k }} .gist { font-size: {{ 10.5 * x }}pt; padding: 0 {{ 4 * x }}pt; }
+  .z{{ k }} .box { font-size: {{ 10.5 * x }}pt; padding: {{ 5 * x }}pt {{ 10 * x }}pt; }
+  .z{{ k }} .arrow { font-size: {{ 14 * x }}pt; margin: {{ 4 * x }}pt 0; }
+  .z{{ k }} table.br { border-spacing: {{ 7 * x }}pt 0; margin: 0 -{{ 7 * x }}pt; width: calc(100% + {{ 14 * x }}pt); }
+  .z{{ k }} table.br td { font-size: {{ 10 * x }}pt; padding: {{ 6 * x }}pt {{ 7 * x }}pt; line-height: 1.55; }
+  .z{{ k }} table.br td .h { margin-bottom: {{ 3 * x }}pt; font-size: {{ 10.5 * x }}pt; }
+  .z{{ k }} .res .it { font-size: {{ 10.3 * x }}pt; }
+  .z{{ k }} table.cap { border-spacing: {{ 5 * x }}pt; margin: {{ 3 * x }}pt -{{ 5 * x }}pt 0; width: calc(100% + {{ 10 * x }}pt); }
+  .z{{ k }} table.cap td { font-size: {{ 9 * x }}pt; padding: {{ 4 * x }}pt {{ 6 * x }}pt; }
+  .z{{ k }} table.fb { border-spacing: {{ 6 * x }}pt; } .z{{ k }} table.fb td { height: {{ [58, 52 * x]|min }}mm; font-size: {{ 10 * x }}pt; padding: {{ 6 * x }}pt; }
+  .z{{ k }} table.fb .w { font-size: {{ 14 * x }}pt; margin-bottom: {{ 4 * x }}pt; }
+  .z{{ k }} .comic img { max-height: {{ [150, 150 * x]|min }}mm; width: auto; max-width: 100%; margin: 0 auto; }
+  {% endfor %}
+{% endblock %}
+
+{% block body %}
+{% for p in passages %}{% set o = p.out %}
+<div class="pg{% if loop.first %} first{% endif %} z{{ p.z if p.z is not none else 5 }}">
+  <div class="wrap">
+    <div class="L">
+      <div class="head"><span class="no">{{ p.title or ((item_offset or 0) + loop.index) ~ "번" }}</span><span class="t">{{ o.title }}</span><span class="muted" style="margin-left:auto">{{ s.title }}</span></div>
+      <div class="lab">핵심 내용</div>
+      <div class="gist">{{ o.gist }}</div>
+      <div class="lab">분류와 구조화</div>
+      <div style="text-align:center"><div class="box" style="display:inline-block;min-width:45%">{{ o.top }}</div></div>
+      <div class="arrow"></div>
+      <table class="br"><tr>{% for b in o.branches %}<td><span class="h">[{{ b.head }}]</span>{{ b.body }}</td>{% endfor %}</tr></table>
+      <div class="arrow"></div>
+      <div style="text-align:center"><div class="box" style="display:inline-block;min-width:70%"><div class="h">[{{ o.result.head }}]</div>
+        <div class="res">{% for x in o.result["items"] %}<div class="it">{{ x }}</div>{% endfor %}</div></div></div>
+    </div>
+    <div class="R">
+      <div class="head"><span class="t">네 컷 만화</span><span class="muted" style="margin-left:auto">중요 단어로 흐름 기억하기</span></div>
+      {% if p.img_src %}
+      <div class="comic"><img src="{{ p.img_src }}" alt=""></div>
+      <table class="cap"><tr>{% for c in o.comic[:2] %}<td><span class="n">{{ CIR[loop.index0] }}</span><span class="w">{{ c.words|join(", ") }}</span> {{ c.ko }}</td>{% endfor %}</tr>
+        <tr>{% for c in o.comic[2:4] %}<td><span class="n">{{ CIR[loop.index0 + 2] }}</span><span class="w">{{ c.words|join(", ") }}</span> {{ c.ko }}</td>{% endfor %}</tr></table>
+      {% else %}
+      <table class="fb"><tr>{% for c in o.comic[:2] %}<td><span class="w">{{ CIR[loop.index0] }} {{ c.words|join(", ") }}</span>{{ c.ko }}</td>{% endfor %}</tr>
+        <tr>{% for c in o.comic[2:4] %}<td><span class="w">{{ CIR[loop.index0 + 2] }} {{ c.words|join(", ") }}</span>{{ c.ko }}</td>{% endfor %}</tr></table>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

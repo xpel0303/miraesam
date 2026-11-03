@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ s.title }} · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/flow">흐름분석</a></p>
+<h1>{{ s.title }}</h1>
+<p class="lead">지문 {{ s.passages|length }}개 · {{ s.teacher.name if s.teacher else "" }} · {{ s.created_at|kst("%Y-%m-%d") }}</p>
+
+{% if busy %}<div class="job" data-job-id="{{ job.id }}" data-reload></div>
+{% elif job and job.status == "failed" %}<div class="flash error" role="alert">{{ job.error }}</div>{% endif %}
+
+<section class="panel">
+  <div class="panel-head"><h2>PDF</h2>
+    {% if not busy %}<div class="actions">
+      {% if all_done %}<form method="post" action="/flow/{{ s.id }}/render"><button class="btn {{ '' if s.options.dirty else 'ghost' }} small" type="submit">PDF 다시 만들기</button></form>
+      {% else %}<form method="post" action="/flow/{{ s.id }}/retry"><button class="btn small" type="submit">못 만든 지문 이어서 만들기</button></form>{% endif %}
+    </div>{% endif %}
+  </div>
+  {% if s.file_id %}<div class="actions"><a class="btn" href="/files/{{ s.file_id }}" target="_blank" rel="noopener">흐름분석 PDF</a></div>
+    {% if s.options.dirty %}<p class="small" style="margin:10px 0 0;color:var(--err)">고친 내용이 아직 PDF에 반영되지 않았어요.</p>{% endif %}
+  {% elif busy %}<p class="muted small" style="margin:0">다 만들면 여기에 PDF가 생겨요.</p>{% else %}<p class="muted small" style="margin:0">아직 PDF가 없어요.</p>{% endif %}
+</section>
+
+<style>
+  .fl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .fl-grid { grid-template-columns: 1fr; } }
+  .fl-box { border: 1.5px solid var(--ink-3, #999); border-radius: 8px; padding: 6px 10px; text-align: center; font-size: .9rem; }
+  .fl-row { display: grid; gap: 8px; margin: 6px 0; }
+  .fl-arrow { text-align: center; font-size: 1.1rem; line-height: 1; }
+  .fl-img { width: 100%; border-radius: 10px; border: 1px solid var(--line); }
+  .fl-cap { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: .82rem; margin-top: 6px; }
+</style>
+{% for p in s.passages %}{% set idx = loop.index0 %}{% set o = p.out or {} %}
+<section class="panel" id="p{{ idx }}">
+  <div class="panel-head"><h2>{{ p.title or ("지문 " ~ (idx + 1)) }}{% if o.title %} <span class="muted small">· {{ o.title }}</span>{% endif %}</h2>
+    <span class="tag">{% if p.status == "done" %}완료{% elif p.status == "making" %}정리 중{% elif p.status == "failed" %}실패{% else %}대기{% endif %}</span></div>
+  {% if p.status == "failed" and p.error %}<div class="flash error">{{ p.error }}</div>{% endif %}
+  {% if p.warnings %}<div class="flash small">확인해 볼 점: {{ p.warnings|join(" / ") }}</div>{% endif %}
+  {% if p.status == "done" %}
+  <div class="fl-grid">
+    <div>
+      <p class="small" style="margin:0 0 6px"><b>핵심 내용</b> {{ o.gist }}</p>
+      <div class="fl-box" style="max-width:60%;margin:0 auto">{{ o.top }}</div>
+      <div class="fl-arrow">⬇</div>
+      <div class="fl-row" style="grid-template-columns: repeat({{ o.branches|length }}, 1fr)">
+        {% for b in o.branches %}<div class="fl-box"><b>[{{ b.head }}]</b><br><span class="small">{{ b.body }}</span></div>{% endfor %}
+      </div>
+      <div class="fl-arrow">⬇</div>
+      <div class="fl-box" style="max-width:80%;margin:0 auto"><b>[{{ o.result.head }}]</b><br>{% for x in o.result["items"] %}<span class="small">□ {{ x }}</span><br>{% endfor %}</div>
+    </div>
+    <div>
+      {% if p.img %}<img class="fl-img" src="/files/{{ p.img }}" alt="네 컷 만화">
+      {% elif p.img_error %}<div class="flash small error">만화를 그리지 못했어요: {{ p.img_error }} (PDF에는 글 칸으로 들어가요)</div>
+      {% elif p.redraw %}<div class="flash small">만화 단어·장면을 바꿨어요. '만화 다시 그리기'를 눌러 주세요.</div>
+      {% else %}<p class="muted small">만화를 그리는 중이거나 아직 없어요.</p>{% endif %}
+      <div class="fl-cap">{% for c in o.comic %}<div><b>{{ loop.index }}. {{ c.words|join(", ") }}</b> <span class="muted">{{ c.ko }}</span></div>{% endfor %}</div>
+      {% if not busy %}<form method="post" action="/flow/{{ s.id }}/redraw/{{ idx }}" style="margin-top:8px"><button class="btn {{ '' if p.redraw else 'ghost' }} small" type="submit">만화 다시 그리기</button></form>{% endif %}
+    </div>
+  </div>
+  <details style="margin-top:12px"><summary class="small"><b>직접 고치기</b></summary>
+    <form method="post" action="/flow/{{ s.id }}/passages/{{ idx }}" style="margin-top:10px">
+      <div class="row">
+        <div class="field"><label>번호·출처</label><input type="text" name="p_title" value="{{ p.title or '' }}"></div>
+        <div class="field"><label>제목</label><input type="text" name="title" value="{{ o.title }}"></div>
+      </div>
+      <div class="field"><label>핵심 내용</label><textarea name="gist" rows="2">{{ o.gist }}</textarea></div>
+      <div class="field"><label>중심 화제 <span class="hint">맨 위 칸</span></label><input type="text" name="top" value="{{ o.top }}"></div>
+      <div class="field"><label>갈래 <span class="hint">한 줄에 한 칸: 칸 이름 | 내용 (2~3줄)</span></label><textarea name="branches" rows="3">{{ spec.branches_text(o.branches or []) }}</textarea></div>
+      <div class="row">
+        <div class="field"><label>결론 칸 이름</label><input type="text" name="result_head" value="{{ o.result.head }}"></div>
+        <div class="field"><label>결론 항목 <span class="hint">한 줄에 하나 (□로 나와요)</span></label><textarea name="result_items" rows="3">{{ o.result["items"]|join("\n") }}</textarea></div>
+      </div>
+      <div class="field"><label>네 컷 만화 <span class="hint">한 줄에 한 칸: 영어 단어(쉼표로 2개까지) | 우리말 한 줄 | 그림 장면(영어). 단어나 장면을 바꾸면 만화를 다시 그려야 해요.</span></label>
+        <textarea name="comic" rows="5" style="font-size:.85rem">{{ spec.comic_text(o.comic or []) }}</textarea></div>
+      <button class="btn small" type="submit" {% if busy %}disabled{% endif %}>저장</button>
+    </form>
+  </details>
+  {% endif %}
+  {% if not busy and p.status in ("done", "failed") %}
+    <form method="post" action="/flow/{{ s.id }}/regenerate/{{ idx }}" style="margin-top:12px" onsubmit="return confirm('이 지문을 새로 정리할까요? 고친 내용과 만화는 사라집니다.')">
+      <button class="btn ghost small" type="submit">이 지문만 다시 만들기</button></form>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if not busy %}<form method="post" action="/flow/{{ s.id }}/delete" onsubmit="return confirm('지울까요?')"><button class="btn danger small" type="submit">지우기</button></form>{% endif %}
+<script>
+  document.addEventListener("job:done", (e) => { if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600); });
+  const watch = document.querySelector("[data-reload]");
+  if (watch) new MutationObserver(() => { if (watch.classList.contains("failed")) setTimeout(() => location.reload(), 1500); }).observe(watch, { attributes: true, attributeFilter: ["class"] });
+</script>
+{% endblock %}
