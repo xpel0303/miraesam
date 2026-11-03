@@ -11,7 +11,7 @@ from ..models import BankQuestion
 
 FIELDS = ["id", "cat", "subcat", "level", "book", "chapter", "unit", "qtype", "instr", "passage", "stem", "choices", "answer", "expl", "src"]
 LEVEL_ORDER = {"하": 0, "중": 1, "상": 2}
-CIRCLED = "①②③④⑤⑥⑦"
+CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩"
 
 
 def import_rows(db: Session, rows: list[dict]) -> int:
@@ -134,17 +134,6 @@ def is_objective(stem: str, choices: str) -> bool:
     return bool(choices.strip()) or bool(re.search(r"[①②③④⑤]", stem)) or bool(re.search(r"(^|\n)[a-e]\.\s", stem)) or bool(re.search(r"[ⓐⓑⓒⓓⓔ]", stem))
 
 
-_SPLIT = re.compile(r"^(?P<head>[^A-Za-z〔]*?[가-힣][^A-Za-z〔]*?(?:시오|세요|하라|라|까|요|오)[.?:]|[^A-Za-z〔]*?[가-힣]\s*\?)\s+(?=[A-Z〔\"“'‘(\[])")
-
-
-def split_head(stem: str) -> tuple[str, str]:
-    """'발문 + 영어 지문/문장'이 한 줄로 붙은 본문을 발문과 지문으로 나눔."""
-    m = _SPLIT.match(stem or "")
-    if m and len(m.group("head")) >= 8 and len(stem) - m.end() >= 8:
-        return m.group("head").strip(), stem[m.end():].strip()
-    return "", stem
-
-
 _INSTR_SPLIT = re.compile(r"^((?:[^A-Za-z]|(?<![A-Za-z])[OXTF](?![A-Za-z])){6,}?[가-힣\)\]〉>][.?](?:\s*[\(（][^)）]{1,30}[\)）])?)\s+(?=[A-Za-z0-9\[〔“\"‘']|\([A-Za-z])")
 
 
@@ -159,42 +148,62 @@ def split_instr(text: str, min_rest: int = 12) -> tuple[str, str]:
 
 
 def display(q: BankQuestion) -> dict:
-    """시험지에 찍을 모양: 발문·지문·본문·보기를 한 번씩만, 보기는 한 줄에 하나."""
+    """시험지에 찍을 모양: 발문 / 지문 / 문제 / 보기를 각각 따로 줄을 나눠서, 보기는 한 줄에 하나."""
     clean = lambda t: re.sub(r"\s*\(추정\)\s*$", "", (t or "").strip())
-    stem, instr = _break_choices(q.stem), clean(q.instr)
-    head = instr if instr and instr not in (q.stem or "") and not (q.stem or "").startswith(instr[:30]) else ""
-    raw = (q.stem or "").strip()
-    if instr and raw.startswith(instr) and len(raw) - len(instr) >= 3:  # 발문이 본문 앞에 그대로 붙은 경우
-        head, stem = instr, _break_choices(raw[len(instr):].strip())
-    elif not head or raw.startswith(instr[:30]):
-        h2, rest = split_head(raw)
-        if h2:
-            head, stem = h2, _break_choices(rest)
+    raw_stem, instr = (q.stem or "").strip(), clean(q.instr)
     passage = (q.passage or "").strip()
-    h3, rest3 = split_head(instr)  # 발문 뒤에 지문이 붙어 있는 경우: 발문 / 지문 분리
-    if h3 and len(rest3) >= 20:
-        head = h3
-        passage = (passage + "\n" + rest3).strip() if passage else rest3
-    head = re.sub(r"_{2,}", BLANK, head)
-    passage = re.sub(r"_{2,}", BLANK, (q.passage or "").strip())
-    if head:  # 발문에 지문이 붙어 있으면 따로 나눔
+    if instr and raw_stem.startswith(instr) and len(raw_stem) - len(instr) >= 3:  # 발문이 본문 앞에 그대로 붙은 경우
+        head, body = instr, raw_stem[len(instr):].strip()
+    elif instr and (instr in raw_stem or raw_stem.startswith(instr[:30])):
+        head, body = "", raw_stem
+    else:
+        head, body = instr, raw_stem
+    rest = ""
+    if head:  # '한글 발문. English 지문…' 처럼 붙어 있으면 나눔
         head, rest = split_instr(head)
-        if rest:
-            passage = (_break_choices(rest) + ("\n" + passage if passage else "")).strip()
-    elif stem and not passage:  # 본문 앞머리가 발문이면 발문과 본문을 나눔
-        h2, rest = split_instr(stem)
-        if rest:
-            head, stem = h2, _break_choices(rest)
-    choices = _break_choices(q.choices)
-    if choices and choices[:20] in stem:
+    else:
+        head, body2 = split_instr(body)
+        if body2:
+            body = body2
+        else:
+            head = ""
+    if rest:
+        passage = (rest + ("\n" + passage if passage else "")).strip()
+    if re.fullmatch(r"[_\s.]*", body or ""):  # 빈칸 표시만 남았으면 답 쓰는 줄이 대신함
+        body = ""
+    body, choices = _break_choices(body), _break_choices(q.choices)
+    if choices and choices[:20] in body:
         choices = ""
     answer = (q.answer or "").strip()
-    objective = is_objective(stem, choices)
+    objective = is_objective(body, choices)
     lines = 0 if objective else (2 if len(answer) > 45 else 1)
-    return {"id": q.id, "head": head, "passage": re.sub(r"_{2,}", BLANK, passage), "stem": stem, "choices": choices,
+    return {"id": q.id, "head": re.sub(r"_{2,}", BLANK, head), "passage": re.sub(r"_{2,}", BLANK, passage), "stem": body, "choices": choices,
             "answer": answer, "expl": (q.expl or "").strip(), "src": q.src, "cat": q.cat, "subcat": q.subcat,
             "level": q.level, "review": q.review, "book": q.book, "page": q.page, "objective": objective, "lines": lines,
             "raw_stem": q.stem or "", "raw_instr": q.instr or "", "raw_choices": q.choices or ""}
+
+
+def group_same_passage(items: list[dict]) -> list[dict]:
+    """같은 발문·지문을 쓰는 이어진 문항(지문 속 ①~⑤를 각각 고치는 문제 등)은 한 문제로 묶음.
+
+    묶인 문제는 답 쓰는 줄이 소문항 수만큼 생기고, 정답은 '① went ② saw …' 로 나옵니다."""
+    out = []
+    for it in items:
+        prev = out[-1] if out else None
+        if prev and it["passage"] and len(it["passage"]) >= 40 and not it["objective"] and not it["stem"] and not it["choices"] \
+                and prev["passage"] == it["passage"] and prev["head"] == it["head"] and not prev["objective"] and not prev["stem"] and not prev["choices"]:
+            prev["subs"].append(it)
+            prev["lines"] = len(prev["subs"])
+            continue
+        it = dict(it)
+        it["subs"] = [it]
+        out.append(it)
+    for it in out:
+        if len(it["subs"]) > 1:
+            it["answer"] = "  ".join(f"{CIRCLED[i]} {x['answer']}" for i, x in enumerate(it["subs"]))
+            it["merged"] = True
+            it["src"] = "확인 필요" if any(x["src"] == "확인 필요" for x in it["subs"]) else it["src"]
+    return out
 
 
 def split_lines(text: str) -> list[str]:

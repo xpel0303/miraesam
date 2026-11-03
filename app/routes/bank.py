@@ -103,10 +103,10 @@ async def pick(request: Request, teacher: Teacher = Depends(current_teacher), db
 
 @router.get("/cart")
 def cart_view(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
-    qs = [service.display(q) for q in _load(db, _cart(request))]
+    qs = service.group_same_passage([service.display(q) for q in _load(db, _cart(request))])
     classes = list(db.execute(select(ClassGroup).where(ClassGroup.academy_id == teacher.academy_id, ClassGroup.active.is_(True)).order_by(ClassGroup.name)).scalars())
     auto = sum(1 for q in qs if service.choice_number(q["answer"]) and q["objective"])
-    auto_text = sum(1 for q in qs if not q["objective"] and q["src"] != "확인 필요" and hspec.text_alts(q["answer"]))
+    auto_text = sum(1 for q in qs if not q["objective"] and q["src"] != "확인 필요" and not q.get("merged") and hspec.text_alts(q["answer"]))
     return render(request, "bank/cart.html", {"teacher": teacher, "qs": qs, "classes": classes, "auto": auto, "auto_text": auto_text, "active": "grammar_bank", "max_cart": MAX_CART})
 
 
@@ -127,7 +127,7 @@ async def cart_edit(request: Request, teacher: Teacher = Depends(current_teacher
 
 
 def _sheet_ctx(request: Request, db: Session, teacher: Teacher, params) -> dict:
-    qs = [service.display(q) for q in _load(db, _cart(request))]
+    qs = service.group_same_passage([service.display(q) for q in _load(db, _cart(request))])
     if not qs:
         raise HTTPException(400, "담은 문항이 없어요.")
     title = str(params.get("title") or "").strip()[:100] or "문법 시험지"
@@ -218,7 +218,7 @@ async def review_save(qid: str, request: Request, teacher: Teacher = Depends(cur
 async def make_homework(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     """담은 문항을 숙제로: 보기 고르는 문항은 번호로 자동 채점, 서술형은 '종이 답안 확인' 할 일로."""
     f = await request.form()
-    qs = [service.display(q) for q in _load(db, _cart(request))]
+    qs = service.group_same_passage([service.display(q) for q in _load(db, _cart(request))])
     title = str(f.get("title") or "").strip()[:120]
     class_ids = {int(x) for x in f.getlist("class_id") if str(x).isdigit()}
     valid = set(db.execute(select(ClassGroup.id).where(ClassGroup.academy_id == teacher.academy_id, ClassGroup.id.in_(class_ids))).scalars()) if class_ids else set()
@@ -228,7 +228,7 @@ async def make_homework(request: Request, teacher: Teacher = Depends(current_tea
     items, written = [], []
     for n, q in enumerate(qs, 1):
         k = service.choice_number(q["answer"]) if q["objective"] else None
-        alts = [] if (q["objective"] or q["src"] == "확인 필요") else hspec.text_alts(q["answer"])
+        alts = [] if (q["objective"] or q["src"] == "확인 필요" or q.get("merged")) else hspec.text_alts(q["answer"])
         if k:
             items.append({"n": n, "a": k})
         elif alts and f.get("auto_text") == "1":
