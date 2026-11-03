@@ -6,8 +6,12 @@
   @font-face { font-family: "NanumSquareRound"; font-weight: 400; src: url("{{ font_dir }}/NanumSquareRoundR.woff2") format("woff2"); }
   @font-face { font-family: "NanumSquareRound"; font-weight: 700; src: url("{{ font_dir }}/NanumSquareRoundB.woff2") format("woff2"); }
   @font-face { font-family: "NanumSquareRound"; font-weight: 800; src: url("{{ font_dir }}/NanumSquareRoundEB.woff2") format("woff2"); }
+  {# 감자꽃 (Gamja Flower, SIL OFL) — 둥글둥글한 손글씨. 굵기는 하나뿐이라 굵은 글씨는 흉내 굵기 #}
+  @font-face { font-family: "GamjaL"; src: url("{{ font_dir }}/gamja-latin.woff2") format("woff2"); }
+  @font-face { font-family: "GamjaK"; src: url("{{ font_dir }}/gamja-korean.woff2") format("woff2"); }
   @page { size: A4 landscape; margin: 13mm 13mm 12mm 13mm; }
   html { font-family: "NanumSquareRound", "Nanum Gothic", sans-serif; }
+  .L, .R { font-family: "GamjaL", "GamjaK", "NanumSquareRound", "Nanum Gothic", sans-serif; font-size: 112%; }
   .pdf-header { width: 271mm; }
   :root { --bl: #2f6fb5; --bl-bg: #cfe0f3; --bx: #3b3b3b; --yl: #fff3a6; }
   .pg { break-before: page; }
