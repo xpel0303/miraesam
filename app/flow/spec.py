@@ -17,7 +17,7 @@ def prompt(text: str, level: str = "", fix: list[str] | None = None) -> str:
     lines = [f"대상: {level or '고등학생'}", "아래 영어 지문의 흐름분석 자료를 만들어 주세요.", "",
              "출력 형식:",
              "{",
-             '  "title": "우리말 제목 (15자 안팎)",',
+             '  "title": "우리말 제목 — 글의 요지를 담은 쉬운 명사구, 띄어쓰기 포함 14자 이내, 한 줄 (예: 돌고래와 물고기의 차이)",',
              '  "gist": "핵심 내용 — 지문의 주요 내용을 개조식으로 1~2줄 (60자 안팎, 쉼표로 이어도 됨)",',
              '  "top": "중심 화제 (짧게, 예: 세종의 업적)",',
              '  "branches": [{"head": "갈래 이름 (예: 정치 안정)", "body": "그 갈래의 내용 (40자 안팎. 두 대상을 비교하면 \"A: … / B: …\"처럼 / 로 나눔)"}, ... 2개 또는 3개],',
@@ -28,7 +28,8 @@ def prompt(text: str, level: str = "", fix: list[str] | None = None) -> str:
              "",
              "규칙:",
              "- 분류와 구조화는 지문의 논리 흐름이 한눈에 보이게: 중심 화제 → 나란한 갈래(원인·측면·대조·단계 등) → 결론/결과.",
-             "- 하이라이트: gist, top, branches의 body, result의 items에서 가장 중요한 낱말·구 1~2곳을 **두 별표**로 감쌉니다 (예: 돌고래는 **포유류**). 문장 전체를 감싸지 않습니다.",
+             "- 하이라이트: gist, top, branches의 body, result의 items에서 가장 중요한 낱말·구를 **두 별표**로 감쌉니다 (예: 돌고래는 **포유류**).",
+             "  칸마다 1~2곳, 전체 6~10곳. 문장 전체를 감싸지 않습니다. 별표를 빠뜨리지 마세요.",
              "- 네 컷 만화는 지문 흐름 순서대로 기-승-전-결. words는 지문에 실제로 나온 내용어(명사·동사·형용사)를 지문 속 형태 그대로.",
              "- 네 칸에 같은 단어를 두 번 쓰지 않습니다. scene은 그림으로 그릴 수 있는 구체적 장면(같은 주인공이 이어서 나오게).",
              "", "지문:", text.strip()]
@@ -61,8 +62,13 @@ def clean(raw, text: str = "") -> tuple[dict, list[str]]:
         words = [_s(w, 30) for w in (c.get("words") or []) if _s(w)][:2]
         comic.append({"words": words, "ko": _s(c.get("ko"), 60), "scene": _s(c.get("scene"), 300)})
     comic = comic[:4]
-    out = {"title": _s(raw.get("title"), 40), "gist": _s(raw.get("gist"), 160), "top": _s(raw.get("top"), 40),
+    out = {"title": plain(_s(raw.get("title"), 40)), "gist": _s(raw.get("gist"), 160), "top": _s(raw.get("top"), 40),
            "branches": branches, "result": result, "comic": comic}
+    marks = sum(t.count("**") // 2 for t in [out["gist"], out["top"], *[b["body"] for b in branches], *result["items"]])
+    if marks < 3:
+        errs.append(f"하이라이트(**두 별표**)가 {marks}곳뿐입니다. 중요한 낱말·구 6~10곳을 **로 감싸세요.")
+    if len(out["title"].replace(" ", "")) > 14:
+        errs.append(f"제목 '{out['title']}'이 깁니다. 띄어쓰기 포함 14자 이내 한 줄로.")
     for k, name in (("title", "제목"), ("gist", "핵심 내용"), ("top", "중심 화제")):
         if not out[k]:
             errs.append(f"{name}이(가) 비었습니다.")
