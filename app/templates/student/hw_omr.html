@@ -3,9 +3,18 @@
 {% block body %}
 <p class="small muted" style="margin:0"><a href="/s/{{ code }}/hw/{{ h.id }}">{{ h.title }}</a></p>
 <h1 style="font-size:1.25rem">{{ t.title }}</h1>
-<p class="small muted">종이에 푼 답을 번호대로 눌러 주세요. 문항 번호는 시험지 번호와 같아요.{% if txt %} 영어로 쓰는 문항은 칸에 직접 적어요. (대소문자·마침표는 달라도 괜찮아요)<br>※ 쓰는 문항은 자동 채점이라, 맞게 썼는데 틀리면 선생님께 말씀드려 주세요.{% endif %}</p>
+<p class="small muted">{% if qs %}문제를 읽고 답을 눌러 주세요.{% else %}종이에 푼 답을 번호대로 눌러 주세요. 문항 번호는 시험지 번호와 같아요.{% endif %}{% if txt %} 영어로 쓰는 문항은 칸에 직접 적어요. (대소문자·마침표는 달라도 괜찮아요)<br>※ 쓰는 문항은 자동 채점이라, 맞게 썼는데 틀리면 선생님께 말씀드려 주세요.{% endif %}</p>
 <form method="post" action="/s/{{ code }}/hw/{{ h.id }}/{{ i }}" id="omr">
   {% for n in nums %}
+    {% set q = qs.get(n) if qs else None %}
+    {% if q %}
+    <div class="sq" style="margin:14px 0 6px;line-height:1.65">
+      {% if q.head %}<p style="margin:0 0 4px;font-weight:700"><span class="en" style="display:inline">{{ n }}.</span> {{ q.head|bt }}</p>{% endif %}
+      {% if q.passage %}<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:4px 0;white-space:pre-line;background:#fff">{{ q.passage|bt }}</div>{% endif %}
+      {% if q.stem %}<div style="white-space:pre-line">{% if not q.head %}<b>{{ n }}.</b> {% endif %}{{ q.stem|bt }}</div>{% elif not q.head %}<b>{{ n }}.</b>{% endif %}
+      {% if q.choices %}<div style="white-space:pre-line;margin-top:4px">{{ q.choices|bt }}</div>{% endif %}
+    </div>
+    {% endif %}
     {% if n in txt %}
     <div class="erow" data-text aria-label="{{ n }}번" style="gap:8px">
       <span class="en">{{ n }}</span>

@@ -403,7 +403,8 @@ def hw_task(code: str, hid: int, i: int, request: Request, db: Session = Depends
     if t["kind"] == "omr":
         nums = [it["n"] for it in t["items"]]
         txt = {it["n"] for it in t["items"] if it.get("txt")}
-        return render(request, "student/hw_omr.html", _ctx(db, s, h=h, i=i, t=t, nums=nums, txt=txt, circ=rspec.CIRCLED))
+        qs = {it["n"]: it["q"] for it in t["items"] if it.get("q")}  # 문제 보여 주기를 켠 숙제만 (정답은 보내지 않음)
+        return render(request, "student/hw_omr.html", _ctx(db, s, h=h, i=i, t=t, nums=nums, txt=txt, qs=qs, circ=rspec.CIRCLED))
     return RedirectResponse(f"/s/{s.access_code}/hw/{h.id}", status_code=303)
 
 
