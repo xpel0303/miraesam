@@ -131,15 +131,50 @@ def grade_ox(task: dict, form) -> tuple[int, list[dict]]:
     return correct, wrong
 
 
+def norm_text(t: str) -> str:
+    """주관식 비교용: 대소문자·문장부호·여러 칸 띄어쓰기·따옴표 모양 차이는 무시."""
+    t = str(t or "").lower().replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+    t = re.sub(r"[.,!?;:\"()\[\]]", " ", t)
+    return " ".join(t.split())
+
+
+def _ok_text(it: dict, given: str) -> bool:
+    g = norm_text(given)
+    return g != "" and any(g == norm_text(a) for a in it.get("alts") or [it["a"]])
+
+
 def grade_omr(task: dict, form) -> tuple[int, list[dict]]:
     correct, wrong = 0, []
     for it in task["items"]:
         g = str(form.get(f"a{it['n']}", "")).strip()
+        if it.get("txt"):
+            if _ok_text(it, g):
+                correct += 1
+            else:
+                wrong.append({"n": it["n"], "a": str(it["a"]), "given": g, "txt": True})
+            continue
         if _ok(it["a"], g):
             correct += 1
         else:
             wrong.append({"n": it["n"], "a": str(it["a"]), "given": g})
     return correct, wrong
+
+
+def text_alts(answer: str) -> list[str]:
+    """서술형 정답 → 인정할 답 목록. 자동 채점하기 어려우면 빈 목록."""
+    a = " ".join((answer or "").split())
+    if not a or len(a) > 40 or "?" in a or "\n" in a:
+        return []
+    if a.upper() in ("O", "T", "○", "맞음", "맞다"):
+        return ["O", "T", "○", "맞음", "맞다"]
+    out = []
+    for part in re.split(r"\s*(?:;| / | 또는 )\s*", a):
+        part = part.strip()
+        if part:
+            out.append(part)
+            if "→" in part:  # 틀린 것 → 고친 것: 고친 것만 써도 정답
+                out.append(part.split("→")[-1].strip())
+    return list(dict.fromkeys(out))
 
 
 def answer_label(a) -> str:

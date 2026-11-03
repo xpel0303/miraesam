@@ -402,7 +402,8 @@ def hw_task(code: str, hid: int, i: int, request: Request, db: Session = Depends
         return render(request, "student/hw_ox.html", _ctx(db, s, h=h, i=i, t=t, items=items))
     if t["kind"] == "omr":
         nums = [it["n"] for it in t["items"]]
-        return render(request, "student/hw_omr.html", _ctx(db, s, h=h, i=i, t=t, nums=nums, circ=rspec.CIRCLED))
+        txt = {it["n"] for it in t["items"] if it.get("txt")}
+        return render(request, "student/hw_omr.html", _ctx(db, s, h=h, i=i, t=t, nums=nums, txt=txt, circ=rspec.CIRCLED))
     return RedirectResponse(f"/s/{s.access_code}/hw/{h.id}", status_code=303)
 
 
@@ -459,6 +460,9 @@ async def hw_submit(code: str, hid: int, i: int, request: Request, db: Session =
     r = _record(db, s, h, i, correct, total, wrong)
     for w in wrong:
         if "a" in w and t["kind"] == "omr":
-            w["a_label"], w["g_label"] = hspec.answer_label(w["a"]), hspec.answer_label(w["given"]) if w["given"] else "안 씀"
+            if w.get("txt"):
+                w["a_label"], w["g_label"] = w["a"], w["given"] or "안 씀"
+            else:
+                w["a_label"], w["g_label"] = hspec.answer_label(w["a"]), hspec.answer_label(w["given"]) if w["given"] else "안 씀"
     return render(request, "student/hw_result.html", _ctx(db, s, h=h, i=i, t=t, r=r, correct=correct, total=total, wrong=wrong,
                                                           reveal=reveal, pct=round(100 * correct / total) if total else 0))

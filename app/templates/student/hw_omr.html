@@ -3,13 +3,20 @@
 {% block body %}
 <p class="small muted" style="margin:0"><a href="/s/{{ code }}/hw/{{ h.id }}">{{ h.title }}</a></p>
 <h1 style="font-size:1.25rem">{{ t.title }}</h1>
-<p class="small muted">종이에 푼 답을 번호대로 눌러 주세요. 문항 번호는 시험지 번호와 같아요.</p>
+<p class="small muted">종이에 푼 답을 번호대로 눌러 주세요. 문항 번호는 시험지 번호와 같아요.{% if txt %} 영어로 쓰는 문항은 칸에 직접 적어요. (대소문자·마침표는 달라도 괜찮아요)<br>※ 쓰는 문항은 자동 채점이라, 맞게 썼는데 틀리면 선생님께 말씀드려 주세요.{% endif %}</p>
 <form method="post" action="/s/{{ code }}/hw/{{ h.id }}/{{ i }}" id="omr">
   {% for n in nums %}
+    {% if n in txt %}
+    <div class="erow" data-text aria-label="{{ n }}번" style="gap:8px">
+      <span class="en">{{ n }}</span>
+      <input type="text" name="a{{ n }}" autocomplete="off" autocapitalize="off" spellcheck="false" style="flex:1;min-width:0" placeholder="답 쓰기">
+    </div>
+    {% else %}
     <div class="erow" role="radiogroup" aria-label="{{ n }}번">
       <span class="en">{{ n }}</span>
       {% for c in ["1","2","3","4","5"] %}<label class="ec"><input type="radio" name="a{{ n }}" value="{{ c }}"><span>{{ circ[c] }}</span></label>{% endfor %}
     </div>
+    {% endif %}
   {% endfor %}
   <p class="small muted" id="left" style="margin:14px 0 8px"></p>
   <button class="btn" type="submit" style="width:100%;padding:12px">제출하고 채점하기</button>
@@ -17,10 +24,10 @@
 {% endblock %}
 {% block script %}
 <script>
-  const f = document.getElementById("omr"), gs = [...f.querySelectorAll("[role=radiogroup]")], left = document.getElementById("left");
-  const empty = () => gs.filter(g => !g.querySelector("input:checked")).map(g => g.getAttribute("aria-label"));
+  const f = document.getElementById("omr"), gs = [...f.querySelectorAll("[role=radiogroup],[data-text]")], left = document.getElementById("left");
+  const empty = () => gs.filter(g => g.hasAttribute("data-text") ? !g.querySelector("input").value.trim() : !g.querySelector("input:checked")).map(g => g.getAttribute("aria-label"));
   function upd() { const e = empty(); left.textContent = e.length ? `안 고른 문항: ${e.join(", ")}` : "다 골랐어요."; }
-  f.addEventListener("change", upd); upd();
+  f.addEventListener("change", upd); f.addEventListener("input", upd); upd();
   f.addEventListener("submit", ev => { const n = empty().length; if (n && !confirm(`안 고른 문항이 ${n}개 있어요. 이대로 낼까요?`)) ev.preventDefault(); });
 </script>
 {% endblock %}

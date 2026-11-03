@@ -35,7 +35,7 @@
     {% if q.passage %}{% if not q.head %}<div><span class="n">{{ loop.index }}.</span></div>{% endif %}<div class="box">{{ q.passage|fmt }}</div>{% endif %}
     <div class="body">{% if not q.head and not q.passage %}<span class="n">{{ loop.index }}.</span>{% endif %}{{ q.stem|fmt }}</div>
     {% if q.choices %}<div class="ch">{{ q.choices|fmt }}</div>{% endif %}
-    {% for _ in range(q.lines) %}<div class="wl">{% if loop.first %}<span>답</span>{% endif %}</div>{% endfor %}
+    {% for _ in range(q.lines) %}<div class="wl">{% if q.merged %}<span>{{ "①②③④⑤⑥⑦⑧⑨"[loop.index0] }}</span>{% elif loop.first %}<span>답</span>{% endif %}</div>{% endfor %}
   </div>
 {% endfor %}
 </div>
