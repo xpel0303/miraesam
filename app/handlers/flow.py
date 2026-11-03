@@ -12,7 +12,7 @@ from ..models import Academy, FlowSet, StoredFile
 from ..pdf import first_fit, render_pdf
 from .analysis import _shrink
 
-LEVELS = 8  # pdf/flow.html 의 SCALES 개수 (0 = 가장 크게)
+LEVELS = 10  # pdf/flow.html 의 SCALES 개수 (0 = 가장 크게)
 
 
 def _save(set_id, idx, data):

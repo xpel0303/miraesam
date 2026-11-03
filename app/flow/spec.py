@@ -28,6 +28,7 @@ def prompt(text: str, level: str = "", fix: list[str] | None = None) -> str:
              "",
              "규칙:",
              "- 분류와 구조화는 지문의 논리 흐름이 한눈에 보이게: 중심 화제 → 나란한 갈래(원인·측면·대조·단계 등) → 결론/결과.",
+             "- 하이라이트: gist, top, branches의 body, result의 items에서 가장 중요한 낱말·구 1~2곳을 **두 별표**로 감쌉니다 (예: 돌고래는 **포유류**). 문장 전체를 감싸지 않습니다.",
              "- 네 컷 만화는 지문 흐름 순서대로 기-승-전-결. words는 지문에 실제로 나온 내용어(명사·동사·형용사)를 지문 속 형태 그대로.",
              "- 네 칸에 같은 단어를 두 번 쓰지 않습니다. scene은 그림으로 그릴 수 있는 구체적 장면(같은 주인공이 이어서 나오게).",
              "", "지문:", text.strip()]
@@ -38,6 +39,11 @@ def prompt(text: str, level: str = "", fix: list[str] | None = None) -> str:
 
 def _s(v, n=200) -> str:
     return re.sub(r"\s+", " ", str(v or "")).strip()[:n]
+
+
+def plain(t: str) -> str:
+    """하이라이트 표시(**)를 뺀 글."""
+    return (t or "").replace("**", "")
 
 
 def clean(raw, text: str = "") -> tuple[dict, list[str]]:

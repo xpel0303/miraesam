@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ s.title }} · {{ APP_NAME }}{% endblock %}
 {% block main %}
+{% macro hl(t) %}{% for part in (t or "").split("**") %}{% if loop.index is even %}<mark>{{ part }}</mark>{% else %}{{ part }}{% endif %}{% endfor %}{% endmacro %}
 <p class="small"><a href="/flow">흐름분석</a></p>
 <h1>{{ s.title }}</h1>
 <p class="lead">지문 {{ s.passages|length }}개 · {{ s.teacher.name if s.teacher else "" }} · {{ s.created_at|kst("%Y-%m-%d") }}</p>
@@ -38,14 +39,14 @@
   {% if p.status == "done" %}
   <div class="fl-grid">
     <div>
-      <p class="small" style="margin:0 0 6px"><b>핵심 내용</b> {{ o.gist }}</p>
-      <div class="fl-box" style="max-width:60%;margin:0 auto">{{ o.top }}</div>
+      <p class="small" style="margin:0 0 6px"><b>핵심 내용</b> {{ hl(o.gist) }}</p>
+      <div class="fl-box" style="max-width:60%;margin:0 auto">{{ hl(o.top) }}</div>
       <div class="fl-arrow">⬇</div>
       <div class="fl-row" style="grid-template-columns: repeat({{ o.branches|length }}, 1fr)">
-        {% for b in o.branches %}<div class="fl-box"><b>[{{ b.head }}]</b><br><span class="small">{{ b.body }}</span></div>{% endfor %}
+        {% for b in o.branches %}<div class="fl-box"><b>[{{ b.head }}]</b><br><span class="small">{{ hl(b.body) }}</span></div>{% endfor %}
       </div>
       <div class="fl-arrow">⬇</div>
-      <div class="fl-box" style="max-width:80%;margin:0 auto"><b>[{{ o.result.head }}]</b><br>{% for x in o.result["items"] %}<span class="small">□ {{ x }}</span><br>{% endfor %}</div>
+      <div class="fl-box" style="max-width:80%;margin:0 auto"><b>[{{ o.result.head }}]</b><br>{% for x in o.result["items"] %}<span class="small">□ {{ hl(x) }}</span><br>{% endfor %}</div>
     </div>
     <div>
       {% if p.img %}<img class="fl-img" src="/files/{{ p.img }}" alt="네 컷 만화">
@@ -62,7 +63,7 @@
         <div class="field"><label>번호·출처</label><input type="text" name="p_title" value="{{ p.title or '' }}"></div>
         <div class="field"><label>제목</label><input type="text" name="title" value="{{ o.title }}"></div>
       </div>
-      <div class="field"><label>핵심 내용</label><textarea name="gist" rows="2">{{ o.gist }}</textarea></div>
+      <div class="field"><label>핵심 내용 <span class="hint">**두 별표**로 감싼 곳은 형광펜으로 나와요</span></label><textarea name="gist" rows="2">{{ o.gist }}</textarea></div>
       <div class="field"><label>중심 화제 <span class="hint">맨 위 칸</span></label><input type="text" name="top" value="{{ o.top }}"></div>
       <div class="field"><label>갈래 <span class="hint">한 줄에 한 칸: 칸 이름 | 내용 (2~3줄)</span></label><textarea name="branches" rows="3">{{ spec.branches_text(o.branches or []) }}</textarea></div>
       <div class="row">
