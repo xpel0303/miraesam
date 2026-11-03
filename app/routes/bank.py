@@ -254,3 +254,45 @@ async def make_homework(request: Request, teacher: Teacher = Depends(current_tea
     db.commit()
     flash(request, f"숙제를 냈어요. 자동 채점 {len(items)}문항(영어로 쓰는 {sum(1 for x in items if x.get('txt'))}문항 포함)" + (f", 서술형 {len(written)}문항은 종이 확인." if written and f.get("written") == "1" else "."))
     return _go(f"/homework/{h.id}")
+
+
+@router.get("/build")
+def build_page(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """문제 만들기: 난이도 → 문법 항목 → 세부 항목 → 문항 수 순서로 골라 한 번에 뽑기."""
+    fac = service.facets(db)
+    return render(request, "bank/build.html", {"teacher": teacher, "cats": fac["cats"], "subs_json": json.dumps(fac["subs"], ensure_ascii=False),
+                                               "max_cart": MAX_CART, "active": "grammar_bank"})
+
+
+@router.post("/build")
+async def build_run(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    f = await request.form()
+    items = []
+    for raw in f.getlist("item"):
+        cat, _, sub = str(raw).partition("||")
+        if cat:
+            items.append((cat.strip(), sub.strip()))
+    if not items:
+        flash(request, "문법 항목을 하나 이상 골라 주세요.", "error")
+        return _go("/bank/build")
+    levels = [x for x in f.getlist("level") if x in ("하", "중", "상")]
+    num = lambda k: max(0, min(MAX_CART, int(f.get(k) or 0))) if str(f.get(k) or "0").isdigit() else 0
+    per_item = {i: num(f"c{i}") for i in range(len(items))} if f.get("mode") == "manual" else None
+    n_obj, n_sub = num("n_obj"), num("n_sub")
+    total = sum(per_item.values()) if per_item else n_obj + n_sub
+    if total == 0:
+        flash(request, "문항 수를 정해 주세요.", "error")
+        return _go("/bank/build")
+    ids = service.pick_questions(db, items, levels, n_obj, n_sub, per_item, skip_unsure=f.get("unsure") != "1", with_passage=f.get("passage") != "0")
+    ids = ids[:MAX_CART]
+    if f.get("shuffle") == "1":
+        random.shuffle(ids)
+    else:  # 교재 순서(대분류·세부 순)로 정렬 — 같은 지문 문항이 붙어 있게
+        order = dict(db.execute(select(BankQuestion.id, BankQuestion.ord).where(BankQuestion.id.in_(ids))).all())
+        ids.sort(key=lambda i: order.get(i, 0))
+    request.session["bank_cart"] = ids
+    if len(ids) < total:
+        flash(request, f"조건에 맞는 문항이 모자라 {len(ids)}문항만 뽑았어요.", "error")
+    else:
+        flash(request, f"{len(ids)}문항을 뽑았어요. 아래에서 시험지로 받거나 숙제로 내세요.")
+    return _go("/bank/cart")

@@ -147,6 +147,41 @@ def split_instr(text: str, min_rest: int = 12) -> tuple[str, str]:
     return (text or "").strip(), ""
 
 
+_KO_END = re.compile(r"(?<=[가-힣][.?!])\s+(?=[A-Z(\[〔“\"][A-Za-z])")
+_MARK = re.compile(r"\s+(?=[〈<\[](?:보기|조건|예시)[〉>\]](?![가-힣]))")
+_SPEAKER = re.compile(r"\s+(?=[A-Z]{1,2}:\s)")
+_LET2NUM = dict(zip("ⓐⓑⓒⓓⓔ", "①②③④⑤"))
+
+
+def structure(text: str) -> str:
+    """한글 발문/해석 → 영어 문장, 〈보기〉〈조건〉, 대화 화자(A: B:)가 한 줄로 붙어 있으면 줄을 나눔."""
+    out = []
+    for line in (text or "").split("\n"):
+        if len(re.findall(r"(?:^|\s)[A-Z]{1,2}:\s", line)) >= 2:
+            line = _SPEAKER.sub("\n", line)
+        for part in line.split("\n"):
+            if re.search(r"[가-힣]", part) and not re.match(r"[A-Z]{1,2}:\s", part):  # 대화 한 줄 안은 나누지 않음
+                part = _KO_END.sub("\n", part)
+            part = _MARK.sub("\n", part)
+            if re.match(r"[〈<\[]보기", part) and part.count("①") and part.count("②"):
+                part = _NUM.sub("\n", part)
+            if "〈조건〉" in part or "<조건>" in part:
+                part = re.sub(r"\s+(?=[2-5]\.\s)", "\n", part)
+            out.append(part)
+    return "\n".join(out)
+
+
+def circle_options(body: str, choices: str, answer: str) -> tuple[str, str, str]:
+    """보기 번호가 ⓐ~ⓔ 인 선택지는 ①~⑤ 원 기호로 바꿈 (정답도 같이). 문장 이름표(ⓐ 문장)는 그대로."""
+    def conv(t):
+        return "".join(_LET2NUM.get(ch, ch) for ch in t)
+    if choices and "ⓐ" in choices and "ⓑ" in choices and "ⓐ" not in body and "①" not in choices:
+        return body, conv(choices), conv(answer)
+    if not choices and "ⓐ" in body and "ⓑ" in body and "①" not in body:
+        return conv(body), choices, conv(answer)
+    return body, choices, answer
+
+
 def display(q: BankQuestion) -> dict:
     """시험지에 찍을 모양: 발문 / 지문 / 문제 / 보기를 각각 따로 줄을 나눠서, 보기는 한 줄에 하나."""
     clean = lambda t: re.sub(r"\s*\(추정\)\s*$", "", (t or "").strip())
@@ -175,6 +210,9 @@ def display(q: BankQuestion) -> dict:
     if choices and choices[:20] in body:
         choices = ""
     answer = (q.answer or "").strip()
+    body, choices, answer = circle_options(body, choices, answer)
+    head, body = structure(head), structure(body)
+    passage = structure(passage)
     objective = is_objective(body, choices)
     lines = 0 if objective else (2 if len(answer) > 45 else 1)
     return {"id": q.id, "head": re.sub(r"_{2,}", BLANK, head), "passage": re.sub(r"_{2,}", BLANK, passage), "stem": body, "choices": choices,
@@ -208,3 +246,57 @@ def group_same_passage(items: list[dict]) -> list[dict]:
 
 def split_lines(text: str) -> list[str]:
     return [t for t in re.split(r"\n+", text) if t.strip()]
+
+
+def pick_questions(db: Session, items: list[tuple[str, str]], levels: list[str], n_obj: int, n_sub: int, per_item: dict | None = None,
+                   skip_unsure: bool = True, with_passage: bool = True) -> list[str]:
+    """고른 항목(대분류·세부)에서 조건에 맞는 문항을 무작위로 뽑아 id 목록으로.
+
+    per_item 이 있으면 항목마다 직접 정한 수, 없으면 객관식·주관식 수를 항목에 고르게 나눠 뽑음."""
+    import random as _r
+    pools = []
+    for cat, sub in items:
+        stmt = select(BankQuestion).where(BankQuestion.cat == cat, BankQuestion.review != "del")
+        if sub:
+            stmt = stmt.where(BankQuestion.subcat == sub)
+        if levels:
+            stmt = stmt.where(BankQuestion.level.in_(levels))
+        if skip_unsure:
+            stmt = stmt.where(BankQuestion.src != "확인 필요")
+        rows = db.execute(stmt.order_by(func.random()).limit(300)).scalars().all()
+        obj, sub_l = [], []
+        for q in rows:
+            d = display(q)
+            if not with_passage and (d["passage"] or len(d["stem"]) > 300):
+                continue
+            (obj if d["objective"] else sub_l).append(q.id)
+        pools.append({"obj": obj, "sub": sub_l})
+    chosen: list[str] = []
+
+    def take(kind, want_each):
+        for i, pool in enumerate(pools):
+            got = 0
+            while pool[kind] and got < want_each[i]:
+                chosen.append(pool[kind].pop())
+                got += 1
+            want_each[i] -= got
+
+    def spread(total):
+        k = len(pools) or 1
+        return [total // k + (1 if i < total % k else 0) for i in range(len(pools))]
+
+    if per_item:
+        for i, pool in enumerate(pools):
+            allq = pool["obj"] + pool["sub"]
+            _r.shuffle(allq)
+            chosen.extend(allq[: max(0, int(per_item.get(i, 0)))])
+    else:
+        for kind, total in (("obj", n_obj), ("sub", n_sub)):
+            want = spread(total)
+            take(kind, want)
+            rest = sum(want)  # 모자란 항목 몫은 다른 항목에서 채움
+            for pool in pools:
+                while rest > 0 and pool[kind]:
+                    chosen.append(pool[kind].pop())
+                    rest -= 1
+    return chosen
