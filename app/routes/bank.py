@@ -106,7 +106,8 @@ def cart_view(request: Request, teacher: Teacher = Depends(current_teacher), db:
     qs = [service.display(q) for q in _load(db, _cart(request))]
     classes = list(db.execute(select(ClassGroup).where(ClassGroup.academy_id == teacher.academy_id, ClassGroup.active.is_(True)).order_by(ClassGroup.name)).scalars())
     auto = sum(1 for q in qs if service.choice_number(q["answer"]) and q["objective"])
-    return render(request, "bank/cart.html", {"teacher": teacher, "qs": qs, "classes": classes, "auto": auto, "active": "grammar_bank", "max_cart": MAX_CART})
+    auto_text = sum(1 for q in qs if not q["objective"] and q["src"] != "확인 필요" and hspec.text_alts(q["answer"]))
+    return render(request, "bank/cart.html", {"teacher": teacher, "qs": qs, "classes": classes, "auto": auto, "auto_text": auto_text, "active": "grammar_bank", "max_cart": MAX_CART})
 
 
 @router.post("/cart")
@@ -227,8 +228,11 @@ async def make_homework(request: Request, teacher: Teacher = Depends(current_tea
     items, written = [], []
     for n, q in enumerate(qs, 1):
         k = service.choice_number(q["answer"]) if q["objective"] else None
+        alts = [] if (q["objective"] or q["src"] == "확인 필요") else hspec.text_alts(q["answer"])
         if k:
             items.append({"n": n, "a": k})
+        elif alts and f.get("auto_text") == "1":
+            items.append({"n": n, "a": alts[0], "alts": alts, "txt": True})
         else:
             written.append(n)
     tasks = []
@@ -248,5 +252,5 @@ async def make_homework(request: Request, teacher: Teacher = Depends(current_tea
     for cid in valid:
         db.add(HomeworkClass(homework_id=h.id, class_id=cid))
     db.commit()
-    flash(request, f"숙제를 냈어요. 자동 채점 {len(items)}문항" + (f", 서술형 {len(written)}문항은 종이 확인." if written and f.get("written") == "1" else "."))
+    flash(request, f"숙제를 냈어요. 자동 채점 {len(items)}문항(영어로 쓰는 {sum(1 for x in items if x.get('txt'))}문항 포함)" + (f", 서술형 {len(written)}문항은 종이 확인." if written and f.get("written") == "1" else "."))
     return _go(f"/homework/{h.id}")

@@ -14,7 +14,7 @@
 </form>
 <form method="post" action="/bank/homework" class="panel">
   <h2>숙제로 내기</h2>
-  <p class="small muted">보기를 고르는 문항 {{ auto }}개는 학생이 번호를 눌러 제출하면 자동 채점돼요. 번호는 시험지 번호와 같아요. 그 밖의 문항은 서술형이라 종이로 풀고 선생님이 확인합니다.</p>
+  <p class="small muted">보기를 고르는 문항 {{ auto }}개는 학생이 번호를 눌러 제출하면 자동 채점돼요. 번호는 시험지 번호와 같아요. 쓰는 문항 {{ auto_text }}개(짧은 영어 정답)는 학생이 칸에 직접 쓰면 정답과 비교해 채점해요. 대소문자·마침표는 무시하지만 철자가 다르거나 다른 표현으로 쓰면 오답이 되니, 정답이 하나로 정해진 문항에 알맞아요. 긴 영작처럼 정답이 여러 가지인 문항은 종이로 풀고 선생님이 확인합니다.</p>
   {% if classes %}
   <div class="row">
     <div class="field"><label for="hwtitle">숙제 이름</label><input type="text" id="hwtitle" name="title" value="문법 숙제"></div>
@@ -22,7 +22,8 @@
     <div class="field"><label for="pass">통과 점수(%)</label><input type="text" id="pass" name="pass" value="0" inputmode="numeric"></div>
   </div>
   <div class="field"><label>반</label>{% for c in classes %}<label style="font-weight:400;margin-right:12px"><input type="checkbox" name="class_id" value="{{ c.id }}"> {{ c.name }}</label>{% endfor %}</div>
-  <label style="font-weight:400"><input type="checkbox" name="written" value="1" checked> 서술형은 '종이 답안 확인' 할 일로 넣기</label><br>
+  <label style="font-weight:400"><input type="checkbox" name="auto_text" value="1" checked> 짧은 영어 정답은 학생이 직접 써서 자동 채점</label><br>
+  <label style="font-weight:400"><input type="checkbox" name="written" value="1" checked> 나머지 서술형은 '종이 답안 확인' 할 일로 넣기</label><br>
   <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" checked> 제출 후 정답 보여 주기</label>
   <p><button class="btn" type="submit">숙제로 내기</button></p>
   {% else %}<p class="muted">학생 명단에서 반을 먼저 만들어 주세요.</p>{% endif %}

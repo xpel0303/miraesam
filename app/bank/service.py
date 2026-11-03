@@ -134,19 +134,64 @@ def is_objective(stem: str, choices: str) -> bool:
     return bool(choices.strip()) or bool(re.search(r"[①②③④⑤]", stem)) or bool(re.search(r"(^|\n)[a-e]\.\s", stem)) or bool(re.search(r"[ⓐⓑⓒⓓⓔ]", stem))
 
 
+_SPLIT = re.compile(r"^(?P<head>[^A-Za-z〔]*?[가-힣][^A-Za-z〔]*?(?:시오|세요|하라|라|까|요|오)[.?:]|[^A-Za-z〔]*?[가-힣]\s*\?)\s+(?=[A-Z〔\"“'‘(\[])")
+
+
+def split_head(stem: str) -> tuple[str, str]:
+    """'발문 + 영어 지문/문장'이 한 줄로 붙은 본문을 발문과 지문으로 나눔."""
+    m = _SPLIT.match(stem or "")
+    if m and len(m.group("head")) >= 8 and len(stem) - m.end() >= 8:
+        return m.group("head").strip(), stem[m.end():].strip()
+    return "", stem
+
+
+_INSTR_SPLIT = re.compile(r"^((?:[^A-Za-z]|(?<![A-Za-z])[OXTF](?![A-Za-z])){6,}?[가-힣\)\]〉>][.?](?:\s*[\(（][^)）]{1,30}[\)）])?)\s+(?=[A-Za-z0-9\[〔“\"‘']|\([A-Za-z])")
+
+
+def split_instr(text: str, min_rest: int = 12) -> tuple[str, str]:
+    """'한글 발문. English …' 처럼 붙어 있으면 발문과 나머지(지문·문장)로 나눔."""
+    m = _INSTR_SPLIT.match((text or "").strip())
+    if m:
+        rest = text.strip()[m.end():].strip()
+        if len(rest) >= min_rest:
+            return m.group(1).strip(), rest
+    return (text or "").strip(), ""
+
+
 def display(q: BankQuestion) -> dict:
     """시험지에 찍을 모양: 발문·지문·본문·보기를 한 번씩만, 보기는 한 줄에 하나."""
     clean = lambda t: re.sub(r"\s*\(추정\)\s*$", "", (t or "").strip())
     stem, instr = _break_choices(q.stem), clean(q.instr)
     head = instr if instr and instr not in (q.stem or "") and not (q.stem or "").startswith(instr[:30]) else ""
+    raw = (q.stem or "").strip()
+    if instr and raw.startswith(instr) and len(raw) - len(instr) >= 3:  # 발문이 본문 앞에 그대로 붙은 경우
+        head, stem = instr, _break_choices(raw[len(instr):].strip())
+    elif not head or raw.startswith(instr[:30]):
+        h2, rest = split_head(raw)
+        if h2:
+            head, stem = h2, _break_choices(rest)
+    passage = (q.passage or "").strip()
+    h3, rest3 = split_head(instr)  # 발문 뒤에 지문이 붙어 있는 경우: 발문 / 지문 분리
+    if h3 and len(rest3) >= 20:
+        head = h3
+        passage = (passage + "\n" + rest3).strip() if passage else rest3
     head = re.sub(r"_{2,}", BLANK, head)
+    passage = re.sub(r"_{2,}", BLANK, (q.passage or "").strip())
+    if head:  # 발문에 지문이 붙어 있으면 따로 나눔
+        head, rest = split_instr(head)
+        if rest:
+            passage = (_break_choices(rest) + ("\n" + passage if passage else "")).strip()
+    elif stem and not passage:  # 본문 앞머리가 발문이면 발문과 본문을 나눔
+        h2, rest = split_instr(stem)
+        if rest:
+            head, stem = h2, _break_choices(rest)
     choices = _break_choices(q.choices)
     if choices and choices[:20] in stem:
         choices = ""
     answer = (q.answer or "").strip()
     objective = is_objective(stem, choices)
     lines = 0 if objective else (2 if len(answer) > 45 else 1)
-    return {"id": q.id, "head": head, "passage": re.sub(r"_{2,}", BLANK, (q.passage or "").strip()), "stem": stem, "choices": choices,
+    return {"id": q.id, "head": head, "passage": re.sub(r"_{2,}", BLANK, passage), "stem": stem, "choices": choices,
             "answer": answer, "expl": (q.expl or "").strip(), "src": q.src, "cat": q.cat, "subcat": q.subcat,
             "level": q.level, "review": q.review, "book": q.book, "page": q.page, "objective": objective, "lines": lines,
             "raw_stem": q.stem or "", "raw_instr": q.instr or "", "raw_choices": q.choices or ""}
