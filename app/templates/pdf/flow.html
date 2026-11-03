@@ -28,6 +28,7 @@
   table.br { width: 100%; border-collapse: separate; table-layout: fixed; }
   table.br td { border: 1.1pt solid var(--bx); vertical-align: top; text-align: left; }
   table.br td .h { display: block; text-align: center; font-weight: 800; }
+  table.br .bl + .bl { margin-top: 3pt; padding-top: 3pt; border-top: 0.6pt dotted #b8b8b8; }
   .res { text-align: left; display: inline-block; }
   .res .it:before { content: "□"; margin-right: 3pt; font-family: "Nanum Gothic"; }
   .comic img { width: 100%; border-radius: 8pt; display: block; }
@@ -67,7 +68,7 @@
       <div class="lab">분류와 구조화</div>
       <div style="text-align:center"><div class="box" style="display:inline-block;min-width:45%">{{ o.top }}</div></div>
       <div class="arrow"></div>
-      <table class="br"><tr>{% for b in o.branches %}<td><span class="h">[{{ b.head }}]</span>{{ b.body }}</td>{% endfor %}</tr></table>
+      <table class="br"><tr>{% for b in o.branches %}<td><span class="h">[{{ b.head }}]</span>{% for x in b.body.split(" / ") %}<div class="bl">{{ x }}</div>{% endfor %}</td>{% endfor %}</tr></table>
       <div class="arrow"></div>
       <div style="text-align:center"><div class="box" style="display:inline-block;min-width:70%"><div class="h">[{{ o.result.head }}]</div>
         <div class="res">{% for x in o.result["items"] %}<div class="it">{{ x }}</div>{% endfor %}</div></div></div>

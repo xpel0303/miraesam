@@ -20,7 +20,7 @@ def prompt(text: str, level: str = "", fix: list[str] | None = None) -> str:
              '  "title": "우리말 제목 (15자 안팎)",',
              '  "gist": "핵심 내용 — 지문의 주요 내용을 개조식으로 1~2줄 (60자 안팎, 쉼표로 이어도 됨)",',
              '  "top": "중심 화제 (짧게, 예: 세종의 업적)",',
-             '  "branches": [{"head": "갈래 이름 (예: 정치 안정)", "body": "그 갈래의 내용 (40자 안팎)"}, ... 2개 또는 3개],',
+             '  "branches": [{"head": "갈래 이름 (예: 정치 안정)", "body": "그 갈래의 내용 (40자 안팎. 두 대상을 비교하면 \"A: … / B: …\"처럼 / 로 나눔)"}, ... 2개 또는 3개],',
              '  "result": {"head": "결론·결과 칸 이름 (예: 문화 발달과 유교 질서 확립)", "items": ["항목", ... 2~4개, 짧게]},',
              '  "comic": [{"words": ["지문에 나온 중요 영어 단어", ... 1~2개], "ko": "이 칸 내용 우리말 한 줄 (25자 안팎)",',
              '             "scene": "English description of what to draw in this panel (characters, action, setting), 1~2 sentences"}, ... 정확히 4개]',
