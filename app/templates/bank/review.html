@@ -12,7 +12,7 @@
     <div class="field"><label for="cat">대분류</label>
       <select id="cat" name="cat"><option value="">전체</option>{% for c, n in fac.cats.items() %}<option value="{{ c }}" {% if f.cat == c %}selected{% endif %}>{{ c }} ({{ n }})</option>{% endfor %}</select></div>
     <div class="field"><label for="subcat">세부</label>
-      <select id="subcat" name="subcat"><option value="">전체</option>{% for c, subs in fac.subs.items() %}{% for s, n in subs %}<option value="{{ s }}" data-cat="{{ c }}" {% if f.subcat == s %}selected{% endif %}>{{ s }} ({{ n }})</option>{% endfor %}{% endfor %}</select></div>
+      <select id="subcat" name="subcat"><option value="">전체</option>{% for c, subs in fac.subs.items() %}{% for s, n in subs %}<option value="{{ s }}" data-cat="{{ c }}" {% if f.subcat == s %}selected{% endif %}>{{ s or "(세부 미분류)" }} ({{ n }})</option>{% endfor %}{% endfor %}</select></div>
     <div class="field"><label for="level">난이도</label>
       <select id="level" name="level"><option value="">전체</option>{% for l in ["하","중","상"] %}<option {% if f.level == l %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
   </div>
