@@ -16,6 +16,11 @@
   .ln { border-bottom: 0.6pt solid var(--ink-3); height: 16pt; margin-left: 20pt; text-indent: 0; }
   .bl { display: inline-block; min-width: 46pt; border-bottom: 0.7pt solid var(--ink); text-indent: 0; }
   .bl i { font-style: normal; color: var(--ink-3); font-size: 8pt; }
+  .pbox { border: 1pt solid var(--brand); border-radius: 8pt; margin: 0 0 12pt; padding: 0 10pt 6pt; box-decoration-break: clone; }
+  .pbox .ptitle { margin: 0 -10pt 6pt; padding: 4pt 10pt; background: var(--brand); color: #fff; border-radius: 7pt 7pt 0 0; font-size: 10.5pt; }
+  .pbox .stem:first-of-type { margin-top: 6pt; }
+  .ans .pbox { border-color: var(--line); padding-bottom: 4pt; }
+  .ans .pbox .ptitle { background: var(--fill); color: var(--brand); }
   .ans { break-before: page; }
   .ans .it { margin-bottom: 3pt; font-size: 8.8pt; }
 {% endblock %}
@@ -23,8 +28,8 @@
 <div class="head"><h1>{{ s.title }}</h1><div class="info"><span>반:</span><span>이름:</span><span>점수:</span></div></div>
 
 {% set ns = namespace(n=0) %}
-{% for g in groups %}
-  {% if groups|length > 1 %}<div class="ptitle">{{ g.title }}</div>{% endif %}
+{% for g in groups %}{% if g.sections %}
+  <div class="pbox"><div class="ptitle">{{ g.title }}</div>
   {% for sec in g.sections %}
     <div class="stem"><span class="tag">{{ types[sec.type] }}</span>{{ stems[sec.type] }}</div>
     {% for q in sec["items"] %}
@@ -37,14 +42,15 @@
       {% endif %}
     {% endfor %}
   {% endfor %}
-{% endfor %}
+  </div>
+{% endif %}{% endfor %}
 
 <div class="ans">
   <h1>정답</h1>
   <div class="sub">{{ s.title }}</div>
   {% set ns.n = 0 %}
-  {% for g in groups %}
-    {% if groups|length > 1 %}<div class="ptitle">{{ g.title }}</div>{% endif %}
+  {% for g in groups %}{% if g.sections %}
+    <div class="pbox"><div class="ptitle">{{ g.title }}</div>
     {% for sec in g.sections %}
       <div class="stem"><span class="tag">{{ types[sec.type] }}</span></div>
       {% for q in sec["items"] %}
@@ -55,6 +61,7 @@
           {% else %}{{ q.en }}{% endif %}</div>
       {% endfor %}
     {% endfor %}
-  {% endfor %}
+    </div>
+  {% endif %}{% endfor %}
 </div>
 {% endblock %}
