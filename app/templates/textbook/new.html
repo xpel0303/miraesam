@@ -16,6 +16,11 @@
     </div>
     <div class="field"><label>넣을 워크북</label>
       <div class="actions">{% for k, name, _ in spec.SECTIONS %}<label style="font-weight:400;margin:0 12px 4px 0"><input type="checkbox" name="sections" value="{{ k }}" {% if k in form.sections %}checked{% endif %}> {{ loop.index }} {{ name }}</label>{% endfor %}</div></div>
+    <div class="field" style="margin-top:8px"><label>PDF 순서 <span class="hint">어느 쪽이든 지문마다 새 쪽에서 시작해요</span></label>
+      <div class="seg" role="radiogroup" aria-label="PDF 순서" style="max-width:520px">
+        <label><input type="radio" name="order" value="type" {% if (form.order or "type") != "passage" %}checked{% endif %}>유형별 (1단계 모든 지문 → 2단계 …)</label>
+        <label><input type="radio" name="order" value="passage" {% if form.order == "passage" %}checked{% endif %}>지문별 (지문 1의 1~10단계 → 지문 2 …)</label>
+      </div></div>
     <label style="font-weight:400"><input type="checkbox" name="show_key" value="1" {% if form.show_key %}checked{% endif %}> 맨 뒤에 정답(Answer Key) 넣기</label>
   </section>
   <div id="passages">

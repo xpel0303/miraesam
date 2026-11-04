@@ -42,6 +42,16 @@
   .key { columns: 2; column-gap: 14pt; font-size: 8.4pt; line-height: 1.55; }
   .key h3 { font-size: 9.5pt; color: var(--gr); margin: 6pt 0 3pt; break-after: avoid; }
   .key div { break-inside: avoid; }
+  .key h3.kp { color: var(--ink); border-bottom: 0.8pt solid var(--gr); padding-bottom: 1pt; margin-top: 8pt; }
+  .key .kh { font-weight: 800; color: var(--gr); margin: 3pt 0 1pt; }
+  .pban { display: flex; align-items: center; gap: 8pt; background: var(--gr); color: #fff; border-radius: 8pt; padding: 5pt 10pt; font-weight: 800; font-size: 12pt; margin-bottom: 8pt; }
+  .pban .k { background: #fff; color: var(--gr); border-radius: 50%; width: 16pt; height: 16pt; line-height: 16pt; text-align: center; font-size: 10pt; }
+  .pban .bk { margin-left: auto; font-size: 8.5pt; font-weight: 700; opacity: .9; }
+  .sub { margin: 0 0 10pt; }
+  .sbar { display: flex; align-items: center; gap: 6pt; border-bottom: 1pt solid var(--gr); padding-bottom: 3pt; margin: 10pt 0 6pt; break-after: avoid; }
+  .sbar .wb { background: #f6e9a8; border-radius: 8pt; padding: 1pt 8pt; font-size: 8.5pt; font-weight: 700; }
+  .sbar .nm { color: var(--gr); font-weight: 800; font-size: 10.5pt; }
+  .sub .ins { break-after: avoid; }
 {% endblock %}
 
 {% macro bar(k, name) %}
@@ -51,14 +61,7 @@
 {% macro blanks(parts) %}{% for x in parts %}{% if x.hit %}<span class="bl"></span>{% else %}{{ x.t }}{% endif %}{% endfor %}{% endmacro %}
 {% macro head(p, i) %}<div class="ph"><span class="k">{{ i }}</span>{{ p.title or ("문단 " ~ i) }}</div>{% endmacro %}
 
-{% block body %}
-{% set ns = namespace(first=true) %}
-{% for key, name, ins in sections %}{% set wk = spec.SECTION_KEYS.index(key) + 1 %}
-<div class="sec{% if ns.first %} first{% endif %}">{% set ns.first = false %}
-  {{ bar(wk, name) }}
-  <p class="ins">{{ ins }}</p>
-  {% for p in passages %}{% set pi = loop.index %}
-    {% if key not in ("s7", "s10") %}{{ head(p, pi) }}{% endif %}
+{% macro content(key, p, pi) %}
     {% if key == "s1" %}
       <table class="two">{% for r in p.rows %}<tr><td class="e"><b style="color:var(--gr)">{{ r.no }}</b> {{ mk(spec.marked(r.en, r.en_blanks)) }}</td><td class="k">{{ mk(spec.blanked_ko(r.ko, r.ko_blanks), "hitk") }}</td></tr>{% endfor %}</table>
     {% elif key == "s2" %}
@@ -84,25 +87,59 @@
       {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.ko }}</div>{% if r.keywords %}<div class="kw">{{ r.keywords|join(", ") }}</div>{% endif %}
         <div class="wl">{% for _ in range(spec.word_count(r.en)) %}<span></span>{% endfor %}</div></div>{% endfor %}
     {% elif key == "s10" %}
-      {{ head(p, pi) }}
       <table class="chk"><tr><td class="e">{% for line in p.check %}{% for x in line %}{% if x.hit %}{% if x.blank %}<span class="bl"></span>{% else %}<b>{{ x.t }}</b>{% endif %}<sup class="n">{{ x.no }})</sup>{% else %}{{ x.t }}{% endif %}{% endfor %} {% endfor %}</td>
         <td class="k">{% for r in p.rows %}{{ r.ko }} {% endfor %}</td></tr></table>
     {% endif %}
+{% endmacro %}
+
+{% block body %}
+{% set ns = namespace(first=true) %}
+{% if order == "passage" %}
+{# 지문별: 지문 하나마다 새 쪽 → 그 지문의 워크북 1~10단계를 이어서 #}
+{% for p in passages %}{% set pi = loop.index %}
+<div class="sec{% if loop.first %} first{% endif %}">
+  <div class="pban"><span class="k">{{ pi }}</span>{{ p.title or ("문단 " ~ pi) }}<span class="bk">Lesson {{ s.options.lesson or "" }} · {{ s.options.book or s.title }}</span></div>
+  {% for key, name, ins in sections %}{% set wk = spec.SECTION_KEYS.index(key) + 1 %}
+  <div class="sub">
+    <div class="sbar"><span class="wb">워크북 {{ wk }}</span><span class="nm">{{ name }}</span></div>
+    <p class="ins">{{ ins }}</p>
+    {{ content(key, p, pi) }}
+  </div>
   {% endfor %}
 </div>
 {% endfor %}
+{% else %}
+{# 유형별: 워크북 1단계의 모든 지문 → 2단계 … (지문마다 새 쪽) #}
+{% for key, name, ins in sections %}{% set wk = spec.SECTION_KEYS.index(key) + 1 %}
+  {% for p in passages %}{% set pi = loop.index %}
+  <div class="sec{% if ns.first %} first{% endif %}">{% set ns.first = false %}
+    {{ bar(wk, name) }}
+    <p class="ins">{{ ins }}</p>
+    {{ head(p, pi) }}
+    {{ content(key, p, pi) }}
+  </div>
+  {% endfor %}
+{% endfor %}
+{% endif %}
 
 {% if show_key %}
 <div class="sec">
   {{ bar("", "Answer Key") }}
   <div class="key">
-  {% for key, name, _ in sections %}{% set wk = spec.SECTION_KEYS.index(key) + 1 %}
-    {% if key != "s1" %}
-    <h3>워크북 {{ wk }} {{ name }}</h3>
-    {% if key == "s7" %}{% for a in answers.s7 %}<div>{{ loop.index }}) {{ a }}</div>{% endfor %}
-    {% else %}{% for a in answers[key] %}{% if a %}<div>{{ loop.index }}) {{ a }}</div>{% endif %}{% endfor %}{% endif %}
-    {% endif %}
-  {% endfor %}
+  {% if order == "passage" %}
+    {% for p in passages %}{% set pi = loop.index %}
+    <h3 class="kp">{{ pi }}. {{ p.title or ("문단 " ~ pi) }}</h3>
+    {% for key, name, _ in sections %}{% if key != "s1" %}{% set rows = answers[key]|selectattr("pi", "equalto", pi)|list %}{% if rows %}
+      <div class="kh">워크북 {{ spec.SECTION_KEYS.index(key) + 1 }} {{ name }}</div>
+      {% for a in rows %}{% if a.t %}<div>{{ a.no }}) {{ a.t }}</div>{% endif %}{% endfor %}
+    {% endif %}{% endif %}{% endfor %}
+    {% endfor %}
+  {% else %}
+    {% for key, name, _ in sections %}{% if key != "s1" %}
+    <h3>워크북 {{ spec.SECTION_KEYS.index(key) + 1 }} {{ name }}</h3>
+    {% for a in answers[key] %}{% if a.t %}<div>{{ a.no }}) {{ a.t }}</div>{% endif %}{% endfor %}
+    {% endif %}{% endfor %}
+  {% endif %}
   </div>
 </div>
 {% endif %}

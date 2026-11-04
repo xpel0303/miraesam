@@ -50,19 +50,19 @@ def _one(key, model, p: dict, level: str) -> dict:
 
 
 def _answers(s: TextbookSet, ps: list[dict]) -> dict:
-    """섹션별 정답 목록 (번호 순서)."""
-    rows = [r for p in ps for r in p["rows"]]
+    """섹션별 정답 [{no, t, pi(지문 번호, 1부터)}] (번호 순서)."""
     ans = {k: [] for k in spec.SECTION_KEYS}
-    for r in rows:
-        ans["s2"].append(" / ".join(r["ko_blanks"]))
-        ans["s3"].append(" / ".join(p["t"] for p in spec.marked(r["en"], r["en_blanks"]) if p["hit"]))
-        ans["s4"].append(r["ko"])
-        ans["s5"].append(" / ".join(p["t"] for p in spec.marked(r["en"], [v["text"] for v in r["verbs"]]) if p["hit"]))
-        ans["s6"].append(" / ".join(x["ans"] for x in spec.grammar_line(r["en"], r["grammar"]) if x.get("hit")))
-        ans["s8"].append(r["en"])
-        ans["s9"].append(r["en"])
-    for p in ps:
-        ans["s7"].append(" / ".join(f"{o['wrong']} → {o['text']}" for o in p["odd"]))
+    for pi, p in enumerate(ps, 1):
+        for r in p["rows"]:
+            add = lambda k, t: ans[k].append({"no": r["no"], "t": t, "pi": pi})  # noqa: E731
+            add("s2", " / ".join(r["ko_blanks"]))
+            add("s3", " / ".join(x["t"] for x in spec.marked(r["en"], r["en_blanks"]) if x["hit"]))
+            add("s4", r["ko"])
+            add("s5", " / ".join(x["t"] for x in spec.marked(r["en"], [v["text"] for v in r["verbs"]]) if x["hit"]))
+            add("s6", " / ".join(x["ans"] for x in spec.grammar_line(r["en"], r["grammar"]) if x.get("hit")))
+            add("s8", r["en"])
+            add("s9", r["en"])
+        ans["s7"].append({"no": pi, "t": " / ".join(f"{o['wrong']} → {o['text']}" for o in p["odd"]), "pi": pi})
     return ans
 
 
@@ -81,20 +81,22 @@ def render_textbook_pdf(ctx: JobContext, set_id: int) -> dict:
             k += 1
             r["no"] = k
     # Check(s10) 줄은 번호가 이어지게 미리 만듦
-    no, check_ans = 1, []
-    for p in ps:
+    no, check_ans, check_pi = 1, [], []
+    for pi, p in enumerate(ps, 1):
         by_n = {o["n"]: o for o in p["odd"]}
         p["check"] = []
         for r in p["rows"]:
             line, no = spec.check_line(r, by_n.get(r["n"]), no, check_ans)
             p["check"].append(line)
+        check_pi += [pi] * (len(check_ans) - len(check_pi))
     ans = _answers(s, ps)
-    ans["s10"] = check_ans
+    ans["s10"] = [{"no": i, "t": t, "pi": pi} for i, (t, pi) in enumerate(zip(check_ans, check_pi), 1)]
     ctx.step("PDF 만드는 중", 90)
     o = s.options or {}
     pdf = render_pdf("pdf/textbook.html", {"academy": academy, "s": s, "passages": ps, "doc_title": s.title, "spec": spec,
                                            "sections": [x for x in spec.SECTIONS if x[0] in (o.get("sections") or spec.SECTION_KEYS)],
-                                           "answers": ans, "show_key": o.get("show_key", True)})
+                                           "answers": ans, "show_key": o.get("show_key", True),
+                                           "order": "passage" if o.get("order") == "passage" else "type"})
     fid = ctx.save_file(f"{s.title}_본문워크북.pdf", "application/pdf", pdf)
     with session_scope() as db:
         row = db.get(TextbookSet, set_id)

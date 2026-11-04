@@ -49,7 +49,7 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher)):
-    return render(request, "textbook/new.html", {"teacher": teacher, "form": {"passages": [{}], "sections": spec.SECTION_KEYS, "show_key": True},
+    return render(request, "textbook/new.html", {"teacher": teacher, "form": {"passages": [{}], "sections": spec.SECTION_KEYS, "show_key": True, "order": "type"},
                                                  "spec": spec, "levels": LEVELS, "active": "textbook"})
 
 
@@ -77,7 +77,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 먼저 넣어 주세요.")
     level = str(f.get("level") or "")
     options = {"lesson": str(f.get("lesson", "")).strip()[:20], "book": str(f.get("book", "")).strip()[:60],
-               "level": level if level in LEVELS else "", "sections": sections, "show_key": f.get("show_key") == "1"}
+               "level": level if level in LEVELS else "", "sections": sections, "show_key": f.get("show_key") == "1",
+               "order": "passage" if f.get("order") == "passage" else "type"}
     if errors:
         form = {"title": title, **options, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)] or [{}]}
         return render(request, "textbook/new.html", {"teacher": teacher, "form": form, "errors": errors, "spec": spec, "levels": LEVELS,
@@ -140,7 +141,8 @@ async def rerender(sid: int, request: Request, teacher: Teacher = Depends(curren
     if not _busy(db, s):
         f = await request.form()
         sections = [k for k in spec.SECTION_KEYS if k in f.getlist("sections")] or (s.options or {}).get("sections") or spec.SECTION_KEYS
-        s.options = {**(s.options or {}), "sections": sections, "show_key": f.get("show_key") == "1"}
+        s.options = {**(s.options or {}), "sections": sections, "show_key": f.get("show_key") == "1",
+                     "order": "passage" if f.get("order") == "passage" else "type"}
         _start(db, s, teacher, "textbook_render", f"본문 워크북 PDF 다시 만들기 · {s.title}")
     return _go(f"/textbook/{sid}")
 

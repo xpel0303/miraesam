@@ -13,6 +13,11 @@
   {% if not busy %}
   {% if all_done %}<form method="post" action="/textbook/{{ s.id }}/render">
     <div class="actions" style="margin-bottom:6px">{% for k, name, _ in spec.SECTIONS %}<label class="small" style="font-weight:400;margin:0 10px 4px 0"><input type="checkbox" name="sections" value="{{ k }}" {% if k in (s.options.sections or spec.SECTION_KEYS) %}checked{% endif %}> {{ loop.index }} {{ name }}</label>{% endfor %}</div>
+    <div class="field" style="margin:4px 0 8px"><label>PDF 순서 <span class="hint">어느 쪽이든 지문마다 새 쪽에서 시작해요</span></label>
+      <div class="seg" role="radiogroup" aria-label="PDF 순서" style="max-width:520px">
+        <label><input type="radio" name="order" value="type" {% if (s.options.order or "type") != "passage" %}checked{% endif %}>유형별 (1단계 모든 지문 → 2단계 …)</label>
+        <label><input type="radio" name="order" value="passage" {% if s.options.order == "passage" %}checked{% endif %}>지문별 (지문 1의 1~10단계 → 지문 2 …)</label>
+      </div></div>
     <label class="small" style="font-weight:400"><input type="checkbox" name="show_key" value="1" {% if s.options.show_key %}checked{% endif %}> 정답 넣기</label>
     <button class="btn {{ '' if s.options.dirty else 'ghost' }} small" type="submit">PDF 다시 만들기</button></form>
   {% else %}<form method="post" action="/textbook/{{ s.id }}/retry"><button class="btn small" type="submit">못 만든 문단 이어서 만들기</button></form>{% endif %}
