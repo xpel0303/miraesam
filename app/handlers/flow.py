@@ -1,6 +1,9 @@
 """흐름분석 작업: 지문마다 우리말 구조화(AI) → 네 컷 만화(그림 모델) → A4 가로 PDF."""
 import base64
 import copy
+import io
+
+from PIL import Image
 
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -12,9 +15,14 @@ from ..models import Academy, FlowSet, StoredFile
 from ..pdf import first_fit, render_pdf
 from .analysis import _shrink
 
-# 글씨 크기 고를 때는 진짜 그림 대신 같은 비율(정사각형)의 아주 작은 그림을 넣음.
-# 진짜 그림(장당 수백 KB)을 지문 수 × 크기 단계만큼 복사해 그리면 무료 서버 메모리(512MB)가 넘쳐 서버가 다시 시작됨.
-_SQUARE = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEklEQVR4nGP4+PEjAwwwkcoBAG8eBcUVrMUoAAAAAElFTkSuQmCC")
+def _stand_in(w: int, h: int) -> str:
+    """글씨 크기 고를 때 진짜 그림 대신 넣는 같은 크기(가로×세로)의 빈 그림 (SVG, 몇 바이트).
+    진짜 그림(장당 수백 KB)을 지문 수 × 크기 단계만큼 복사해 그리면 무료 서버 메모리(512MB)가 넘침.
+    크기가 다르면 맞춘 글씨 크기가 틀려 한 쪽을 넘김 → 반드시 진짜 그림과 같은 가로·세로로."""
+    svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}"><rect width="{w}" height="{h}" fill="#ddd"/></svg>'
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+
+
 LEVELS = 10  # pdf/flow.html 의 SCALES 개수 (0 = 가장 크게)
 
 
@@ -79,7 +87,13 @@ def _with_images(passages: list[dict]) -> list[dict]:
     out = []
     for p in passages:
         f = files.get(p.get("img"))
-        out.append({**p, "img_src": f"data:{f[0]};base64,{base64.b64encode(f[1]).decode()}" if f else None})
+        wh = None
+        if f:
+            try:
+                wh = Image.open(io.BytesIO(f[1])).size
+            except Exception:  # noqa: BLE001
+                wh = (1024, 1024)
+        out.append({**p, "img_src": f"data:{f[0]};base64,{base64.b64encode(f[1]).decode()}" if f else None, "img_wh": wh})
     return out
 
 
@@ -94,7 +108,7 @@ def render_flow_pdf(ctx: JobContext, set_id: int) -> dict:
         raise llm.LLMError("PDF에 넣을 지문이 없습니다.")
     ctx.step("한 쪽에 맞게 글자 크기 고르는 중", 88)
     base = {"academy": academy, "s": s, "doc_title": s.title}
-    light = [{**p, "img_src": _SQUARE if p.get("img_src") else None} for p in ps]
+    light = [{**p, "img_src": _stand_in(*p["img_wh"]) if p.get("img_src") else None} for p in ps]
     for start in range(0, len(ps), 3):  # 몇 개씩 나눠서 (한 번에 다 그리면 메모리가 쌓임)
         groups = [[{**base, "passages": [{**p, "z": z}]} for z in range(LEVELS)] for p in light[start:start + 3]]
         for p, z in zip(ps[start:start + 3], first_fit("pdf/flow.html", groups)):

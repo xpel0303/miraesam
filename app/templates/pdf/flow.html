@@ -44,7 +44,7 @@
   table.br .bl + .bl { margin-top: 3pt; padding-top: 3pt; border-top: 0.6pt dotted #b8b8b8; }
   .res { text-align: left; display: inline-block; }
   .res .it:before { content: "□"; margin-right: 3pt; font-family: "Nanum Gothic"; }
-  .comic img { width: 100%; border-radius: 8pt; display: block; }
+  .comic img { width: auto; height: auto; max-width: 100%; max-height: 122mm; border-radius: 8pt; display: block; margin: 0 auto; }
   table.cap { width: 100%; border-collapse: separate; table-layout: fixed; }
   table.cap td { border: 0.8pt solid #d8dee8; border-radius: 6pt; vertical-align: top; background: #f7f9fc; }
   table.cap .w { font-weight: 800; color: var(--bl); }
@@ -66,7 +66,6 @@
   .z{{ k }} table.cap td { font-size: {{ 9 * x }}pt; padding: {{ 4 * x }}pt {{ 6 * x }}pt; }
   .z{{ k }} table.fb { border-spacing: {{ 6 * x }}pt; } .z{{ k }} table.fb td { height: {{ [58, 52 * x]|min }}mm; font-size: {{ 10 * x }}pt; padding: {{ 6 * x }}pt; }
   .z{{ k }} table.fb .w { font-size: {{ 14 * x }}pt; margin-bottom: {{ 4 * x }}pt; }
-  .z{{ k }} .comic img { max-height: {{ [150, 150 * x]|min }}mm; width: auto; max-width: 100%; margin: 0 auto; }
   {% endfor %}
 {% endblock %}
 
