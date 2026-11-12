@@ -336,14 +336,30 @@ def exam_items(words: list[dict], n_mc: int, n_sa: int, shuffle: bool, seed: int
     meanings = [x["meaning"] for x in pool]
     words_en = [x["word"] for x in pool]
     keys = list(groups)
+
+    def fit(mc_n: int, sa_n: int, avail: int, can_sa: int) -> tuple[int, int]:
+        """단어가 모자라면 객관식·주관식을 정한 비율대로 줄임 (주관식은 예문 빈칸이 되는 단어 수까지)."""
+        sa_n = min(sa_n, can_sa)
+        if mc_n + sa_n > avail and mc_n + sa_n:
+            total = avail
+            sa_new = min(sa_n, round(total * sa_n / (mc_n + sa_n)))
+            if mc_n and total > 1 and sa_new >= total:
+                sa_new = total - 1
+            sa_n, mc_n = sa_new, min(mc_n, total - sa_new)
+        return mc_n, sa_n
+
     if not (per_src and by_src):
+        n_mc, n_sa = fit(n_mc, n_sa, len(pool), len([w for w in pool if exam_blank(w)]))
         sa_split = _split(n_sa, [len([w for w in groups[g] if exam_blank(w)]) for g in keys])
         mc_split = _split(n_mc, [len(groups[g]) - sa_split[i] for i, g in enumerate(keys)])
     out, k = [], 0
     for gi, src in enumerate(keys):
         ws = groups[src]
         ws = rng.sample(ws, len(ws)) if shuffle else list(ws)
-        want_sa, want_mc = (n_sa, n_mc) if per_src and by_src else (sa_split[gi], mc_split[gi])
+        if per_src and by_src:
+            want_mc, want_sa = fit(n_mc, n_sa, len(ws), len([w for w in ws if exam_blank(w)]))
+        else:
+            want_sa, want_mc = sa_split[gi], mc_split[gi]
         sa_w = [w for w in ws if exam_blank(w)][:want_sa]
         rest = [w for w in ws if w not in sa_w][:want_mc]
         mc = []

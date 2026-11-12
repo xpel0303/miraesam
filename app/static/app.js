@@ -50,6 +50,7 @@ function watchJob(el) {
       } else if (r.reply) {
         out.innerHTML = `<p style="margin:6px 0 0">${escapeHtml(r.reply)}</p><span class="muted">모델: ${escapeHtml(r.model || "")}</span>`;
       }
+      if (r.note) out.insertAdjacentHTML("beforeend", `<p class="small" style="margin:6px 0 0;color:var(--warn, #b26b00)">${escapeHtml(r.note)}</p>`);
       el.dispatchEvent(new CustomEvent("job:done", { detail: j, bubbles: true }));
       return;
     }

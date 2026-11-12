@@ -92,11 +92,16 @@ def make_pdf(ctx: JobContext) -> dict:
     if p.get("kind") == "test":
         mode = p.get("mode", "en_ko")
         key = p.get("key", "end")
+        note = ""
         if mode == "exam":
             groups = spec.exam_items(words, int(p.get("mc", 10)), int(p.get("sa", 5)), p.get("shuffle", True), p.get("seed") or 1,
                                      p.get("by_src", True), p.get("srcs"), p.get("per_src", False))
             if not any(g["mc"] or g["sa"] for g in groups):
                 raise llm.LLMError("낼 문제가 없어요. 객관식·주관식 문항 수를 확인해 주세요.")
+            got_mc, got_sa = sum(len(g["mc"]) for g in groups), sum(len(g["sa"]) for g in groups)
+            if not p.get("per_src") and (got_mc < int(p.get("mc", 10)) or got_sa < int(p.get("sa", 5))):
+                note = (f"단어가 모자라 객관식 {got_mc} · 주관식 {got_sa}문제로 줄였어요 "
+                        f"(정한 수: 객관식 {p.get('mc', 10)} · 주관식 {p.get('sa', 5)}, 주관식은 예문이 있는 단어만).")
             tpl = "pdf/vocab_exam.html"
             ctxv = {"academy": academy, "title": title, "groups": groups, "doc_title": f"{title} · 단어 시험지",
                     "date": datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y. %m. %d."), "circled": spec.CIRCLED, "pages": p.get("layout") == "pages"}
@@ -114,9 +119,11 @@ def make_pdf(ctx: JobContext) -> dict:
             key_pdf = render_pdf(tpl, {**ctxv, "part": "key", "doc_title": f"{title} · 정답지"})
             files = [{"file_id": ctx.save_file(f"{title}_단어시험.pdf", "application/pdf", test_pdf), "filename": f"{title}_단어시험.pdf"},
                      {"file_id": ctx.save_file(f"{title}_단어시험_정답지.pdf", "application/pdf", key_pdf), "filename": f"{title}_단어시험_정답지.pdf"}]
-            return {**files[0], "files": files}
+            return {**files[0], "files": files, "note": note}
         pdf = render_pdf(tpl, {**ctxv, "part": "test" if key == "none" else "all"})
         name = f"{title}_단어시험.pdf"
+        fid = ctx.save_file(name, "application/pdf", pdf)
+        return {"file_id": fid, "filename": name, "note": note}
     else:
         ctx.step("단어장 만드는 중", 60)
         pdf = render_pdf("pdf/vocab_list.html", {"academy": academy, "title": title, "words": words, "doc_title": f"{title} · 단어장", "today": today,
