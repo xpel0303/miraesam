@@ -89,7 +89,15 @@ def make_pdf(ctx: JobContext) -> dict:
         title, words = wl.title, [w for w in wl.words if w.get("word")]
     today = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
 
-    if p.get("kind") == "test":
+    if p.get("kind") == "test" and p.get("mode") == "exam":
+        groups = spec.exam_items(words, int(p.get("count") or len(words)), p.get("shuffle", True), p.get("seed") or 1, p.get("by_src", True),
+                                 p.get("srcs"), p.get("per_src", False))
+        ctx.step("시험지 만드는 중", 60)
+        date = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y. %m. %d.")
+        pdf = render_pdf("pdf/vocab_exam.html", {"academy": academy, "title": title, "groups": groups, "doc_title": f"{title} · 단어 시험지",
+                                                 "date": date, "circled": spec.CIRCLED, "pages": p.get("layout") == "pages"})
+        name = f"{title}_단어시험.pdf"
+    elif p.get("kind") == "test":
         mode = p.get("mode", "en_ko")
         groups = spec.test_items(words, mode, int(p.get("count") or len(words)), p.get("shuffle", True), p.get("seed") or 1, p.get("by_src", True),
                                  p.get("srcs"), p.get("per_src", False))

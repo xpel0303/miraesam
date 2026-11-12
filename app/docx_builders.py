@@ -190,6 +190,8 @@ def vocab_test_docx(wl, academy, opts: dict, shuffle: bool, seed: int):
 
     mode = opts["mode"]
     pages = opts.get("layout") == "pages"
+    if mode == "exam":
+        return _vocab_exam_docx(wl, academy, opts, shuffle, seed)
     groups = vs.test_items(wl.words, mode, opts["count"], shuffle, seed, opts["by_src"], opts.get("srcs"), opts.get("per_src", False))
     total = sum(len(g["qs"]) for g in groups)
     doc = Doc(academy, f"{wl.title} · 단어 시험")
@@ -229,6 +231,71 @@ def vocab_test_docx(wl, academy, opts: dict, shuffle: bool, seed: int):
     doc.title("정답", f"{wl.title} 단어 시험")
     for k in key:
         doc.para(k, size=9, space_after=1, bold=k.startswith("■"))
+    return doc.response(f"{wl.title}_단어시험.docx")
+
+
+def _vocab_exam_docx(wl, academy, opts: dict, shuffle: bool, seed: int):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from .vocab import spec as vs
+
+    pages = opts.get("layout") == "pages"
+    groups = vs.exam_items(wl.words, opts["count"], shuffle, seed, opts["by_src"], opts.get("srcs"), opts.get("per_src", False))
+    date = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y. %m. %d.")
+    doc = Doc(academy, f"{wl.title} · 단어 시험지")
+
+    def head(sub, gs):
+        nm, ns = sum(len(g["mc"]) for g in gs), sum(len(g["sa"]) for g in gs)
+        doc.title(f"{wl.title}{' · ' + sub if sub else ''} 단어 시험지", f"총 {nm + ns}문제 (객관식 {nm} · 주관식 {ns}) · {date}")
+        doc.para("이름: ________      번호/학번: ________      점수: ________", size=10, space_after=8)
+
+    def mc(items, k):
+        for i, q in enumerate(items, k + 1):
+            doc.para(f"{i}. {q['stem']} [ {q['show']} ]", size=10, space_after=1, keep=True)
+            doc.para("    ".join(f"{vs.CIRCLED[j]} {c}" for j, c in enumerate(q["choices"])), size=10, space_after=6)
+
+    def sa(items, k):
+        for i, q in enumerate(items, k + 1):
+            doc.para(f"{i}. {q['sent']}", size=10, space_after=1, keep=True)
+            if q["ko"]:
+                doc.para(f"해석: {q['ko']}", size=8.5, color=INK_3, space_after=1, keep=True)
+            doc.para("답: ______________________", size=10, space_after=8)
+
+    blocks = groups if pages else [{"src": "", "mc": [q for g in groups for q in g["mc"]], "sa": [q for g in groups for q in g["sa"]]}]
+    for gi, g in enumerate(groups if pages else [None]):
+        if pages:
+            if gi:
+                doc.page_break()
+            head(g["src"], [g])
+            gs = [g]
+        else:
+            head("", groups)
+            gs = groups
+        for key, label, fn in (("mc", "객관식", mc), ("sa", "주관식 (빈칸에 알맞은 단어 쓰기)", sa)):
+            if not any(x[key] for x in gs):
+                continue
+            doc.para(label, bold=True, size=11, color=INK_3, space_after=4)
+            k = 0
+            for x in gs:
+                if x[key]:
+                    if not pages and len(gs) > 1 and x["src"]:
+                        doc.para(f"■ {x['src']}", bold=True, size=10, space_after=3)
+                    fn(x[key], k)
+                    k += len(x[key])
+    doc.page_break()
+    doc.title(f"{wl.title} 정답지", f"선생님용 · {date}")
+    for b in blocks:
+        if b["src"]:
+            doc.para(f"■ {b['src']}", bold=True, size=10, space_after=3)
+        if b["mc"]:
+            doc.para("객관식 정답", bold=True, color=INK_3, space_after=2)
+            for i, q in enumerate(b["mc"], 1):
+                doc.para(f"{i}번: {q['answer']}", size=10, space_after=0)
+        if b["sa"]:
+            doc.para("주관식 정답", bold=True, color=INK_3, space_after=2)
+            for i, q in enumerate(b["sa"], 1):
+                doc.para(f"{i}번: {q['answer']}", size=10, space_after=0)
     return doc.response(f"{wl.title}_단어시험.docx")
 
 

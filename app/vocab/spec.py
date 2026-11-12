@@ -151,6 +151,7 @@ def grade(words: list[dict], mode: str, idx: int, given: str) -> bool:
 # ---------------------------------------------------------------- 종이 시험지
 
 TEST_MODES = {
+    "exam": "실전형: 객관식(뜻·유의어·단어 고르기) + 주관식(예문 빈칸 쓰기)",
     "en_ko": "영어 → 뜻 쓰기",
     "ko_en": "뜻 → 영어 쓰기",
     "mix": "쓰기 (영어·뜻 섞어서)",
@@ -271,4 +272,86 @@ def test_items(words: list[dict], mode: str, count: int, shuffle: bool, seed: in
             qs.append(q)
         if qs:
             out.append({"src": src, "qs": qs})
+    return out
+
+# ---------------------------------------------------------------- 실전형 (객관식 + 주관식 빈칸)
+
+EXAM_STEMS = {
+    "meaning": "다음 단어의 뜻으로 알맞은 것은?",
+    "syn": "다음 단어와 유의어(비슷한 말) 관계인 것은?",
+    "word": "다음 뜻에 해당하는 단어로 알맞은 것은?",
+}
+
+
+def exam_blank(w: dict) -> tuple[str, str] | None:
+    """예문 빈칸: 단어 원형 부분만 비우고 붙은 끝(-s, -d, -ing…)은 남김 → (빈칸 예문, 정답 원형)."""
+    got = blank_sentence(w)
+    if not got:
+        return None
+    sent, form = got
+    word = w["word"].strip()
+    tail = form[len(word):] if form.lower().startswith(word.lower()) else ""
+    if tail and not re.fullmatch(r"[a-z]{1,4}", tail):
+        tail = ""
+    return sent.replace("__________", "____________" + tail, 1), (word if tail or form.lower() == word.lower() else form)
+
+
+def _syn(w: dict) -> str:
+    return next((x.strip() for x in re.split(r"[,;/]", w.get("syn") or "") if x.strip() and " " not in x.strip()), "")
+
+
+def _four(rng, right: str, pool: list[str], avoid: set[str] = frozenset()) -> tuple[list[str], int]:
+    others = [x for x in dict.fromkeys(pool) if x and x.lower() != right.lower() and x.lower() not in avoid]
+    rng.shuffle(others)
+    opts = others[:3] + [right]
+    rng.shuffle(opts)
+    return opts, opts.index(right) + 1
+
+
+def exam_items(words: list[dict], count: int, shuffle: bool, seed: int, by_src: bool,
+               srcs: list[str] | None = None, per_src: bool = False) -> list[dict]:
+    """실전형 → [{src, mc[{stem, show, choices, ans_no, answer}], sa[{sent, ko, answer}]}].
+    문항 수의 약 2/3은 객관식, 1/3은 주관식(예문 빈칸이 되는 단어만)."""
+    rng = random.Random(seed)
+    pool = [w for w in words if w.get("word") and w.get("meaning")]
+    if srcs is not None:
+        pool = [w for w in pool if (w.get("src") or "") in set(srcs)]
+    groups: dict[str, list[dict]] = {}
+    for w in pool:
+        groups.setdefault((w.get("src") or "") if by_src else "", []).append(w)
+    total = sum(len(g) for g in groups.values()) or 1
+    meanings = [x["meaning"] for x in pool]
+    words_en = [x["word"] for x in pool]
+    out, k = [], 0
+    for src, ws in groups.items():
+        n = min(count, len(ws)) if per_src and by_src else (max(1, round(count * len(ws) / total)) if count < total else len(ws))
+        ws = rng.sample(ws, len(ws)) if shuffle else list(ws)
+        can_sa = [w for w in ws if exam_blank(w)]
+        n_sa = min(len(can_sa), max(1, round(n / 3)) if n >= 3 else 0)
+        sa_w = can_sa[:n_sa]
+        rest = [w for w in ws if w not in sa_w][: n - n_sa]
+        mc = []
+        for w in rest:
+            kinds = ["meaning", "syn", "word"]
+            kind = kinds[k % 3]
+            k += 1
+            syn = _syn(w)
+            if kind == "syn" and not syn:
+                kind = "meaning"
+            if kind == "meaning":
+                opts, no = _four(rng, w["meaning"], meanings)
+                mc.append({"stem": EXAM_STEMS[kind], "show": w["word"], "choices": opts, "ans_no": no, "answer": w["meaning"]})
+            elif kind == "syn":
+                avoid = {x.strip().lower() for x in re.split(r"[,;/]", w.get("syn") or "")} | {w["word"].lower()}
+                opts, no = _four(rng, syn, words_en + [_syn(x) for x in pool], avoid)
+                mc.append({"stem": EXAM_STEMS[kind], "show": w["word"], "choices": opts, "ans_no": no, "answer": syn})
+            else:
+                opts, no = _four(rng, w["word"], words_en)
+                mc.append({"stem": EXAM_STEMS[kind], "show": w["meaning"], "choices": opts, "ans_no": no, "answer": w["word"]})
+        sa = []
+        for w in sa_w:
+            sent, ans = exam_blank(w)
+            sa.append({"sent": sent, "ko": w.get("example_ko", ""), "answer": ans})
+        if mc or sa:
+            out.append({"src": src, "mc": mc, "sa": sa})
     return out

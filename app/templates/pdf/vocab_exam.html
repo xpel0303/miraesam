@@ -1,0 +1,92 @@
+{% extends "pdf/_base.html" %}
+{# 단어 시험지 · 실전형: 객관식(뜻·유의어·단어 고르기, 4지선다) + 주관식(예문 빈칸 쓰기) → 정답지(새 쪽) #}
+{% block style %}
+  h1.t { font-size: 17pt; font-weight: 800; margin: 2pt 0 4pt; }
+  .meta { font-size: 9pt; color: var(--ink-3); margin-bottom: 9pt; }
+  .info { font-size: 10pt; padding-bottom: 8pt; border-bottom: 0.6pt solid var(--line); margin-bottom: 4pt; }
+  .info span { margin-right: 26pt; }
+  .info i { display: inline-block; width: 40pt; border-bottom: 0.6pt solid var(--ink-2); margin-left: 4pt; }
+  .sec { font-size: 11pt; font-weight: 700; color: var(--ink-3); margin: 14pt 0 7pt 6pt; break-after: avoid; }
+  .gh { font-size: 10.5pt; font-weight: 800; color: var(--brand); border-bottom: 0.8pt solid var(--brand); padding-bottom: 2pt; margin: 14pt 0 2pt; break-after: avoid; }
+  .q { margin: 0 0 8pt; break-inside: avoid; font-size: 10pt; line-height: 1.5; }
+  .q .no { font-weight: 800; margin-right: 4pt; }
+  table.ch { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 3pt; }
+  table.ch td { border: 0; padding: 0; font-size: 10pt; vertical-align: top; }
+  .sa { margin: 0 0 11pt; break-inside: avoid; font-size: 10pt; line-height: 1.5; }
+  .sa .ko { font-size: 8.8pt; color: var(--ink-3); margin-top: 1pt; }
+  .sa .an { margin-top: 2pt; }
+  .sa .an i { display: inline-block; width: 120pt; border-bottom: 0.6pt solid var(--ink-2); margin-left: 3pt; }
+  .pg { break-before: page; }
+  .key { break-before: page; }
+  table.kt { border-collapse: collapse; }
+  table.kt td { border: 0; vertical-align: top; padding: 0 34pt 0 0; font-size: 10pt; line-height: 1.85; }
+  table.kt .kh { font-size: 11pt; font-weight: 700; color: var(--ink-3); padding: 0 0 6pt 6pt; display: block; }
+  table.kt .src { font-weight: 800; color: var(--brand); }
+{% endblock %}
+
+{% macro head(sub, g_list) %}
+{% set nm = g_list|sum(attribute="mc", start=[])|length %}{% set ns_ = g_list|sum(attribute="sa", start=[])|length %}
+<h1 class="t">{{ title }}{% if sub %} · {{ sub }}{% endif %} 단어 시험지</h1>
+<div class="meta">총 {{ nm + ns_ }}문제 (객관식 {{ nm }} · 주관식 {{ ns_ }}) · {{ date }}</div>
+<div class="info"><span>이름:<i></i></span><span>번호/학번:<i></i></span><span>점수:<i></i></span></div>
+{% endmacro %}
+
+{% macro mc_block(items, start) %}
+{% for q in items %}
+<div class="q"><span class="no">{{ start + loop.index }}.</span>{{ q.stem }} [ {{ q.show }} ]
+  <table class="ch"><tr>{% for c in q.choices %}<td>{{ circled[loop.index0] }} {{ c }}</td>{% endfor %}</tr></table></div>
+{% endfor %}
+{% endmacro %}
+
+{% macro sa_block(items, start) %}
+{% for q in items %}
+<div class="sa"><span class="no" style="font-weight:800;margin-right:4pt">{{ start + loop.index }}.</span>{{ q.sent }}
+  {% if q.ko %}<div class="ko">해석: {{ q.ko }}</div>{% endif %}
+  <div class="an">답:<i></i></div></div>
+{% endfor %}
+{% endmacro %}
+
+{% block body %}
+{% if pages %}
+  {# 지문마다 따로 시험지 #}
+  {% for g in groups %}
+  <div class="{{ 'pg' if not loop.first else '' }}">
+    {{ head(g.src, [g]) }}
+    {% if g.mc %}<div class="sec">객관식</div>{{ mc_block(g.mc, 0) }}{% endif %}
+    {% if g.sa %}<div class="sec">주관식 (빈칸에 알맞은 단어 쓰기)</div>{{ sa_block(g.sa, 0) }}{% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+  {{ head("", groups) }}
+  {% set multi = groups|length > 1 %}
+  {% if groups|sum(attribute="mc", start=[]) %}
+  <div class="sec">객관식</div>
+  {% set ns = namespace(k=0) %}
+  {% for g in groups %}{% if g.mc %}
+    {% if multi and g.src %}<div class="gh">{{ g.src }}</div>{% endif %}
+    {{ mc_block(g.mc, ns.k) }}{% set ns.k = ns.k + g.mc|length %}
+  {% endif %}{% endfor %}
+  {% endif %}
+  {% if groups|sum(attribute="sa", start=[]) %}
+  <div class="sec">주관식 (빈칸에 알맞은 단어 쓰기)</div>
+  {% set ns = namespace(k=0) %}
+  {% for g in groups %}{% if g.sa %}
+    {% if multi and g.src %}<div class="gh">{{ g.src }}</div>{% endif %}
+    {{ sa_block(g.sa, ns.k) }}{% set ns.k = ns.k + g.sa|length %}
+  {% endif %}{% endfor %}
+  {% endif %}
+{% endif %}
+
+<div class="key">
+  <h1 class="t">{{ title }} 정답지</h1>
+  <div class="meta">선생님용 · {{ date }}</div>
+  {% set blocks = groups if pages else [{"src": "", "mc": groups|sum(attribute="mc", start=[]), "sa": groups|sum(attribute="sa", start=[])}] %}
+  {% for g in blocks %}
+  {% if g.src %}<div class="gh">{{ g.src }}</div>{% endif %}
+  <table class="kt"><tr>
+    <td>{% if g.mc %}<span class="kh">객관식 정답</span>{% for q in g.mc %}{{ loop.index }}번: {{ q.answer }}<br>{% endfor %}{% endif %}</td>
+    <td>{% if g.sa %}<span class="kh">주관식 정답</span>{% for q in g.sa %}{{ loop.index }}번: {{ q.answer }}<br>{% endfor %}{% endif %}</td>
+  </tr></table>
+  {% endfor %}
+</div>
+{% endblock %}
