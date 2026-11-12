@@ -43,7 +43,9 @@ function watchJob(el) {
     if (j.status === "done") {
       el.classList.add("done");
       const r = j.result || {};
-      if (r.file_id) {
+      if (r.files && r.files.length) {
+        out.innerHTML = r.files.map((f) => `<a class="btn small" style="margin-right:6px" href="/files/${f.file_id}" target="_blank" rel="noopener">${escapeHtml(f.filename || "파일")} 열기</a>`).join("");
+      } else if (r.file_id) {
         out.innerHTML = `<a class="btn small" href="/files/${r.file_id}" target="_blank" rel="noopener">${escapeHtml(r.filename || "파일 열기")} 열기</a>`;
       } else if (r.reply) {
         out.innerHTML = `<p style="margin:6px 0 0">${escapeHtml(r.reply)}</p><span class="muted">모델: ${escapeHtml(r.model || "")}</span>`;

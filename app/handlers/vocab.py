@@ -89,22 +89,33 @@ def make_pdf(ctx: JobContext) -> dict:
         title, words = wl.title, [w for w in wl.words if w.get("word")]
     today = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
 
-    if p.get("kind") == "test" and p.get("mode") == "exam":
-        groups = spec.exam_items(words, int(p.get("count") or len(words)), p.get("shuffle", True), p.get("seed") or 1, p.get("by_src", True),
-                                 p.get("srcs"), p.get("per_src", False))
-        ctx.step("시험지 만드는 중", 60)
-        date = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y. %m. %d.")
-        pdf = render_pdf("pdf/vocab_exam.html", {"academy": academy, "title": title, "groups": groups, "doc_title": f"{title} · 단어 시험지",
-                                                 "date": date, "circled": spec.CIRCLED, "pages": p.get("layout") == "pages"})
-        name = f"{title}_단어시험.pdf"
-    elif p.get("kind") == "test":
+    if p.get("kind") == "test":
         mode = p.get("mode", "en_ko")
-        groups = spec.test_items(words, mode, int(p.get("count") or len(words)), p.get("shuffle", True), p.get("seed") or 1, p.get("by_src", True),
-                                 p.get("srcs"), p.get("per_src", False))
+        key = p.get("key", "end")
+        if mode == "exam":
+            groups = spec.exam_items(words, int(p.get("mc", 10)), int(p.get("sa", 5)), p.get("shuffle", True), p.get("seed") or 1,
+                                     p.get("by_src", True), p.get("srcs"), p.get("per_src", False))
+            if not any(g["mc"] or g["sa"] for g in groups):
+                raise llm.LLMError("낼 문제가 없어요. 객관식·주관식 문항 수를 확인해 주세요.")
+            tpl = "pdf/vocab_exam.html"
+            ctxv = {"academy": academy, "title": title, "groups": groups, "doc_title": f"{title} · 단어 시험지",
+                    "date": datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y. %m. %d."), "circled": spec.CIRCLED, "pages": p.get("layout") == "pages"}
+        else:
+            groups = spec.test_items(words, mode, int(p.get("count") or len(words)), p.get("shuffle", True), p.get("seed") or 1, p.get("by_src", True),
+                                     p.get("srcs"), p.get("per_src", False))
+            tpl = "pdf/vocab_test.html"
+            ctxv = {"academy": academy, "title": title, "groups": groups, "n": sum(len(g["qs"]) for g in groups),
+                    "doc_title": f"{title} · 단어 시험", "today": today, "mode": mode, "dirs": spec.TEST_DIRS,
+                    "circled": spec.CIRCLED, "pages": p.get("layout") == "pages"}
         ctx.step("시험지 만드는 중", 60)
-        pdf = render_pdf("pdf/vocab_test.html", {"academy": academy, "title": title, "groups": groups, "n": sum(len(g["qs"]) for g in groups),
-                                                 "doc_title": f"{title} · 단어 시험", "today": today, "mode": mode, "dirs": spec.TEST_DIRS,
-                                                 "circled": spec.CIRCLED, "pages": p.get("layout") == "pages"})
+        if key == "separate":  # 시험지 · 정답지 따로 (같은 문제로)
+            test_pdf = render_pdf(tpl, {**ctxv, "part": "test"})
+            ctx.step("정답지 만드는 중", 80)
+            key_pdf = render_pdf(tpl, {**ctxv, "part": "key", "doc_title": f"{title} · 정답지"})
+            files = [{"file_id": ctx.save_file(f"{title}_단어시험.pdf", "application/pdf", test_pdf), "filename": f"{title}_단어시험.pdf"},
+                     {"file_id": ctx.save_file(f"{title}_단어시험_정답지.pdf", "application/pdf", key_pdf), "filename": f"{title}_단어시험_정답지.pdf"}]
+            return {**files[0], "files": files}
+        pdf = render_pdf(tpl, {**ctxv, "part": "test" if key == "none" else "all"})
         name = f"{title}_단어시험.pdf"
     else:
         ctx.step("단어장 만드는 중", 60)

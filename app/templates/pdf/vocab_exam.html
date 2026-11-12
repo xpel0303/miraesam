@@ -47,6 +47,8 @@
 {% endmacro %}
 
 {% block body %}
+{% set part = part or "all" %}
+{% if part != "key" %}
 {% if pages %}
   {# 지문마다 따로 시험지 #}
   {% for g in groups %}
@@ -76,8 +78,10 @@
   {% endif %}{% endfor %}
   {% endif %}
 {% endif %}
+{% endif %}
 
-<div class="key">
+{% if part != "test" %}
+<div class="{{ 'key' if part == 'all' else '' }}">
   <h1 class="t">{{ title }} 정답지</h1>
   <div class="meta">선생님용 · {{ date }}</div>
   {% set blocks = groups if pages else [{"src": "", "mc": groups|sum(attribute="mc", start=[]), "sa": groups|sum(attribute="sa", start=[])}] %}
@@ -89,4 +93,5 @@
   </tr></table>
   {% endfor %}
 </div>
+{% endif %}
 {% endblock %}

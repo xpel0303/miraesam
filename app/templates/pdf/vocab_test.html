@@ -31,6 +31,8 @@
 <div class="info"><span>반:</span><span>이름:</span><span>점수: &nbsp;&nbsp;&nbsp;&nbsp;/ {{ n }}</span></div>
 {% if mode in dirs %}<div class="dir">{{ dirs[mode] }}</div>{% elif mode == "mix" %}<div class="dir">영어는 뜻을, 우리말은 영어 단어를 쓰시오.</div>{% endif %}
 {% endmacro %}
+{% set part = part or "all" %}
+{% if part != "key" %}
 {% if not pages %}{{ head("", n) }}{% endif %}
 {% set ns = namespace(k=0) %}
 {% for g in groups %}
@@ -53,8 +55,10 @@
   {% endfor %}
   </div>
 {% endfor %}
+{% endif %}
 
-<div class="ans">
+{% if part != "test" %}{% set ns = namespace(k=0) %}
+<div class="{{ 'ans' if part == 'all' else '' }}">
   <h1>정답</h1>
   <div class="sub">{{ title }} 단어 시험 · {{ today }}</div>
   <div class="cols" style="margin-top:8pt">
@@ -66,4 +70,5 @@
   {% endfor %}
   </div>
 </div>
+{% endif %}
 {% endblock %}

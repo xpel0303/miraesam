@@ -179,7 +179,7 @@ async def pdf(lid: int, request: Request, teacher: Teacher = Depends(current_tea
         flash(request, "단어가 없어요.", "error")
         return _go(f"/vocab/{lid}")
     if kind == "test":
-        opts = _test_opts(wl, f.get("mode"), f.get("count"), f.get("per"), f.get("layout"), f.getlist("srcs"), f.get("pick_src") == "1")
+        opts = _test_opts(wl, f.get("mode"), f.get("count"), f.get("per"), f.get("layout"), f.getlist("srcs"), f.get("pick_src") == "1", f)
         if opts is None:
             flash(request, "출제할 지문을 하나 이상 골라 주세요.", "error")
             return _go(f"/vocab/{lid}#pdf")
@@ -194,8 +194,16 @@ async def pdf(lid: int, request: Request, teacher: Teacher = Depends(current_tea
     return _go(f"/vocab/{lid}?pdf_job={job.id}#pdf")
 
 
-def _test_opts(wl, mode, count, per, layout, srcs, pick_src):
-    """시험지 옵션 정리. 지문을 하나도 안 고르면 None."""
+def _num(v, default: int, hi: int) -> int:
+    try:
+        return max(0, min(hi, int(str(v).strip())))
+    except (TypeError, ValueError):
+        return default
+
+
+def _test_opts(wl, mode, count, per, layout, srcs, pick_src, q=None):
+    """시험지 옵션 정리. 지문을 하나도 안 고르면 None.
+    q: 폼/쿼리 — 실전형 객관식·주관식 문항 수(mc, sa), 정답지(key: end 맨 뒤 / separate 따로 파일 / none 빼기)."""
     mode = str(mode or "en_ko")
     layout = layout if layout in spec.LAYOUTS else "together"
     have = spec.sources(wl.words)
@@ -206,8 +214,12 @@ def _test_opts(wl, mode, count, per, layout, srcs, pick_src):
         count = max(1, min(len(wl.words), int(count or len(wl.words))))
     except ValueError:
         count = len(wl.words)
+    q = q or {}
+    n = len(wl.words)
+    key = str(q.get("key") or "end")
     return {"mode": mode if mode in spec.TEST_MODES else "en_ko", "count": count, "per_src": per == "src",
-            "by_src": layout != "mixed", "layout": layout, "srcs": chosen}
+            "by_src": layout != "mixed", "layout": layout, "srcs": chosen,
+            "mc": _num(q.get("mc"), 10, n), "sa": _num(q.get("sa"), 5, n), "key": key if key in ("end", "separate", "none") else "end"}
 
 
 @router.get("/{lid}/docx")
@@ -219,7 +231,7 @@ def docx(lid: int, request: Request, kind: str = "list", hide: str = "", show_ex
         raise HTTPException(404, "단어가 없어요.")
     academy = db.get(Academy, wl.academy_id)
     if kind == "test":
-        opts = _test_opts(wl, mode, count, per, layout, request.query_params.getlist("srcs"), pick_src == "1")
+        opts = _test_opts(wl, mode, count, per, layout, request.query_params.getlist("srcs"), pick_src == "1", request.query_params)
         if opts is None:
             flash(request, "출제할 지문을 하나 이상 골라 주세요.", "error")
             return _go(f"/vocab/{lid}#pdf")

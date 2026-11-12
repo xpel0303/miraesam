@@ -29,8 +29,8 @@
     </form>
     <form method="post" action="/vocab/{{ wl.id }}/pdf">
       <input type="hidden" name="kind" value="test">
-      <h3>단어 시험지 <span class="small muted" style="font-weight:400">답지는 맨 뒤 페이지</span></h3>
-      <div class="field"><select name="mode" aria-label="문제 방식">{% for k, v in test_modes.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <h3>단어 시험지</h3>
+      <div class="field"><select name="mode" aria-label="문제 방식" data-test-mode>{% for k, v in test_modes.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
       {% set multi = sources|length > 1 %}
       {% if multi %}
       <div class="field"><label>출제할 지문 <span class="hint">고른 지문의 단어만 나와요</span></label>
@@ -41,10 +41,15 @@
         </div></div>
       <div class="field"><label>묶는 방식</label><select name="layout">{% for k, v in layouts.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
       {% endif %}
-      <div class="row" style="grid-template-columns: {{ '150px 100px' if multi else '100px' }}; align-items:end">
+      <div class="row" style="grid-template-columns: {{ '150px ' if multi else '' }}auto; align-items:end">
         {% if multi %}<div class="field"><label>문항 수</label><select name="per"><option value="all">전체에서</option><option value="src">지문마다</option></select></div>{% endif %}
-        <div class="field">{% if not multi %}<label>문항 수</label>{% endif %}<input type="text" name="count" inputmode="numeric" value="{{ wl.words|length }}" aria-label="문항 수" data-count></div>
+        <div class="field" data-for="exam"><label>객관식 · 주관식 문항 수</label>
+          <div style="display:flex;gap:8px;align-items:center">객관식 <input type="text" name="mc" inputmode="numeric" value="{{ [10, wl.words|length]|min }}" style="width:64px" aria-label="객관식 문항 수">
+            주관식 <input type="text" name="sa" inputmode="numeric" value="{{ [5, wl.words|length]|min }}" style="width:64px" aria-label="주관식 문항 수"></div></div>
+        <div class="field" data-for="other" hidden><label>문항 수</label><input type="text" name="count" inputmode="numeric" value="{{ wl.words|length }}" aria-label="문항 수" data-count style="width:90px"></div>
       </div>
+      <div class="field"><label>정답지</label><select name="key">
+        <option value="end">시험지 맨 뒤에 붙이기</option><option value="separate">따로 뽑기 (시험지 PDF · 정답지 PDF 두 개)</option><option value="none">넣지 않기</option></select></div>
       <label style="font-weight:400"><input type="checkbox" name="shuffle" value="1" checked> 순서 섞기 (누를 때마다 다른 시험지)</label><br>
       <button class="btn small" type="submit" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>시험지 PDF</button>
       <button class="btn ghost small" type="submit" formaction="/vocab/{{ wl.id }}/docx" formmethod="get" style="margin-top:8px" {% if not wl.words %}disabled{% endif %}>워드로</button>
@@ -52,6 +57,14 @@
   </div>
   {% if pdf_job %}<div class="job" data-job-id="{{ pdf_job }}"></div>{% endif %}
 </section>
+<script>
+(() => {
+  const sel = document.querySelector("[data-test-mode]"); if (!sel) return;
+  const sync = () => { const ex = sel.value === "exam";
+    document.querySelector('[data-for="exam"]').hidden = !ex; document.querySelector('[data-for="other"]').hidden = ex; };
+  sel.addEventListener("change", sync); sync();
+})();
+</script>
 <style>.src-pick{display:flex;flex-wrap:wrap;gap:4px 14px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px 10px}.src-pick label{margin:0}</style>
 <script>
 (() => {

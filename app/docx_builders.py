@@ -227,6 +227,8 @@ def vocab_test_docx(wl, academy, opts: dict, shuffle: bool, seed: int):
             else:
                 doc.para("   답: ______________________", size=9, color=INK_3, space_after=4)
             key.append(f"{n}. " + (f"{vs.CIRCLED[q['ans_no'] - 1]} " if q["ans_no"] else "") + q["answer"])
+    if opts.get("key") == "none":
+        return doc.response(f"{wl.title}_단어시험.docx")
     doc.new_section(cols=2)
     doc.title("정답", f"{wl.title} 단어 시험")
     for k in key:
@@ -241,7 +243,7 @@ def _vocab_exam_docx(wl, academy, opts: dict, shuffle: bool, seed: int):
     from .vocab import spec as vs
 
     pages = opts.get("layout") == "pages"
-    groups = vs.exam_items(wl.words, opts["count"], shuffle, seed, opts["by_src"], opts.get("srcs"), opts.get("per_src", False))
+    groups = vs.exam_items(wl.words, opts.get("mc", 10), opts.get("sa", 5), shuffle, seed, opts["by_src"], opts.get("srcs"), opts.get("per_src", False))
     date = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y. %m. %d.")
     doc = Doc(academy, f"{wl.title} · 단어 시험지")
 
@@ -283,6 +285,8 @@ def _vocab_exam_docx(wl, academy, opts: dict, shuffle: bool, seed: int):
                         doc.para(f"■ {x['src']}", bold=True, size=10, space_after=3)
                     fn(x[key], k)
                     k += len(x[key])
+    if opts.get("key") == "none":
+        return doc.response(f"{wl.title}_단어시험.docx")
     doc.page_break()
     doc.title(f"{wl.title} 정답지", f"선생님용 · {date}")
     for b in blocks:

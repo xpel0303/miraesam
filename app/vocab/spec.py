@@ -308,10 +308,24 @@ def _four(rng, right: str, pool: list[str], avoid: set[str] = frozenset()) -> tu
     return opts, opts.index(right) + 1
 
 
-def exam_items(words: list[dict], count: int, shuffle: bool, seed: int, by_src: bool,
+def _split(total: int, sizes: list[int]) -> list[int]:
+    """total개를 그룹 크기에 비례해 나눔 (합 = total, 그룹마다 크기 넘지 않게)."""
+    whole = sum(sizes) or 1
+    out = [min(s, int(total * s / whole)) for s in sizes]
+    i = 0
+    while sum(out) < min(total, whole) and i < 10000:
+        j = i % len(sizes)
+        if out[j] < sizes[j]:
+            out[j] += 1
+        i += 1
+    return out
+
+
+def exam_items(words: list[dict], n_mc: int, n_sa: int, shuffle: bool, seed: int, by_src: bool,
                srcs: list[str] | None = None, per_src: bool = False) -> list[dict]:
     """실전형 → [{src, mc[{stem, show, choices, ans_no, answer}], sa[{sent, ko, answer}]}].
-    문항 수의 약 2/3은 객관식, 1/3은 주관식(예문 빈칸이 되는 단어만)."""
+    n_mc·n_sa: 객관식·주관식 문항 수 (per_src면 지문마다, 아니면 전체를 지문 크기대로 나눔).
+    주관식은 예문 빈칸이 되는 단어만, 한 단어는 한 번만 나옴."""
     rng = random.Random(seed)
     pool = [w for w in words if w.get("word") and w.get("meaning")]
     if srcs is not None:
@@ -319,17 +333,19 @@ def exam_items(words: list[dict], count: int, shuffle: bool, seed: int, by_src: 
     groups: dict[str, list[dict]] = {}
     for w in pool:
         groups.setdefault((w.get("src") or "") if by_src else "", []).append(w)
-    total = sum(len(g) for g in groups.values()) or 1
     meanings = [x["meaning"] for x in pool]
     words_en = [x["word"] for x in pool]
+    keys = list(groups)
+    if not (per_src and by_src):
+        sa_split = _split(n_sa, [len([w for w in groups[g] if exam_blank(w)]) for g in keys])
+        mc_split = _split(n_mc, [len(groups[g]) - sa_split[i] for i, g in enumerate(keys)])
     out, k = [], 0
-    for src, ws in groups.items():
-        n = min(count, len(ws)) if per_src and by_src else (max(1, round(count * len(ws) / total)) if count < total else len(ws))
+    for gi, src in enumerate(keys):
+        ws = groups[src]
         ws = rng.sample(ws, len(ws)) if shuffle else list(ws)
-        can_sa = [w for w in ws if exam_blank(w)]
-        n_sa = min(len(can_sa), max(1, round(n / 3)) if n >= 3 else 0)
-        sa_w = can_sa[:n_sa]
-        rest = [w for w in ws if w not in sa_w][: n - n_sa]
+        want_sa, want_mc = (n_sa, n_mc) if per_src and by_src else (sa_split[gi], mc_split[gi])
+        sa_w = [w for w in ws if exam_blank(w)][:want_sa]
+        rest = [w for w in ws if w not in sa_w][:want_mc]
         mc = []
         for w in rest:
             kinds = ["meaning", "syn", "word"]
