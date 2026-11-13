@@ -238,7 +238,7 @@ def remap_rules_run(request: Request, teacher: Teacher = Depends(owner_only), db
 
 
 @router.post("/fill")
-def fill_run(request: Request, per_cat: int = Form(200), per_sub: int = Form(0), resume: int = Form(0), teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+def fill_run(request: Request, per_cat: int = Form(200), per_sub: int = Form(0), resume: int = Form(0), min_total: int = Form(0), teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
     """문항이 하나도 없는 중분류를 AI 문항으로 채우기 (중분류마다 per_cat 문항)."""
     from ..jobs import enqueue
 
@@ -248,9 +248,10 @@ def fill_run(request: Request, per_cat: int = Form(200), per_sub: int = Form(0),
             if j.id == resume or (j.payload or {}).get("resume") == resume:
                 flash(request, f"작업 {j.id}이(가) 아직 돌고 있어요. 끝난 뒤에 이어서 눌러 주세요.")
                 return _go(f"/bank/import?job={j.id}")
-    title = f"멈춘 채우기 작업({resume}) 이어서" if resume else f"빈 소분류 AI 문항 채우기 (소분류당 {per_sub})" if per_sub else f"빈 중분류 AI 문항 채우기 (중분류당 {per_cat})"
+    min_total = max(0, min(500, min_total))
+    title = f"소분류마다 {min_total}문항 되게 AI로 채우기" if min_total else f"멈춘 채우기 작업({resume}) 이어서" if resume else f"빈 소분류 AI 문항 채우기 (소분류당 {per_sub})" if per_sub else f"빈 중분류 AI 문항 채우기 (중분류당 {per_cat})"
     job = enqueue(db, academy_id=teacher.academy_id, teacher_id=teacher.id, kind="bank_fill", title=title,
-                  payload={"per_cat": per_cat, "per_sub": per_sub, **({"resume": resume} if resume else {})})
+                  payload={"per_cat": per_cat, "per_sub": per_sub, **({"resume": resume} if resume else {}), **({"min_total": min_total} if min_total else {})})
     return _go(f"/bank/import?job={job.id}")
 
 

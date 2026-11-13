@@ -166,7 +166,8 @@ def fill(ctx: JobContext) -> dict:
     from ..models import BankQuestion
 
     per_cat = int(ctx.payload.get("per_cat") or 200)
-    per_sub = int(ctx.payload.get("per_sub") or 0)  # 켜면: 중분류 대신 빈 소분류마다 per_sub 문항
+    per_sub = int(ctx.payload.get("per_sub") or 0)
+    min_total = int(ctx.payload.get("min_total") or 0)  # 켜면: 모든 소분류가 (교재 문항 + AI 문항) min_total 이 되게
     targets: dict[str, int] = ctx.payload.get("targets") or {}
     tx = taxonomy.load()
     subs = tx["subs"]
@@ -188,12 +189,20 @@ def fill(ctx: JobContext) -> dict:
                 busy |= set((p or {}).get("targets") or {})
                 if not (p or {}).get("targets"):
                     raise RuntimeError("앞의 채우기 작업이 아직 시작 전이에요. 그 작업이 끝난 뒤 다시 눌러 주세요.")
-            counts.update({sid: 1 for sid in busy})
+            ai = dict(db.execute(select(BankQuestion.sub_id, func.count()).where(BankQuestion.book == GEN_BOOK, BankQuestion.review != "del")
+                                 .group_by(BankQuestion.sub_id)).all())
+            if not min_total:
+                counts.update({sid: 1 for sid in busy})
         cats: dict[tuple, list[str]] = {}
         for sid, s in subs.items():
             cats.setdefault((s["tier"], s["cat"]), []).append(sid)
         for key, sids in cats.items():
-            if per_sub:
+            if min_total:
+                for sid in sids:
+                    gap = min_total - (counts.get(sid, 0) - ai.get(sid, 0))  # 교재 문항 빼고 AI로 채울 수
+                    if gap > 0 and sid not in busy:
+                        targets[sid] = gap
+            elif per_sub:
                 for sid in sids:
                     if not counts.get(sid):
                         targets[sid] = per_sub
