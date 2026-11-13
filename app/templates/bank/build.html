@@ -93,7 +93,7 @@
   var SUB = {}, ORDER = [];  // sub_id → {id, label, n, tier, tierLabel, cat}
   TREE.forEach(function (t) { t.n = 0; t.cats.forEach(function (c) { c.subs.forEach(function (s) {
     SUB[s[0]] = {id: s[0], label: s[1], n: s[2], tier: t.id, tierLabel: t.label, cat: c.label}; ORDER.push(s[0]); t.n += s[2]; }); }); });
-  var picked = new Set(), open = {}, tier = (TREE.find(function (t) { return t.n > 0; }) || TREE[0]).id, last = null;
+  var picked = new Set(), open = {}, tier = TREE.reduce(function (a, t) { return t.n > a.n ? t : a; }, TREE[0]).id, last = null;
   var $ = function (id) { return document.getElementById(id); };
   var form = $("bf");
   function esc(x) { return String(x).replace(/[&<>"]/g, function (m) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[m]; }); }
