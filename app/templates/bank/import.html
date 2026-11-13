@@ -17,6 +17,8 @@
     <button class="btn" type="submit">규칙으로 전체 재배치 (교재 학년 단계 + 기존 분류)</button></form>
   <form method="post" action="/bank/fill" onsubmit="return confirm('문항이 하나도 없는 중분류마다 AI로 문항을 만들어 넣을까요? 몇 시간 걸려요.')" style="margin-bottom:10px">
     <button class="btn" type="submit">빈 중분류 AI 문항으로 채우기</button> 중분류마다 <input type="number" name="per_cat" value="200" min="10" max="1000" style="width:80px">문항</form>
+  <form method="post" action="/bank/fill" onsubmit="return confirm('문항이 하나도 없는 소분류마다 AI로 문항을 만들어 넣을까요?')" style="margin-bottom:10px">
+    <button class="btn" type="submit">빈 소분류 AI 문항으로 채우기</button> 소분류마다 <input type="number" name="per_sub" value="20" min="5" max="200" style="width:80px">문항</form>
   <a class="btn ghost" href="/bank/export_units.json">① 단원 목록 받기 (JSON)</a>
   <form method="post" action="/bank/remap" enctype="multipart/form-data" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <input type="file" name="file" accept=".json" required>

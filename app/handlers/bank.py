@@ -166,6 +166,7 @@ def fill(ctx: JobContext) -> dict:
     from ..models import BankQuestion
 
     per_cat = int(ctx.payload.get("per_cat") or 200)
+    per_sub = int(ctx.payload.get("per_sub") or 0)  # 켜면: 중분류 대신 빈 소분류마다 per_sub 문항
     targets: dict[str, int] = ctx.payload.get("targets") or {}
     tx = taxonomy.load()
     subs = tx["subs"]
@@ -177,7 +178,11 @@ def fill(ctx: JobContext) -> dict:
         for sid, s in subs.items():
             cats.setdefault((s["tier"], s["cat"]), []).append(sid)
         for key, sids in cats.items():
-            if sum(counts.get(x, 0) for x in sids) == 0:
+            if per_sub:
+                for sid in sids:
+                    if not counts.get(sid):
+                        targets[sid] = per_sub
+            elif sum(counts.get(x, 0) for x in sids) == 0:
                 base, extra = divmod(per_cat, len(sids))
                 for i, sid in enumerate(sids):
                     targets[sid] = base + (1 if i < extra else 0)
