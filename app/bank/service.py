@@ -329,11 +329,6 @@ def tree(db: Session) -> list[dict]:
         if not cats or cats[-1]["label"] != s["cat"]:
             cats.append({"label": s["cat"], "subs": []})
         cats[-1]["subs"].append([sid, s["label"], counts.get(sid, 0)])
-    # 문항이 없는 소분류·중분류는 숨김 (고를 수 있는 것만)
-    for t in out.values():
-        for c in t["cats"]:
-            c["subs"] = [s for s in c["subs"] if s[2] > 0]
-        t["cats"] = [c for c in t["cats"] if c["subs"]]
     return list(out.values())
 
 
