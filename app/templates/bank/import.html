@@ -13,6 +13,8 @@
   <h2>분류 재배치 (학년 단계 → 중분류 → 소분류)</h2>
   <p class="small muted">지금 {{ "{:,}".format(mapped) }} / {{ "{:,}".format(n) }}문항이 새 분류에 들어가 있어요.
     ① 단원 목록을 받아 Claude에게 주면 → ② 분류 재배치 파일을 만들어 줘요 → ③ 그 파일을 여기 올리면 전체 문항이 한 번에 옮겨져요. 문항 내용(정답 등)은 바뀌지 않아요.</p>
+  <form method="post" action="/bank/remap_rules" onsubmit="return confirm('전체 문항을 새 분류(학년 단계 → 중분류 → 소분류)로 옮길까요? 문항 내용은 바뀌지 않아요.')" style="margin-bottom:10px">
+    <button class="btn" type="submit">규칙으로 전체 재배치 (교재 학년 단계 + 기존 분류)</button></form>
   <a class="btn ghost" href="/bank/export_units.json">① 단원 목록 받기 (JSON)</a>
   <form method="post" action="/bank/remap" enctype="multipart/form-data" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <input type="file" name="file" accept=".json" required>

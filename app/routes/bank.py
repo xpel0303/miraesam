@@ -185,6 +185,15 @@ async def remap_run(request: Request, file: UploadFile, teacher: Teacher = Depen
     return _go(f"/bank/import?job={job.id}")
 
 
+@router.post("/remap_rules")
+def remap_rules_run(request: Request, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+    """규칙(교재 학년 단계 + 기존 분류)으로 전체 문항 재배치."""
+    from ..jobs import enqueue
+
+    job = enqueue(db, academy_id=teacher.academy_id, teacher_id=teacher.id, kind="bank_remap", title="문법뱅크 분류 재배치 (규칙)", payload={"rules": True})
+    return _go(f"/bank/import?job={job.id}")
+
+
 @router.get("/import")
 def import_page(request: Request, job: int | None = None, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
     n = db.scalar(select(func.count()).select_from(BankQuestion)) or 0

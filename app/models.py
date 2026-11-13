@@ -701,3 +701,5 @@ class BankQuestion(Base):
     review: Mapped[str] = mapped_column(String(6), index=True, default="")  # 검수 상태: "" 미검수 / ok 정상 / fixed 고침 / del 삭제
     tier: Mapped[str] = mapped_column(String(4), default="")  # 학년 단계 g1(초등기초)~g7(고등) — bank/taxonomy.txt
     sub_id: Mapped[str] = mapped_column(String(12), default="")  # 소분류 번호 (G5-B-03)
+    old_cat: Mapped[str] = mapped_column(String(60), default="")  # 재배치 전 원래 대분류 (규칙 다시 돌릴 때 기준)
+    old_sub: Mapped[str] = mapped_column(String(400), default="")

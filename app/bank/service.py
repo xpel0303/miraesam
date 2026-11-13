@@ -309,7 +309,9 @@ UNIT_KEY = ("book", "chapter", "unit", "cat", "subcat", "level")
 
 def unit_groups(db: Session) -> list[dict]:
     """교재 단원(+ 기존 분류·난이도) 묶음마다 문항 수와 예시 문항 — 매핑 만들 때 쓰는 목록."""
-    cols = [getattr(BankQuestion, k) for k in UNIT_KEY]
+    oc = func.coalesce(func.nullif(BankQuestion.old_cat, ""), BankQuestion.cat)
+    osub = func.coalesce(func.nullif(BankQuestion.old_sub, ""), BankQuestion.subcat)
+    cols = [BankQuestion.book, BankQuestion.chapter, BankQuestion.unit, oc, osub, BankQuestion.level]
     rows = db.execute(select(*cols, func.count(), func.min(BankQuestion.ord), func.min(BankQuestion.stem), func.max(BankQuestion.stem),
                              func.string_agg(func.distinct(BankQuestion.qtype), ","))
                       .where(BankQuestion.review != "del").group_by(*cols).order_by(func.min(BankQuestion.ord)))
@@ -321,23 +323,36 @@ def unit_groups(db: Session) -> list[dict]:
     return out
 
 
-def remap(db: Session, mapping: list[dict], step=None) -> dict:
+def remap_rules(db: Session, step=None) -> dict:
+    """bank/rules.py 규칙(교재 학년 단계 + 기존 분류 → 소분류)으로 전체 재배치."""
+    from . import rules
+
+    return remap(db, None, step, pick=lambda key: rules.choose(key[3], key[4], key[0], key[5]))
+
+
+def remap(db: Session, mapping: list[dict] | None, step=None, pick=None) -> dict:
     """mapping: [{book, chapter, unit, cat, subcat, level, sub_id}] → 문항마다 tier·sub_id·cat(학년 단계 · 중분류)·subcat(소분류) 바꾸고
     분류 체계 순서대로 ord 다시 매김. 매핑에 없는 묶음은 cat 을 '미분류 · …'로."""
     from . import taxonomy
 
     subs = taxonomy.load()["subs"]
     by_key = {}
-    for m in mapping:
+    for m in mapping or []:
         sid = str(m.get("sub_id") or "").strip()
         if sid in subs:
             by_key[tuple(str(m.get(k) or "") for k in UNIT_KEY)] = sid
-    rows = db.execute(select(BankQuestion.id, *[getattr(BankQuestion, k) for k in UNIT_KEY], BankQuestion.ord)).all()
+    # 처음 재배치할 때 원래 분류를 old_cat/old_sub 에 보관 → 몇 번을 다시 돌려도 원래 분류 기준
+    t0 = BankQuestion.__table__
+    from sqlalchemy import update as _upd
+
+    db.execute(_upd(t0).where(t0.c.old_cat == "").values(old_cat=t0.c.cat, old_sub=func.left(t0.c.subcat, 400)))
+    rows = db.execute(select(BankQuestion.id, BankQuestion.book, BankQuestion.chapter, BankQuestion.unit, BankQuestion.old_cat,
+                             BankQuestion.old_sub, BankQuestion.level, BankQuestion.ord)).all()
     lv = {"하": 0, "중": 1, "상": 2}
     upd, unmapped = [], 0
     for r in rows:
         key = tuple(str(x or "") for x in r[1:7])
-        sid = by_key.get(key)
+        sid = pick(key) if pick else by_key.get(key)
         if sid:
             s = subs[sid]
             upd.append({"i": r[0], "tier": s["tier"], "sub_id": sid, "cat": f"{s['tier_label']} · {s['cat']}"[:60], "subcat": s["label"][:120],
@@ -345,7 +360,7 @@ def remap(db: Session, mapping: list[dict], step=None) -> dict:
         else:
             unmapped += 1
             old = str(r[4] or "")
-            upd.append({"i": r[0], "tier": "", "sub_id": "", "cat": (old if old.startswith("미분류") else f"미분류 · {old}")[:60], "subcat": str(r[5] or "")[:120],
+            upd.append({"i": r[0], "tier": "", "sub_id": "", "cat": f"미분류 · {old}"[:60], "subcat": str(r[5] or "")[:120],
                         "sort": (10**6, lv.get(r[6], 1), r[7] or 0)})
     upd.sort(key=lambda d: d["sort"])
     for n, d in enumerate(upd):
