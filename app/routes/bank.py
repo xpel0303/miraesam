@@ -161,10 +161,35 @@ def export(teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)
                     headers={"Content-Disposition": "attachment; filename*=UTF-8''%EB%AC%B8%EB%B2%95%EB%B1%85%ED%81%AC_%EB%82%B4%EB%B3%B4%EB%82%B4%EA%B8%B0.json"})
 
 
+@router.get("/export_units.json")
+def export_units(teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+    """교재 단원 묶음 목록 (분류 재배치용, 문항 원문 대신 예시 1~2개만)."""
+    body = json.dumps(service.unit_groups(db), ensure_ascii=False)
+    return Response(body, media_type="application/json",
+                    headers={"Content-Disposition": "attachment; filename*=UTF-8''%EB%AC%B8%EB%B2%95%EB%B1%85%ED%81%AC_%EB%8B%A8%EC%9B%90%EB%AA%A9%EB%A1%9D.json"})
+
+
+@router.post("/remap")
+async def remap_run(request: Request, file: UploadFile, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+    """분류 재배치 파일(JSON)을 올리면 작업으로 전체 문항 분류를 바꿈."""
+    from ..jobs import enqueue
+
+    try:
+        mapping = json.loads((await file.read()).decode("utf-8"))
+        assert isinstance(mapping, list)
+    except Exception:  # noqa: BLE001
+        flash(request, "분류 재배치 파일(JSON)을 읽지 못했어요.", "error")
+        return _go("/bank/import")
+    job = enqueue(db, academy_id=teacher.academy_id, teacher_id=teacher.id, kind="bank_remap", title=f"문법뱅크 분류 재배치 ({len(mapping):,}묶음)",
+                  payload={"mapping": mapping})
+    return _go(f"/bank/import?job={job.id}")
+
+
 @router.get("/import")
-def import_page(request: Request, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+def import_page(request: Request, job: int | None = None, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
     n = db.scalar(select(func.count()).select_from(BankQuestion)) or 0
-    return render(request, "bank/import.html", {"teacher": teacher, "n": n, "active": "grammar_bank"})
+    mapped = db.scalar(select(func.count()).select_from(BankQuestion).where(BankQuestion.sub_id != "")) or 0
+    return render(request, "bank/import.html", {"teacher": teacher, "n": n, "mapped": mapped, "job": job, "active": "grammar_bank"})
 
 
 @router.post("/import")

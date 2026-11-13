@@ -699,3 +699,5 @@ class BankQuestion(Base):
     expl: Mapped[str] = mapped_column(Text, default="")
     src: Mapped[str] = mapped_column(String(20), index=True, default="")  # 교재 정답 / AI 풀이 / 해설 기반 / 확인 필요
     review: Mapped[str] = mapped_column(String(6), index=True, default="")  # 검수 상태: "" 미검수 / ok 정상 / fixed 고침 / del 삭제
+    tier: Mapped[str] = mapped_column(String(4), default="")  # 학년 단계 g1(초등기초)~g7(고등) — bank/taxonomy.txt
+    sub_id: Mapped[str] = mapped_column(String(12), default="")  # 소분류 번호 (G5-B-03)

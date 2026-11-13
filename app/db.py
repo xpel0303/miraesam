@@ -51,6 +51,8 @@ ADDED_COLUMNS = [
     ("jobs", "start_progress", "INTEGER", "0"),
     ("bank_questions", "review", "VARCHAR(6)", "''"),  # 문법뱅크 검수 상태
     ("jobs", "finished_at", "TIMESTAMP WITH TIME ZONE", "NULL"),
+    ("bank_questions", "tier", "VARCHAR(4)", "''"),  # 문법뱅크 학년 단계 g1~g7
+    ("bank_questions", "sub_id", "VARCHAR(12)", "''"),  # 문법뱅크 소분류 번호
 ]
 
 

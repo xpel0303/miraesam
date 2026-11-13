@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..models import BankQuestion
 
-FIELDS = ["id", "cat", "subcat", "level", "book", "chapter", "unit", "qtype", "instr", "passage", "stem", "choices", "answer", "expl", "src"]
+FIELDS = ["id", "cat", "subcat", "level", "book", "chapter", "unit", "qtype", "instr", "passage", "stem", "choices", "answer", "expl", "src", "tier", "sub_id"]
 LEVEL_ORDER = {"하": 0, "중": 1, "상": 2}
 CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩"
 
@@ -34,7 +34,7 @@ def import_rows(db: Session, rows: list[dict], keep_reviewed: bool = True) -> in
         d["review"] = "" if keep_reviewed else str(r.get("review") or "")[:6]
         if rid in kept:
             d.update(kept[rid])
-        for k, w in (("subcat", 120), ("book", 80), ("chapter", 120), ("unit", 160), ("qtype", 30), ("src", 20)):
+        for k, w in (("subcat", 120), ("book", 80), ("chapter", 120), ("unit", 160), ("qtype", 30), ("src", 20), ("tier", 4), ("sub_id", 12)):
             d[k] = d[k][:w]
         batch.append(d)
         n += 1
@@ -300,3 +300,65 @@ def pick_questions(db: Session, items: list[tuple[str, str]], levels: list[str],
                     chosen.append(pool[kind].pop())
                     rest -= 1
     return chosen
+
+
+# ---------------------------------------------------------------- 분류 재배치 (단원 묶음 → 학년 단계·소분류)
+
+UNIT_KEY = ("book", "chapter", "unit", "cat", "subcat", "level")
+
+
+def unit_groups(db: Session) -> list[dict]:
+    """교재 단원(+ 기존 분류·난이도) 묶음마다 문항 수와 예시 문항 — 매핑 만들 때 쓰는 목록."""
+    cols = [getattr(BankQuestion, k) for k in UNIT_KEY]
+    rows = db.execute(select(*cols, func.count(), func.min(BankQuestion.ord), func.min(BankQuestion.stem), func.max(BankQuestion.stem),
+                             func.string_agg(func.distinct(BankQuestion.qtype), ","))
+                      .where(BankQuestion.review != "del").group_by(*cols).order_by(func.min(BankQuestion.ord)))
+    out = []
+    for r in rows:
+        d = dict(zip(UNIT_KEY, r[:6]))
+        d.update({"n": r[6], "qtypes": r[10] or "", "ex": [(r[8] or "")[:140], (r[9] or "")[:140]] if r[8] != r[9] else [(r[8] or "")[:140]]})
+        out.append(d)
+    return out
+
+
+def remap(db: Session, mapping: list[dict], step=None) -> dict:
+    """mapping: [{book, chapter, unit, cat, subcat, level, sub_id}] → 문항마다 tier·sub_id·cat(학년 단계 · 중분류)·subcat(소분류) 바꾸고
+    분류 체계 순서대로 ord 다시 매김. 매핑에 없는 묶음은 cat 을 '미분류 · …'로."""
+    from . import taxonomy
+
+    subs = taxonomy.load()["subs"]
+    by_key = {}
+    for m in mapping:
+        sid = str(m.get("sub_id") or "").strip()
+        if sid in subs:
+            by_key[tuple(str(m.get(k) or "") for k in UNIT_KEY)] = sid
+    rows = db.execute(select(BankQuestion.id, *[getattr(BankQuestion, k) for k in UNIT_KEY], BankQuestion.ord)).all()
+    lv = {"하": 0, "중": 1, "상": 2}
+    upd, unmapped = [], 0
+    for r in rows:
+        key = tuple(str(x or "") for x in r[1:7])
+        sid = by_key.get(key)
+        if sid:
+            s = subs[sid]
+            upd.append({"i": r[0], "tier": s["tier"], "sub_id": sid, "cat": f"{s['tier_label']} · {s['cat']}"[:60], "subcat": s["label"][:120],
+                        "sort": (s["idx"], lv.get(r[6], 1), r[7] or 0)})
+        else:
+            unmapped += 1
+            old = str(r[4] or "")
+            upd.append({"i": r[0], "tier": "", "sub_id": "", "cat": (old if old.startswith("미분류") else f"미분류 · {old}")[:60], "subcat": str(r[5] or "")[:120],
+                        "sort": (10**6, lv.get(r[6], 1), r[7] or 0)})
+    upd.sort(key=lambda d: d["sort"])
+    for n, d in enumerate(upd):
+        d["o"] = n
+        del d["sort"]
+    t = BankQuestion.__table__
+    from sqlalchemy import bindparam, update
+
+    stmt = update(t).where(t.c.id == bindparam("i")).values(tier=bindparam("tier"), sub_id=bindparam("sub_id"), cat=bindparam("cat"),
+                                                             subcat=bindparam("subcat"), ord=bindparam("o"))
+    for k in range(0, len(upd), 2000):
+        db.execute(stmt, upd[k:k + 2000])
+        if step:
+            step(k + 2000, len(upd))
+    db.commit()
+    return {"total": len(upd), "mapped": len(upd) - unmapped, "unmapped": unmapped}

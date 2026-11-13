@@ -8,6 +8,17 @@
   <label style="font-weight:400"><input type="checkbox" name="overwrite" value="1"> 검수한 문항도 이 파일 내용으로 덮어쓰기 (새로 정리한 파일을 올릴 때)</label><br>
   <button class="btn" type="submit" style="margin-top:8px">가져오기</button>
 </form>
+{% if job %}<div class="job" data-job-id="{{ job }}"></div>{% endif %}
+<section class="panel">
+  <h2>분류 재배치 (학년 단계 → 중분류 → 소분류)</h2>
+  <p class="small muted">지금 {{ "{:,}".format(mapped) }} / {{ "{:,}".format(n) }}문항이 새 분류에 들어가 있어요.
+    ① 단원 목록을 받아 Claude에게 주면 → ② 분류 재배치 파일을 만들어 줘요 → ③ 그 파일을 여기 올리면 전체 문항이 한 번에 옮겨져요. 문항 내용(정답 등)은 바뀌지 않아요.</p>
+  <a class="btn ghost" href="/bank/export_units.json">① 단원 목록 받기 (JSON)</a>
+  <form method="post" action="/bank/remap" enctype="multipart/form-data" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input type="file" name="file" accept=".json" required>
+    <button class="btn" type="submit">③ 분류 재배치 파일 올리기</button>
+  </form>
+</section>
 <section class="panel">
   <h2>내보내기</h2>
   <p class="small muted">지금 들어 있는 문항 전체(검수에서 고친 내용·삭제 표시 포함)를 JSON 파일 하나로 받아요.</p>
