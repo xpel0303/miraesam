@@ -14,7 +14,7 @@ from ..bank import service
 from ..db import get_db
 from ..docx_builders import bank_docx
 from ..homework import spec as hspec
-from ..models import Academy, BankCart, BankConcept, BankQuestion, ClassGroup, Homework, HomeworkClass, Teacher
+from ..models import Academy, BankCart, BankConcept, BankQuestion, ClassGroup, Homework, HomeworkClass, Job, Teacher
 from ..pdf import render_pdf
 from ..web import current_teacher, flash, owner_only, render
 
@@ -243,6 +243,11 @@ def fill_run(request: Request, per_cat: int = Form(200), per_sub: int = Form(0),
     from ..jobs import enqueue
 
     per_cat, per_sub = max(10, min(1000, per_cat)), max(0, min(200, per_sub))
+    if resume:  # 같은 소분류를 두 작업이 동시에 만들지 않게: 그 작업이나 그걸 이어받은 작업이 아직 돌고 있으면 막음
+        for j in db.execute(select(Job).where(Job.kind == "bank_fill", Job.status.in_(("queued", "running")))).scalars():
+            if j.id == resume or (j.payload or {}).get("resume") == resume:
+                flash(request, f"작업 {j.id}이(가) 아직 돌고 있어요. 끝난 뒤에 이어서 눌러 주세요.")
+                return _go(f"/bank/import?job={j.id}")
     title = f"멈춘 채우기 작업({resume}) 이어서" if resume else f"빈 소분류 AI 문항 채우기 (소분류당 {per_sub})" if per_sub else f"빈 중분류 AI 문항 채우기 (중분류당 {per_cat})"
     job = enqueue(db, academy_id=teacher.academy_id, teacher_id=teacher.id, kind="bank_fill", title=title,
                   payload={"per_cat": per_cat, "per_sub": per_sub, **({"resume": resume} if resume else {})})
@@ -253,7 +258,38 @@ def fill_run(request: Request, per_cat: int = Form(200), per_sub: int = Form(0),
 def import_page(request: Request, job: int | None = None, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
     n = db.scalar(select(func.count()).select_from(BankQuestion)) or 0
     mapped = db.scalar(select(func.count()).select_from(BankQuestion).where(BankQuestion.sub_id != "")) or 0
-    return render(request, "bank/import.html", {"teacher": teacher, "n": n, "mapped": mapped, "job": job, "active": "grammar_bank"})
+    return render(request, "bank/import.html", {"teacher": teacher, "n": n, "mapped": mapped, "job": job, "active": "grammar_bank",
+                                                "fills": _fill_jobs(db, teacher), "empty_subs": _empty_subs(db)})
+
+
+def _empty_subs(db: Session) -> int:
+    """문항이 하나도 없는(삭제 표시 빼고) 소분류 수."""
+    from ..bank import taxonomy
+
+    have = set(db.scalars(select(BankQuestion.sub_id).where(BankQuestion.review != "del", BankQuestion.sub_id != "").distinct()))
+    return sum(1 for sid in taxonomy.load()["subs"] if sid not in have)
+
+
+def _fill_jobs(db: Session, teacher: Teacher) -> list[dict]:
+    """최근 AI 문항 채우기 작업: 상태, 목표 대비 지금 들어 있는 AI 문항 수, 이어받을 수 있는지."""
+    from ..handlers.bank import GEN_BOOK
+
+    jobs = db.execute(select(Job).where(Job.kind == "bank_fill", Job.academy_id == teacher.academy_id).order_by(Job.id.desc()).limit(8)).scalars().all()
+    have = dict(db.execute(select(BankQuestion.sub_id, func.count()).where(BankQuestion.book == GEN_BOOK, BankQuestion.review != "del")
+                           .group_by(BankQuestion.sub_id)).all()) if jobs else {}
+    active = {j.id for j in jobs if j.status in ("queued", "running")} | {(j.payload or {}).get("resume") for j in jobs if j.status in ("queued", "running")}
+    resumed = {(j.payload or {}).get("resume") for j in jobs}
+    out = []
+    for j in jobs:
+        targets = (j.payload or {}).get("targets") or {}
+        need = sum(targets.values())
+        got = sum(min(have.get(s, 0), n) for s, n in targets.items())
+        short = sum(1 for s, n in targets.items() if have.get(s, 0) < n)
+        out.append({"id": j.id, "title": j.title, "status": j.status, "step": j.step, "progress": j.progress, "attempts": j.attempts,
+                    "error": j.error, "reply": (j.result or {}).get("reply"), "subs": len(targets), "need": need, "got": got, "short": short,
+                    "created": j.created_at, "can_resume": bool(targets) and short > 0 and j.id not in active and j.status in ("done", "failed")
+                    and j.id not in resumed})
+    return out
 
 
 @router.post("/import")
