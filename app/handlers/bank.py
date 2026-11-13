@@ -139,7 +139,9 @@ def clean_gen(raw) -> list[dict]:
              "choices": " ".join(g("choices").split()), "answer": g("answer", 400), "expl": g("expl", 600)}
         if not d["stem"] or not d["answer"] or not d["instr"]:
             continue
-        if kind == "mc":
+        if kind == "mc" and not _re.sub(r"[①②③④⑤\s.,]", "", d["choices"]) and all(c in d["stem"] for c in "①②③④⑤"):
+            d["choices"] = ""  # 보기가 문장 속에 이미 있음 (밑줄 친 것 고르기 등)
+        elif kind == "mc":
             if not all(c in d["choices"] for c in "①②③④⑤") or not _re.fullmatch(r"[①②③④⑤]", d["answer"]):
                 continue
         else:

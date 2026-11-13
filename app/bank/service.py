@@ -182,11 +182,21 @@ def circle_options(body: str, choices: str, answer: str) -> tuple[str, str, str]
     return body, choices, answer
 
 
+def fix_tags(t) -> str:
+    """AI가 넣은 <u>밑줄</u> 은 〔밑줄〕로, 나머지 HTML 태그는 지움 (escape 돼서 글자로 찍히지 않게)."""
+    t = str(t or "")
+    if "<" not in t and "&lt;" not in t:
+        return t
+    t = t.replace("&lt;", "<").replace("&gt;", ">")
+    t = re.sub(r"<u>(.*?)</u>", r"〔\1〕", t, flags=re.S | re.I)
+    return re.sub(r"</?(?:u|b|i|br|span|strong|em)\b[^>]*>", "", t, flags=re.I)
+
+
 def display(q: BankQuestion) -> dict:
     """시험지에 찍을 모양: 발문 / 지문 / 문제 / 보기를 각각 따로 줄을 나눠서, 보기는 한 줄에 하나."""
-    clean = lambda t: re.sub(r"\s*\(추정\)\s*$", "", (t or "").strip())
-    raw_stem, instr = (q.stem or "").strip(), clean(q.instr)
-    passage = (q.passage or "").strip()
+    clean = lambda t: re.sub(r"\s*\(추정\)\s*$", "", fix_tags(t).strip())
+    raw_stem, instr = fix_tags(q.stem).strip(), clean(q.instr)
+    passage = fix_tags(q.passage).strip()
     if instr and raw_stem.startswith(instr) and len(raw_stem) - len(instr) >= 3:  # 발문이 본문 앞에 그대로 붙은 경우
         head, body = instr, raw_stem[len(instr):].strip()
     elif instr and (instr in raw_stem or raw_stem.startswith(instr[:30])):
@@ -206,7 +216,10 @@ def display(q: BankQuestion) -> dict:
         passage = (rest + ("\n" + passage if passage else "")).strip()
     if re.fullmatch(r"[_\s.]*", body or ""):  # 빈칸 표시만 남았으면 답 쓰는 줄이 대신함
         body = ""
-    body, choices = _break_choices(body), _break_choices(q.choices)
+    qch = fix_tags(q.choices)
+    if not re.sub(r"[①②③④⑤ⓐⓑⓒⓓⓔ\s.,]", "", qch):  # 보기 번호만 있고 내용이 없으면(문장 속에 ①~⑤가 이미 있음) 보기 줄을 안 찍음
+        qch = ""
+    body, choices = _break_choices(body), _break_choices(qch)
     if choices and choices[:20] in body:
         choices = ""
     answer = (q.answer or "").strip()
