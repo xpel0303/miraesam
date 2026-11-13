@@ -17,9 +17,9 @@
 {% if qs %}
 <form method="get" class="panel" id="out">
   <div class="row">
-    <div class="field"><label for="title">시험지 제목</label><input type="text" id="title" name="title" value="문법 시험지"></div>
-    <div class="field"><label for="answers">정답지</label><select id="answers" name="answers"><option value="1">{{ "세트마다 뒤에 넣기" if sets else "맨 뒤 페이지에 넣기" }}</option><option value="0">넣지 않기</option></select></div>
-    <div class="field"><label for="expl">해설</label><select id="expl" name="expl"><option value="0">정답만</option><option value="1">해설도</option></select></div>
+    <div class="field"><label for="title">시험지 제목</label><input type="text" id="title" name="title" value="{{ pdf.title or '문법 시험지' }}"></div>
+    <div class="field"><label for="answers">정답지</label><select id="answers" name="answers"><option value="1" {% if pdf.answers is not defined or pdf.answers %}selected{% endif %}>{{ "세트마다 뒤에 넣기" if sets else "맨 뒤 페이지에 넣기" }}</option><option value="0" {% if pdf.answers is defined and not pdf.answers %}selected{% endif %}>넣지 않기</option></select></div>
+    <div class="field"><label for="expl">해설</label><select id="expl" name="expl"><option value="0">정답만</option><option value="1" {% if pdf.expl %}selected{% endif %}>해설도</option></select></div>
     {% if concept_total %}<div class="field"><label for="concept">개념 설명</label><select id="concept" name="concept"><option value="1">맨 앞에 넣기</option><option value="0">넣지 않기</option></select></div>{% endif %}
   </div>
   <button class="btn" type="submit" formaction="/bank/sheet.pdf">PDF 받기</button>

@@ -134,7 +134,7 @@ def cart_view(request: Request, job: int | None = None, teacher: Teacher = Depen
     return render(request, "bank/cart.html", {"teacher": teacher, "qs": qs, "classes": classes, "auto": auto, "auto_text": auto_text, "active": "grammar_bank",
                                               "max_cart": MAX_CART, "job": job, "sets": [len(x) for x in meta.get("sets") or []],
                                               "concept_total": len(concept_subs), "concept_ready": ready or 0,
-                                              "concepts": _concept_cards(db, concept_subs) if concept_subs else []})
+                                              "concepts": _concept_cards(db, concept_subs) if concept_subs else [], "pdf": meta.get("pdf") or {}})
 
 
 @router.post("/cart")
@@ -397,7 +397,8 @@ async def build_run(request: Request, teacher: Teacher = Depends(current_teacher
     if not sets:
         flash(request, "조건에 맞는 문항이 없어요. 형식·난이도를 넓혀 보세요.", "error")
         return _go("/bank/build")
-    meta = {"sets": sets if len(sets) > 1 else [], "concept": sub_ids if f.get("concept") == "1" else []}
+    meta = {"sets": sets if len(sets) > 1 else [], "concept": sub_ids if f.get("concept") == "1" else [],
+            "pdf": {"title": str(f.get("ptitle") or "").strip()[:100] or "문법 시험지", "answers": f.get("answers") != "0", "expl": f.get("expl") == "1"}}
     _set_cart(db, teacher, [i for x in sets for i in x], meta)
     job_q = ""
     if meta["concept"]:

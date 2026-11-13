@@ -2,93 +2,121 @@
 {% block title %}문법뱅크 문제 만들기 · {{ APP_NAME }}{% endblock %}
 {% block main %}
 <style>
-  .gb { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
-  @media (max-width: 900px) { .gb { grid-template-columns: 1fr; } }
-  .gb .card { border: 1px solid var(--line); border-radius: 14px; background: var(--surface, #fff); }
-  .gb .top { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-  .gb .search { flex: 1; min-width: 200px; position: relative; }
-  .gb .search input { width: 100%; padding-left: 32px; }
-  .gb .search:before { content: "⌕"; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-3, #999); font-size: 1.05rem; }
-  .gb .stat { white-space: nowrap; font-size: .92rem; }
-  .gb .stat b { color: var(--brand); }
-  .gb .tiers { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  .gb .tiers button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 16px; font-weight: 700; cursor: pointer; color: var(--ink-2, #444); }
-  .gb .tiers button.on { background: var(--brand-soft, #e8f1ec); border-color: var(--brand); color: var(--brand); }
-  .gb .tiers button .c { font-weight: 400; font-size: .8rem; color: var(--ink-3, #999); margin-left: 4px; }
-  .gb .head { padding: 10px 14px 6px; font-size: .9rem; color: var(--ink-3, #888); font-weight: 700; }
-  .gb .tree { max-height: 560px; overflow: auto; padding: 0 6px 10px; user-select: none; }
-  .gb .cat { border-bottom: 1px solid var(--line); }
-  .gb .cat > .row1 { display: flex; align-items: center; gap: 8px; padding: 10px 8px; cursor: pointer; }
-  .gb .cat > .row1 .arw { width: 14px; color: var(--ink-3, #888); font-size: .8rem; }
-  .gb .cat > .row1 .nm { font-weight: 800; flex: 1; }
-  .gb .cat > .row1 .cnt { font-size: .82rem; color: var(--ink-3, #999); }
-  .gb .subs { padding: 0 0 6px 30px; }
-  .gb .sub { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
-  .gb .sub:hover { background: #f6f8fa; }
-  .gb .sub.on { background: var(--brand-soft, #e8f1ec); }
-  .gb .sub .nm { flex: 1; }
-  .gb .sub .n { font-size: .82rem; color: var(--ink-3, #999); }
-  .gb .sub.zero { opacity: .45; cursor: default; }
-  .gb .sub .path { font-size: .78rem; color: var(--ink-3, #999); margin-left: 4px; }
-  .gb input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--brand); pointer-events: none; }
-  .gb .cat > .row1 input { pointer-events: auto; }
-  .gb .side { padding: 14px; position: sticky; top: 12px; }
-  .gb .side h3 { font-size: .95rem; margin: 14px 0 8px; }
-  .gb .side h3:first-child { margin-top: 0; }
-  .gb .pills { display: flex; flex-wrap: wrap; gap: 6px; }
-  .gb .pills label { margin: 0; }
-  .gb .pills input { display: none; }
-  .gb .pills span { display: inline-block; min-width: 46px; text-align: center; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-weight: 700; color: var(--ink-2, #444); }
-  .gb .pills input:checked + span { background: var(--brand-soft, #e8f1ec); border-color: var(--brand); color: var(--brand); }
-  .gb .picked { max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 6px; }
-  .gb .picked .it { display: flex; gap: 6px; align-items: center; font-size: .88rem; padding: 4px 6px; border-radius: 6px; }
-  .gb .picked .it:hover { background: #f6f8fa; }
-  .gb .picked .it .t { flex: 1; }
-  .gb .picked .it small { color: var(--ink-3, #999); }
-  .gb .picked .it button { border: 0; background: none; cursor: pointer; color: var(--ink-3, #999); }
-  .gb .muted2 { color: var(--ink-3, #888); font-size: .86rem; }
-  .gb .opt { display: flex; gap: 8px; align-items: center; font-weight: 400; margin: 4px 0; }
+  .main { max-width: 1520px; }
+  .gx { --acc: #3a9a89; --acc-bg: #e8f5f1; --acc-line: #9fd2c6; }
+  .gx .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin: 6px 0 12px; }
+  .gx .tabs button { border: 0; background: none; padding: 10px 14px; font-weight: 800; font-size: 1.02rem; color: var(--ink-3, #999); cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -1px; }
+  .gx .tabs button.on { color: var(--ink, #222); border-bottom-color: var(--ink, #222); }
+  .gx .box { border: 1px solid var(--line); border-radius: 12px; background: var(--surface, #fff); overflow: hidden; }
+  .gx .toprow { display: flex; gap: 12px; align-items: center; padding: 10px; border-bottom: 1px solid var(--line); }
+  .gx .search { flex: 1; position: relative; }
+  .gx .search input { width: 100%; padding-left: 36px; height: 42px; border-radius: 8px; }
+  .gx .search:before { content: ""; position: absolute; left: 13px; top: 50%; width: 11px; height: 11px; border: 1.8px solid #777; border-radius: 50%; transform: translateY(-62%); }
+  .gx .search:after { content: ""; position: absolute; left: 24px; top: 58%; width: 6px; height: 1.8px; background: #777; transform: rotate(45deg); }
+  .gx .stat { white-space: nowrap; font-size: .95rem; padding-right: 4px; }
+  .gx .stat b { color: var(--acc); }
+  .gx .cols { display: grid; grid-template-columns: minmax(0, 1fr) 500px; }
+  @media (max-width: 1100px) { .gx .cols { grid-template-columns: 1fr; } }
+  .gx .left { border-right: 1px solid var(--line); min-width: 0; }
+  .gx .tiers { display: flex; flex-wrap: wrap; gap: 10px; padding: 12px; border-bottom: 1px solid var(--line); }
+  .gx .tiers button { border: 1px solid #ddd; background: #fff; border-radius: 999px; padding: 0 18px; height: 52px; min-width: 98px; font-weight: 800; font-size: .98rem; cursor: pointer; color: #333; }
+  .gx .tiers button.on { background: var(--acc-bg); border-color: var(--acc); color: var(--acc); }
+  .gx .tiers button .c { display: none; }
+  .gx .head { padding: 10px 12px; font-size: .88rem; color: #666; font-weight: 700; background: #fafafa; border-bottom: 1px solid var(--line); }
+  .gx .tree { height: 520px; overflow: auto; padding: 4px 12px 10px; user-select: none; }
+  .gx .cat > .row1 { display: flex; align-items: center; gap: 12px; padding: 12px 6px; cursor: pointer; }
+  .gx .cat > .row1 .arw { width: 14px; color: #555; font-size: .8rem; }
+  .gx .cat > .row1 .nm { font-weight: 800; font-size: 1.02rem; flex: 1; }
+  .gx .cat > .row1 .cnt { font-size: .86rem; color: #888; }
+  .gx .subs { padding: 0 0 4px 34px; }
+  .gx .sub { display: flex; align-items: center; gap: 12px; padding: 8px 6px; border-radius: 8px; cursor: pointer; }
+  .gx .sub:hover { background: #f7f8f8; }
+  .gx .sub.on { background: var(--acc-bg); }
+  .gx .sub .nm { flex: 1; color: #333; }
+  .gx .sub .n { font-size: .8rem; color: #aaa; }
+  .gx .sub.zero { opacity: .4; cursor: default; }
+  .gx .sub .path { font-size: .78rem; color: #999; margin-left: 6px; }
+  .gx input[type=checkbox].cb { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; border: 1.5px solid #cfcfcf; border-radius: 5px; background: #fff; pointer-events: none; flex: none; position: relative; margin: 0; }
+  .gx .cat > .row1 input.cb { pointer-events: auto; cursor: pointer; }
+  .gx input[type=checkbox].cb:checked, .gx input[type=checkbox].cb:indeterminate { background: var(--acc); border-color: var(--acc); }
+  .gx input[type=checkbox].cb:checked:after { content: ""; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .gx input[type=checkbox].cb:indeterminate:after { content: ""; position: absolute; left: 4px; top: 8px; width: 10px; height: 2px; background: #fff; }
+  .gx .right { padding: 16px; }
+  .gx .rt { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 12px; font-weight: 800; }
+  .gx .rt .ico { color: #888; font-weight: 400; letter-spacing: -2px; }
+  .gx table.set { width: 100%; border-collapse: collapse; border: 1px solid var(--line); }
+  .gx table.set td { border-top: 1px solid var(--line); padding: 8px; vertical-align: middle; }
+  .gx table.set tr.sec td { background: #fafafa; color: #888; font-weight: 800; font-size: .9rem; padding: 10px 8px; }
+  .gx table.set tr.sec td small { font-weight: 700; color: #aaa; margin-left: 4px; }
+  .gx table.set td.k { width: 140px; text-align: center; color: #444; font-size: .93rem; }
+  .gx .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gx .pills label { margin: 0; flex: 1 1 auto; }
+  .gx .pills.grid label { flex: 0 0 calc(20% - 5px); }
+  .gx .pills.grid label.w2 { flex: 0 0 calc(50% - 3px); }
+  .gx .pills input { display: none; }
+  .gx .pills span { display: block; text-align: center; padding: 8px 6px; border: 1px solid #ddd; border-radius: 999px; cursor: pointer; font-weight: 800; color: #333; background: #fff; }
+  .gx .pills input:checked + span { background: var(--acc-bg); border-color: var(--acc); color: var(--acc); }
+  .gx .num { width: 110px; height: 40px; }
+  .gx .picked-h { display: flex; justify-content: space-between; align-items: center; margin: 18px 0 8px; font-weight: 800; }
+  .gx .picked-h a { color: var(--acc); font-weight: 700; font-size: .92rem; cursor: pointer; text-decoration: underline; }
+  .gx .picked { max-height: 220px; overflow: auto; }
+  .gx .picked .it { display: flex; gap: 6px; align-items: center; font-size: .9rem; padding: 5px 4px; border-bottom: 1px solid #f1f1f1; }
+  .gx .picked .it .t { flex: 1; }
+  .gx .picked .it small { color: #999; margin-left: 4px; }
+  .gx .picked .it button { border: 0; background: none; cursor: pointer; color: #aaa; }
+  .gx .muted2 { color: #888; font-size: .9rem; }
+  .gx .opt { display: flex; gap: 8px; align-items: center; font-weight: 400; margin: 6px 0; }
+  .gx .go { width: 100%; margin-top: 14px; height: 48px; font-size: 1rem; }
+  .gx .pdfset .field { margin-bottom: 14px; }
 </style>
 
-<div class="panel-head" style="margin-bottom:4px"><h1>문제 만들기</h1><a class="btn ghost" href="/bank">← 직접 찾아서 담기</a></div>
-<p class="lead">학년 단계를 고르고, 중분류를 눌러 펼친 뒤 출제할 소분류를 체크하세요. 중분류 체크박스는 그 안을 통째로 골라요. 소분류는 <b>누른 채 끌면</b> 주르륵, <b>Shift+클릭</b>으로 범위를 한 번에 골라요. 뒤 숫자는 낼 수 있는 문항 수예요.</p>
+<div class="panel-head" style="margin-bottom:0"><h1>문법뱅크</h1><a class="btn ghost" href="/bank">← 직접 찾아서 담기</a></div>
 
-<form method="post" action="/bank/build" id="bf">
-<div class="gb">
-  <div class="card">
-    <div class="top">
-      <div class="search"><input type="text" id="q" placeholder="문법 이름으로 찾기 (예: 관계대명사, 수동태)" autocomplete="off"></div>
-      <div class="stat">고른 문법 <b id="n-pick">0</b>개 · 출제 <b id="n-total">0문항</b></div>
-      <button class="btn ghost small" type="button" id="sample">✦ 예시로 골라주기</button>
+<form method="post" action="/bank/build" id="bf" class="gx">
+<div class="tabs"><button type="button" class="on" data-tab="g">✎ 문법 출제 설정</button><button type="button" data-tab="p">⎙ PDF 출력 설정</button></div>
+
+<div class="box" data-pane="g">
+  <div class="toprow">
+    <div class="search"><input type="text" id="q" placeholder="문법 이름으로 찾기 (예: 관계대명사, 수동태)" autocomplete="off"></div>
+    <button class="btn ghost small" type="button" id="sample">예시로 골라주기</button>
+    <div class="stat">고른 문법 <b id="n-pick">0</b>개 · 출제 <b id="n-total">0문항</b></div>
+  </div>
+  <div class="cols">
+    <div class="left">
+      <div class="tiers" id="tiers"></div>
+      <div class="head" id="head"></div>
+      <div class="tree" id="tree"></div>
     </div>
-    <div class="tiers" id="tiers"></div>
-    <div class="head" id="head"></div>
-    <div class="tree" id="tree"></div>
+    <div class="right">
+      <div class="rt"><span class="ico">⚌</span><span>문서 생성 설정</span></div>
+      <table class="set">
+        <tr class="sec"><td colspan="2">개념 <small>고른 문법마다 개념 카드 (시험지 맨 앞)</small></td></tr>
+        <tr><td class="k">개념 설명</td><td><div class="pills"><label><input type="radio" name="concept" value="1"><span>넣기</span></label><label><input type="radio" name="concept" value="0" checked><span>안 넣기</span></label></div></td></tr>
+        <tr class="sec"><td colspan="2">분량</td></tr>
+        <tr><td class="k">소분류당 문항 수</td><td><div class="pills grid">{% for n in [1, 2, 3, 5, 10] %}<label><input type="radio" name="per" value="{{ n }}" {% if n == 2 %}checked{% endif %}><span>{{ n }}</span></label>{% endfor %}{% for n in [20, 30] %}<label class="w2"><input type="radio" name="per" value="{{ n }}"><span>{{ n }}</span></label>{% endfor %}</div></td></tr>
+        <tr class="sec"><td colspan="2">문항 조건</td></tr>
+        <tr><td class="k">문항 형식</td><td><div class="pills">{% for k, t in [("mc","객관식"),("short","주관식"),("essay","서술형")] %}<label><input type="checkbox" name="kind" value="{{ k }}" checked><span>{{ t }}</span></label>{% endfor %}</div></td></tr>
+        <tr><td class="k">난이도</td><td><div class="pills">{% for l, t in [("하","쉬움"),("중","보통"),("상","어려움")] %}<label><input type="checkbox" name="level" value="{{ l }}" checked><span>{{ t }}</span></label>{% endfor %}</div></td></tr>
+        <tr><td class="k">시험지 세트 수</td><td><input type="number" class="num" name="sets" value="1" min="1" max="5"></td></tr>
+      </table>
+      <div class="picked-h"><span>고른 문법</span><a id="clear">모두 지우기</a></div>
+      <div class="picked" id="picked"></div>
+      <p class="muted2" style="margin:8px 0 0">켠 형식의 문항이 모자라면 그만큼만 나가요. 한 번에 최대 {{ max_cart }}문항(세트 합계).</p>
+      <div id="hidden"></div>
+      <button class="btn go" type="submit">문제 만들기</button>
+    </div>
   </div>
+</div>
 
-  <div class="card side">
-    <h3>개념 설명 <span class="muted2">고른 문법마다 개념 카드 (시험지 맨 앞)</span></h3>
-    <div class="pills"><label><input type="radio" name="concept" value="1"><span>넣기</span></label><label><input type="radio" name="concept" value="0" checked><span>안 넣기</span></label></div>
-    <p class="muted2" style="margin:6px 0 0">처음 쓰는 문법은 AI가 개념 설명을 만들어 저장해 두고 다음부터 바로 써요.</p>
-    <h3>분량 <span class="muted2">소분류당 문항 수</span></h3>
-    <div class="pills">{% for n in [1, 2, 3, 5, 10, 20, 30] %}<label><input type="radio" name="per" value="{{ n }}" {% if n == 3 %}checked{% endif %}><span>{{ n }}</span></label>{% endfor %}</div>
-    <h3>문항 형식</h3>
-    <div class="pills">{% for k, t in [("mc","객관식"),("short","주관식"),("essay","서술형")] %}<label><input type="checkbox" name="kind" value="{{ k }}" checked><span>{{ t }}</span></label>{% endfor %}</div>
-    <p class="muted2" style="margin:6px 0 0">서술형 = 영작·문장 전환·배열. 켠 형식의 문항이 모자라면 그만큼만 나가요.</p>
-    <h3>난이도</h3>
-    <div class="pills">{% for l, t in [("하","쉬움"),("중","보통"),("상","어려움")] %}<label><input type="checkbox" name="level" value="{{ l }}" checked><span>{{ t }}</span></label>{% endfor %}</div>
-    <h3>시험지 세트 수 <span class="muted2">같은 범위로 문항이 겹치지 않게</span></h3>
-    <div class="pills">{% for n in [1, 2, 3, 4, 5] %}<label><input type="radio" name="sets" value="{{ n }}" {% if n == 1 %}checked{% endif %}><span>{{ n }}</span></label>{% endfor %}</div>
-    <h3>문제 모양</h3>
-    <label class="opt"><input type="checkbox" name="passage" value="0" style="pointer-events:auto"> 긴 지문 문제는 빼기</label>
-    <label class="opt"><input type="checkbox" name="unsure" value="1" style="pointer-events:auto"> 정답 '확인 필요' 문항도 넣기</label>
-    <label class="opt"><input type="checkbox" name="shuffle" value="1" style="pointer-events:auto"> 문제 순서 섞기</label>
-    <h3 style="display:flex;align-items:center">고른 문법 <button class="btn ghost small" type="button" id="clear" style="margin-left:auto">모두 지우기</button></h3>
-    <div class="picked" id="picked"><p class="muted2" style="margin:6px">아직 고른 문법이 없어요. 왼쪽에서 소분류를 골라 주세요.</p></div>
-    <p class="muted2" style="margin:8px 0 0">한 번에 최대 {{ max_cart }}문항(세트 합계)까지 뽑아요.</p>
-    <div id="hidden"></div>
-    <button class="btn" type="submit" style="width:100%;margin-top:12px">문제 만들기</button>
-  </div>
+<div class="box pdfset" data-pane="p" hidden style="padding:20px;max-width:720px">
+  <div class="field"><label for="ptitle">시험지 제목</label><input type="text" id="ptitle" name="ptitle" value="문법 시험지"></div>
+  <div class="field"><label>정답지</label><div class="pills" style="max-width:420px"><label><input type="radio" name="answers" value="1" checked><span>뒤에 넣기</span></label><label><input type="radio" name="answers" value="0"><span>넣지 않기</span></label></div></div>
+  <div class="field"><label>해설</label><div class="pills" style="max-width:420px"><label><input type="radio" name="expl" value="0" checked><span>정답만</span></label><label><input type="radio" name="expl" value="1"><span>해설도</span></label></div></div>
+  <div class="field"><label>문제 모양</label>
+    <label class="opt"><input type="checkbox" name="passage" value="0"> 긴 지문 문제는 빼기</label>
+    <label class="opt"><input type="checkbox" name="unsure" value="1"> 정답 '확인 필요' 문항도 넣기</label>
+    <label class="opt"><input type="checkbox" name="shuffle" value="1"> 문제 순서 섞기</label></div>
+  <p class="muted2">문제를 만든 뒤 '담은 문항' 화면에서 이 설정대로 PDF·워드를 받을 수 있어요. 거기서 바꿀 수도 있어요.</p>
 </div>
 </form>
 
@@ -103,7 +131,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var form = $("bf");
   function esc(x) { return String(x).replace(/[&<>"]/g, function (m) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[m]; }); }
-  function per() { return parseInt((form.querySelector("input[name=per]:checked") || {}).value || 3, 10); }
+  function per() { return parseInt((form.querySelector("input[name=per]:checked") || {}).value || 2, 10); }
 
   function renderTiers() {
     $("tiers").innerHTML = TREE.map(function (t) {
@@ -112,7 +140,7 @@
   }
   function subRow(id, showPath) {
     var s = SUB[id], on = picked.has(id);
-    return '<div class="sub' + (on ? " on" : "") + (s.n ? "" : " zero") + '" data-sub="' + id + '"><input type="checkbox"' + (on ? " checked" : "") + (s.n ? "" : " disabled") + '>' +
+    return '<div class="sub' + (on ? " on" : "") + (s.n ? "" : " zero") + '" data-sub="' + id + '"><input type="checkbox" class="cb"' + (on ? " checked" : "") + (s.n ? "" : " disabled") + '>' +
       '<span class="nm">' + esc(s.label) + (showPath ? '<span class="path">' + esc(s.tierLabel + " · " + s.cat) + '</span>' : "") + '</span><span class="n">' + s.n + '</span></div>';
   }
   function renderTree() {
@@ -130,8 +158,8 @@
       var nOn = ids.filter(function (id) { return picked.has(id); }).length, total = c.subs.reduce(function (a, s) { return a + s[2]; }, 0);
       var isOpen = open[key] !== undefined ? open[key] : ci === 0;
       return '<div class="cat"><div class="row1" data-cat="' + key + '"><span class="arw">' + (isOpen ? "▼" : "▶") + '</span>' +
-        '<input type="checkbox" data-catbox="' + ci + '"' + (ids.length && nOn === ids.length ? " checked" : "") + (ids.length ? "" : " disabled") + '>' +
-        '<span class="nm">' + esc(c.label) + '</span><span class="cnt">' + (nOn ? '<b style="color:var(--brand)">' + nOn + ' 선택</b> · ' : "") + '소분류 ' + c.subs.length + ' · ' + total + '문항</span></div>' +
+        '<input type="checkbox" class="cb" data-catbox="' + ci + '"' + (ids.length && nOn === ids.length ? " checked" : "") + (ids.length ? "" : " disabled") + '>' +
+        '<span class="nm">' + esc(c.label) + '</span><span class="cnt">' + (nOn ? '<b style="color:var(--acc)">' + nOn + '개 선택</b> · ' : "") + '소분류 ' + c.subs.length + '</span></div>' +
         (isOpen ? '<div class="subs">' + c.subs.map(function (s) { return subRow(s[0]); }).join("") + "</div>" : "") + "</div>";
     }).join("");
     var cb = $("tree").querySelectorAll("[data-catbox]");
@@ -141,11 +169,11 @@
     var ids = ORDER.filter(function (id) { return picked.has(id); });
     $("n-pick").textContent = ids.length;
     var tot = ids.reduce(function (a, id) { return a + Math.min(per(), SUB[id].n); }, 0);
-    var ns = parseInt((form.querySelector("input[name=sets]:checked") || {}).value || 1, 10);
+    var ns = Math.max(1, Math.min(5, parseInt(form.querySelector("input[name=sets]").value || 1, 10) || 1));
     $("n-total").textContent = (tot * ns) + "문항" + (ns > 1 ? " (" + tot + " × " + ns + "세트)" : "") + (tot * ns > MAX ? " — 최대 " + MAX : "");
     $("picked").innerHTML = ids.length ? ids.map(function (id) { var s = SUB[id];
       return '<div class="it"><span class="t">' + esc(s.label) + ' <small>' + esc(s.tierLabel + " · " + s.cat) + '</small></span><button type="button" data-rm="' + id + '" title="빼기">✕</button></div>'; }).join("")
-      : '<p class="muted2" style="margin:6px">아직 고른 문법이 없어요. 왼쪽에서 소분류를 골라 주세요.</p>';
+      : '<p class="muted2" style="margin:2px 0">아직 고른 문법이 없습니다. 위에서 소분류를 골라주세요.</p>';
   }
   function all() { renderTiers(); renderTree(); renderPicked(); }
   function set(id, on) { if (!SUB[id] || !SUB[id].n) return; if (on) picked.add(id); else picked.delete(id); }
@@ -183,6 +211,11 @@
   $("picked").addEventListener("click", function (e) { var b = e.target.closest("[data-rm]"); if (b) { picked.delete(b.dataset.rm); all(); } });
   $("clear").addEventListener("click", function () { picked.clear(); all(); });
   form.addEventListener("change", function (e) { if (e.target.name === "per" || e.target.name === "sets") renderPicked(); });
+  form.addEventListener("input", function (e) { if (e.target.name === "sets") renderPicked(); });
+  document.querySelectorAll(".gx .tabs [data-tab]").forEach(function (b) { b.addEventListener("click", function () {
+    document.querySelectorAll(".gx .tabs [data-tab]").forEach(function (x) { x.classList.toggle("on", x === b); });
+    document.querySelectorAll(".gx [data-pane]").forEach(function (p) { p.hidden = p.dataset.pane !== b.dataset.tab; });
+  }); });
   // 예시로 골라주기: 지금 학년 단계에서 문항이 많은 중분류 두 개의 소분류 몇 개
   $("sample").addEventListener("click", function () {
     var t = TREE.find(function (x) { return x.id === tier; });
