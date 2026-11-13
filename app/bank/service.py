@@ -333,18 +333,19 @@ def tree(db: Session) -> list[dict]:
 
 
 def pick_by_subs(db: Session, sub_ids: list[str], per: int, kinds: list[str], levels: list[str],
-                 skip_unsure: bool = True, with_passage: bool = True) -> list[str]:
-    """소분류마다 per 문항씩, 켠 형식(kinds)·난이도(levels)에서 무작위로. 모자라면 있는 만큼."""
+                 skip_unsure: bool = True, with_passage: bool = True, sets: int = 1) -> list[list[str]]:
+    """소분류마다 per 문항씩, 켠 형식(kinds)·난이도(levels)에서 무작위로 → 세트 수만큼 [세트별 id 목록].
+    세트끼리는 문항이 겹치지 않음. 모자라면 앞 세트부터 채우고 뒤 세트는 있는 만큼."""
     import random as _r
 
-    chosen: list[str] = []
+    out: list[list[str]] = [[] for _ in range(max(1, sets))]
     for sid in sub_ids:
         stmt = select(BankQuestion).where(BankQuestion.sub_id == sid, BankQuestion.review != "del")
         if levels:
             stmt = stmt.where(BankQuestion.level.in_(levels))
         if skip_unsure:
             stmt = stmt.where(BankQuestion.src != "확인 필요")
-        rows = db.execute(stmt.order_by(func.random()).limit(max(60, per * 8))).scalars().all()
+        rows = db.execute(stmt.order_by(func.random()).limit(max(60, per * sets * 8))).scalars().all()
         pool = []
         for q in rows:
             d = display(q)
@@ -354,8 +355,9 @@ def pick_by_subs(db: Session, sub_ids: list[str], per: int, kinds: list[str], le
                 continue
             pool.append(q.id)
         _r.shuffle(pool)
-        chosen.extend(pool[:per])
-    return chosen
+        for k in range(len(out)):
+            out[k].extend(pool[k * per:(k + 1) * per])
+    return out
 
 
 # ---------------------------------------------------------------- 분류 재배치 (단원 묶음 → 학년 단계·소분류)

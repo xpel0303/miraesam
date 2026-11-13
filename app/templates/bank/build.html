@@ -58,7 +58,8 @@
   <div class="card">
     <div class="top">
       <div class="search"><input type="text" id="q" placeholder="문법 이름으로 찾기 (예: 관계대명사, 수동태)" autocomplete="off"></div>
-      <div class="stat">고른 문법 <b id="n-pick">0</b>개 · 출제 <b id="n-total">0</b>문항</div>
+      <div class="stat">고른 문법 <b id="n-pick">0</b>개 · 출제 <b id="n-total">0문항</b></div>
+      <button class="btn ghost small" type="button" id="sample">✦ 예시로 골라주기</button>
     </div>
     <div class="tiers" id="tiers"></div>
     <div class="head" id="head"></div>
@@ -66,6 +67,9 @@
   </div>
 
   <div class="card side">
+    <h3>개념 설명 <span class="muted2">고른 문법마다 개념 카드 (시험지 맨 앞)</span></h3>
+    <div class="pills"><label><input type="radio" name="concept" value="1"><span>넣기</span></label><label><input type="radio" name="concept" value="0" checked><span>안 넣기</span></label></div>
+    <p class="muted2" style="margin:6px 0 0">처음 쓰는 문법은 AI가 개념 설명을 만들어 저장해 두고 다음부터 바로 써요.</p>
     <h3>분량 <span class="muted2">소분류당 문항 수</span></h3>
     <div class="pills">{% for n in [1, 2, 3, 5, 10, 20, 30] %}<label><input type="radio" name="per" value="{{ n }}" {% if n == 3 %}checked{% endif %}><span>{{ n }}</span></label>{% endfor %}</div>
     <h3>문항 형식</h3>
@@ -73,13 +77,15 @@
     <p class="muted2" style="margin:6px 0 0">서술형 = 영작·문장 전환·배열. 켠 형식의 문항이 모자라면 그만큼만 나가요.</p>
     <h3>난이도</h3>
     <div class="pills">{% for l, t in [("하","쉬움"),("중","보통"),("상","어려움")] %}<label><input type="checkbox" name="level" value="{{ l }}" checked><span>{{ t }}</span></label>{% endfor %}</div>
+    <h3>시험지 세트 수 <span class="muted2">같은 범위로 문항이 겹치지 않게</span></h3>
+    <div class="pills">{% for n in [1, 2, 3, 4, 5] %}<label><input type="radio" name="sets" value="{{ n }}" {% if n == 1 %}checked{% endif %}><span>{{ n }}</span></label>{% endfor %}</div>
     <h3>문제 모양</h3>
     <label class="opt"><input type="checkbox" name="passage" value="0" style="pointer-events:auto"> 긴 지문 문제는 빼기</label>
     <label class="opt"><input type="checkbox" name="unsure" value="1" style="pointer-events:auto"> 정답 '확인 필요' 문항도 넣기</label>
     <label class="opt"><input type="checkbox" name="shuffle" value="1" style="pointer-events:auto"> 문제 순서 섞기</label>
     <h3 style="display:flex;align-items:center">고른 문법 <button class="btn ghost small" type="button" id="clear" style="margin-left:auto">모두 지우기</button></h3>
     <div class="picked" id="picked"><p class="muted2" style="margin:6px">아직 고른 문법이 없어요. 왼쪽에서 소분류를 골라 주세요.</p></div>
-    <p class="muted2" style="margin:8px 0 0">한 번에 최대 {{ max_cart }}문항까지 뽑아요.</p>
+    <p class="muted2" style="margin:8px 0 0">한 번에 최대 {{ max_cart }}문항(세트 합계)까지 뽑아요.</p>
     <div id="hidden"></div>
     <button class="btn" type="submit" style="width:100%;margin-top:12px">문제 만들기</button>
   </div>
@@ -135,7 +141,8 @@
     var ids = ORDER.filter(function (id) { return picked.has(id); });
     $("n-pick").textContent = ids.length;
     var tot = ids.reduce(function (a, id) { return a + Math.min(per(), SUB[id].n); }, 0);
-    $("n-total").textContent = Math.min(tot, MAX) + (tot > MAX ? " (최대 " + MAX + ")" : "");
+    var ns = parseInt((form.querySelector("input[name=sets]:checked") || {}).value || 1, 10);
+    $("n-total").textContent = (tot * ns) + "문항" + (ns > 1 ? " (" + tot + " × " + ns + "세트)" : "") + (tot * ns > MAX ? " — 최대 " + MAX : "");
     $("picked").innerHTML = ids.length ? ids.map(function (id) { var s = SUB[id];
       return '<div class="it"><span class="t">' + esc(s.label) + ' <small>' + esc(s.tierLabel + " · " + s.cat) + '</small></span><button type="button" data-rm="' + id + '" title="빼기">✕</button></div>'; }).join("")
       : '<p class="muted2" style="margin:6px">아직 고른 문법이 없어요. 왼쪽에서 소분류를 골라 주세요.</p>';
@@ -175,7 +182,17 @@
   document.addEventListener("mouseup", function () { drag = null; });
   $("picked").addEventListener("click", function (e) { var b = e.target.closest("[data-rm]"); if (b) { picked.delete(b.dataset.rm); all(); } });
   $("clear").addEventListener("click", function () { picked.clear(); all(); });
-  form.addEventListener("change", function (e) { if (e.target.name === "per") renderPicked(); });
+  form.addEventListener("change", function (e) { if (e.target.name === "per" || e.target.name === "sets") renderPicked(); });
+  // 예시로 골라주기: 지금 학년 단계에서 문항이 많은 중분류 두 개의 소분류 몇 개
+  $("sample").addEventListener("click", function () {
+    var t = TREE.find(function (x) { return x.id === tier; });
+    var cats = t.cats.map(function (c, i) { return {i: i, n: c.subs.reduce(function (a, s) { return a + s[2]; }, 0), c: c}; })
+      .filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; }).slice(0, 2);
+    picked.clear();
+    cats.forEach(function (x) { x.c.subs.filter(function (s) { return s[2] > 0; }).slice(0, 2).forEach(function (s) { picked.add(s[0]); }); open[tier + x.i] = true; });
+    $("q").value = ""; all();
+    if (!picked.size) alert("이 학년 단계에는 아직 문항이 없어요. 다른 단계를 골라 보세요.");
+  });
   form.addEventListener("submit", function (e) {
     if (!picked.size) { e.preventDefault(); alert("출제할 소분류를 하나 이상 골라 주세요."); return; }
     $("hidden").innerHTML = ORDER.filter(function (id) { return picked.has(id); }).map(function (id) { return '<input type="hidden" name="sub" value="' + id + '">'; }).join("");

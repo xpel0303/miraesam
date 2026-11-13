@@ -14,13 +14,13 @@ from ..bank import service
 from ..db import get_db
 from ..docx_builders import bank_docx
 from ..homework import spec as hspec
-from ..models import Academy, BankQuestion, ClassGroup, Homework, HomeworkClass, Teacher
+from ..models import Academy, BankCart, BankConcept, BankQuestion, ClassGroup, Homework, HomeworkClass, Teacher
 from ..pdf import render_pdf
 from ..web import current_teacher, flash, owner_only, render
 
 router = APIRouter(prefix="/bank")
 PER_PAGE = 30
-MAX_CART = 80  # 세션 쿠키에 id 목록을 담으므로 상한을 둠
+MAX_CART = 600  # 한 번에 담는 최대 문항 수 (세트 전체 합)
 FILTERS = ("cat", "subcat", "level", "status", "q")
 
 
@@ -37,8 +37,29 @@ def _qs(f: dict, **extra) -> str:
     return urlencode(d)
 
 
-def _cart(request: Request) -> list[str]:
-    return list(request.session.get("bank_cart") or [])
+def _cart_row(db: Session, teacher: Teacher) -> BankCart | None:
+    return db.get(BankCart, teacher.id)
+
+
+def _cart(db: Session, teacher: Teacher) -> list[str]:
+    row = _cart_row(db, teacher)
+    return list(row.ids or []) if row else []
+
+
+def _cart_meta(db: Session, teacher: Teacher) -> dict:
+    row = _cart_row(db, teacher)
+    return dict(row.meta or {}) if row else {}
+
+
+def _set_cart(db: Session, teacher: Teacher, ids: list[str], meta: dict | None = None):
+    """담은 문항 저장. meta 를 안 주면 세트·개념 설정은 지움 (직접 담기·빼기 등)."""
+    row = _cart_row(db, teacher)
+    if row is None:
+        row = BankCart(teacher_id=teacher.id)
+        db.add(row)
+    row.ids = list(ids)
+    row.meta = meta or {}
+    db.commit()
 
 
 def _load(db: Session, ids: list[str]) -> list[BankQuestion]:
@@ -57,31 +78,31 @@ def index(request: Request, page: int = 1, teacher: Teacher = Depends(current_te
     pages = max(1, ceil(total / PER_PAGE))
     page = max(1, min(page, pages))
     rows = db.execute(stmt.order_by(BankQuestion.ord).offset((page - 1) * PER_PAGE).limit(PER_PAGE)).scalars().all()
-    cart = _cart(request)
+    cart = _cart(db, teacher)
     return render(request, "bank/index.html", {
         "teacher": teacher, "rows": [service.display(r) for r in rows], "f": f, "fac": service.facets(db), "total": total, "total_all": total_all,
         "page": page, "pages": pages, "cart": cart, "qs": _qs(f), "max_cart": MAX_CART, "active": "grammar_bank"})
 
 
-def _add(request: Request, ids: list[str]) -> int:
-    cart = _cart(request)
+def _add(db: Session, teacher: Teacher, ids: list[str]) -> int:
+    cart = _cart(db, teacher)
     added = 0
     for i in ids:
         if i not in cart and len(cart) < MAX_CART:
             cart.append(i)
             added += 1
-    request.session["bank_cart"] = cart
+    _set_cart(db, teacher, cart)
     return added
 
 
 @router.post("/add")
-async def add(request: Request, teacher: Teacher = Depends(current_teacher)):
+async def add(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     f = await request.form()
     back = str(f.get("back") or "/bank")
     if not back.startswith("/bank"):
         back = "/bank"
-    n = _add(request, [str(x) for x in f.getlist("id")])
-    flash(request, f"{n}문항을 담았어요. (담은 문항 {len(_cart(request))}/{MAX_CART})" if n else f"담을 수 있는 문항이 없어요. (최대 {MAX_CART}개)", "ok" if n else "error")
+    n = _add(db, teacher, [str(x) for x in f.getlist("id")])
+    flash(request, f"{n}문항을 담았어요. (담은 문항 {len(_cart(db, teacher))}/{MAX_CART})" if n else f"담을 수 있는 문항이 없어요. (최대 {MAX_CART}개)", "ok" if n else "error")
     return _go(back)
 
 
@@ -96,24 +117,29 @@ async def pick(request: Request, teacher: Teacher = Depends(current_teacher), db
         n = 10
     ids = [r for r in db.scalars(service.apply_filters(select(BankQuestion.id), flt))]
     random.shuffle(ids)
-    got = _add(request, ids[:n])
-    flash(request, f"무작위로 {got}문항을 담았어요. (담은 문항 {len(_cart(request))}/{MAX_CART})")
+    got = _add(db, teacher, ids[:n])
+    flash(request, f"무작위로 {got}문항을 담았어요. (담은 문항 {len(_cart(db, teacher))}/{MAX_CART})")
     return _go("/bank?" + _qs(flt))
 
 
 @router.get("/cart")
-def cart_view(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
-    qs = service.group_same_passage([service.display(q) for q in _load(db, _cart(request))])
+def cart_view(request: Request, job: int | None = None, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    qs = service.group_same_passage([service.display(q) for q in _load(db, _cart(db, teacher))])
     classes = list(db.execute(select(ClassGroup).where(ClassGroup.academy_id == teacher.academy_id, ClassGroup.active.is_(True)).order_by(ClassGroup.name)).scalars())
     auto = sum(1 for q in qs if service.choice_number(q["answer"]) and q["objective"])
     auto_text = sum(1 for q in qs if not q["objective"] and q["src"] != "확인 필요" and not q.get("merged") and hspec.text_alts(q["answer"]))
-    return render(request, "bank/cart.html", {"teacher": teacher, "qs": qs, "classes": classes, "auto": auto, "auto_text": auto_text, "active": "grammar_bank", "max_cart": MAX_CART})
+    meta = _cart_meta(db, teacher)
+    concept_subs = meta.get("concept") or []
+    ready = db.scalar(select(func.count()).select_from(BankConcept).where(BankConcept.sub_id.in_(concept_subs))) if concept_subs else 0
+    return render(request, "bank/cart.html", {"teacher": teacher, "qs": qs, "classes": classes, "auto": auto, "auto_text": auto_text, "active": "grammar_bank",
+                                              "max_cart": MAX_CART, "job": job, "sets": [len(x) for x in meta.get("sets") or []],
+                                              "concept_total": len(concept_subs), "concept_ready": ready or 0})
 
 
 @router.post("/cart")
-async def cart_edit(request: Request, teacher: Teacher = Depends(current_teacher)):
+async def cart_edit(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     f = await request.form()
-    cart = _cart(request)
+    cart = _cart(db, teacher)
     act = str(f.get("act") or "")
     if act == "clear":
         cart = []
@@ -122,16 +148,32 @@ async def cart_edit(request: Request, teacher: Teacher = Depends(current_teacher
         cart = [i for i in cart if i not in gone]
     elif act == "shuffle":
         random.shuffle(cart)
-    request.session["bank_cart"] = cart
+    _set_cart(db, teacher, cart)
     return _go("/bank/cart")
 
 
+def _concept_cards(db: Session, sub_ids: list[str]) -> list[dict]:
+    from ..bank import taxonomy
+
+    subs = taxonomy.load()["subs"]
+    have = {c.sub_id: c.body for c in db.execute(select(BankConcept).where(BankConcept.sub_id.in_(sub_ids))).scalars()} if sub_ids else {}
+    return [{**have[x], "path": f"{subs[x]['tier_label']} · {subs[x]['cat']} · {subs[x]['label']}"} for x in sub_ids if x in have and x in subs]
+
+
 def _sheet_ctx(request: Request, db: Session, teacher: Teacher, params) -> dict:
-    qs = service.group_same_passage([service.display(q) for q in _load(db, _cart(request))])
-    if not qs:
-        raise HTTPException(400, "담은 문항이 없어요.")
+    meta = _cart_meta(db, teacher)
     title = str(params.get("title") or "").strip()[:100] or "문법 시험지"
-    return {"academy": db.get(Academy, teacher.academy_id), "doc_title": title, "title": title, "qs": qs,
+    if meta.get("sets"):
+        parts = [{"title": f"{title} · {chr(65 + k)}세트", "qs": service.group_same_passage([service.display(q) for q in _load(db, ids)])}
+                 for k, ids in enumerate(meta["sets"])]
+        parts = [p for p in parts if p["qs"]]
+    else:
+        parts = [{"title": title, "qs": service.group_same_passage([service.display(q) for q in _load(db, _cart(db, teacher))])}]
+    if not parts or not parts[0]["qs"]:
+        raise HTTPException(400, "담은 문항이 없어요.")
+    with_concept = str(params.get("concept", "1")) != "0"
+    return {"academy": db.get(Academy, teacher.academy_id), "doc_title": title, "title": title, "qs": parts[0]["qs"], "parts": parts,
+            "concepts": _concept_cards(db, meta.get("concept") or []) if with_concept else [],
             "answers": str(params.get("answers", "1")) != "0", "expl": str(params.get("expl", "0")) == "1"}
 
 
@@ -148,7 +190,7 @@ def sheet_pdf(request: Request, teacher: Teacher = Depends(current_teacher), db:
 @router.get("/sheet.docx")
 def sheet_docx(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     ctx = _sheet_ctx(request, db, teacher, request.query_params)
-    return bank_docx(ctx["academy"], ctx["title"], ctx["qs"], ctx["answers"], ctx["expl"]).response(f"{ctx['title']}.docx")
+    return bank_docx(ctx["academy"], ctx["title"], ctx["qs"], ctx["answers"], ctx["expl"], ctx["parts"], ctx["concepts"]).response(f"{ctx['title']}.docx")
 
 
 @router.get("/export.json")
@@ -213,7 +255,7 @@ async def import_run(request: Request, file: UploadFile, teacher: Teacher = Depe
         except (ValueError, OSError):
             flash(request, "JSON 파일을 읽지 못했어요. 문법뱅크 통합 JSON을 올려 주세요.", "error")
             return _go("/bank/import")
-    request.session["bank_cart"] = []
+    _set_cart(db, teacher, [])
     flash(request, f"문법뱅크 {n:,}문항을 가져왔어요.")
     return _go("/bank")
 
@@ -268,7 +310,8 @@ def _student_q(q: dict) -> dict:
 async def make_homework(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     """담은 문항을 숙제로: 보기 고르는 문항은 번호로 자동 채점, 서술형은 '종이 답안 확인' 할 일로."""
     f = await request.form()
-    qs = service.group_same_passage([service.display(q) for q in _load(db, _cart(request))])
+    sets = _cart_meta(db, teacher).get("sets") or []
+    qs = service.group_same_passage([service.display(q) for q in _load(db, sets[0] if sets else _cart(db, teacher))])
     title = str(f.get("title") or "").strip()[:120]
     class_ids = {int(x) for x in f.getlist("class_id") if str(x).isdigit()}
     valid = set(db.execute(select(ClassGroup.id).where(ClassGroup.academy_id == teacher.academy_id, ClassGroup.id.in_(class_ids))).scalars()) if class_ids else set()
@@ -334,21 +377,46 @@ async def build_run(request: Request, teacher: Teacher = Depends(current_teacher
         flash(request, "문항 형식(객관식·주관식·서술형)을 하나 이상 켜 주세요.", "error")
         return _go("/bank/build")
     levels = [x for x in f.getlist("level") if x in ("하", "중", "상")]
-    ids = service.pick_by_subs(db, sub_ids, per, kinds, levels, skip_unsure=f.get("unsure") != "1", with_passage=f.get("passage") != "0")
+    n_sets = int(f.get("sets")) if str(f.get("sets") or "").isdigit() else 1
+    n_sets = max(1, min(10, n_sets))
+    sets = service.pick_by_subs(db, sub_ids, per, kinds, levels, skip_unsure=f.get("unsure") != "1", with_passage=f.get("passage") != "0", sets=n_sets)
     want = len(sub_ids) * per
-    cut = len(ids) > MAX_CART
-    ids = ids[:MAX_CART]
-    if f.get("shuffle") == "1":
-        random.shuffle(ids)
-    else:  # 분류 체계 순서 — 같은 소분류·지문 문항이 붙어 있게
-        order = dict(db.execute(select(BankQuestion.id, BankQuestion.ord).where(BankQuestion.id.in_(ids))).all())
-        ids.sort(key=lambda i: order.get(i, 0))
-    request.session["bank_cart"] = ids
+    allq = sum(len(x) for x in sets)
+    cut = allq > MAX_CART
+    if cut:  # 세트 전체 합이 상한을 넘으면 세트마다 고르게 자름
+        each = MAX_CART // len(sets)
+        sets = [x[:each] for x in sets]
+    order = dict(db.execute(select(BankQuestion.id, BankQuestion.ord).where(BankQuestion.id.in_([i for x in sets for i in x]))).all())
+    for x in sets:
+        if f.get("shuffle") == "1":
+            random.shuffle(x)
+        else:  # 분류 체계 순서 — 같은 소분류·지문 문항이 붙어 있게
+            x.sort(key=lambda i: order.get(i, 0))
+    sets = [x for x in sets if x]
+    if not sets:
+        flash(request, "조건에 맞는 문항이 없어요. 형식·난이도를 넓혀 보세요.", "error")
+        return _go("/bank/build")
+    meta = {"sets": sets if len(sets) > 1 else [], "concept": sub_ids if f.get("concept") == "1" else []}
+    _set_cart(db, teacher, [i for x in sets for i in x], meta)
+    job_q = ""
+    if meta["concept"]:
+        have = set(db.execute(select(BankConcept.sub_id).where(BankConcept.sub_id.in_(sub_ids))).scalars())
+        todo = [x for x in sub_ids if x not in have]
+        if todo:
+            if not teacher.gemini_key_enc:
+                flash(request, "개념 설명을 만들려면 설정에서 Gemini API 키를 넣어 주세요. (문항은 뽑아 두었어요)", "error")
+            else:
+                from ..jobs import enqueue
+
+                job = enqueue(db, academy_id=teacher.academy_id, teacher_id=teacher.id, kind="bank_concepts",
+                              title=f"문법 개념 설명 만들기 ({len(todo)}개)", payload={"subs": todo})
+                job_q = f"?job={job.id}"
+    sizes = " · ".join(f"{chr(65 + k)}세트 {len(x)}" for k, x in enumerate(sets)) if len(sets) > 1 else f"{len(sets[0])}문항"
     if cut:
-        flash(request, f"한 번에 {MAX_CART}문항까지라 {MAX_CART}문항만 뽑았어요. 소분류를 나눠서 여러 번 만들어 주세요.", "error")
-    elif len(ids) < want:
-        flash(request, f"켠 형식·난이도의 문항이 모자란 문법이 있어 {len(ids)}문항만 뽑았어요 (고른 {len(sub_ids)}개 × {per}문항 = {want}).", "error")
+        flash(request, f"한 번에 {MAX_CART}문항까지라 세트마다 줄였어요 ({sizes}).", "error")
+    elif any(len(x) < want for x in sets):
+        flash(request, f"켠 형식·난이도의 문항이 모자란 문법이 있어 일부만 뽑았어요 ({sizes}, 세트당 목표 {want}).", "error")
     else:
-        flash(request, f"{len(ids)}문항을 뽑았어요. 아래에서 시험지로 받거나 숙제로 내세요.")
-    return _go("/bank/cart")
+        flash(request, f"뽑았어요: {sizes}. 아래에서 시험지로 받거나 숙제로 내세요.")
+    return _go("/bank/cart" + job_q)
 

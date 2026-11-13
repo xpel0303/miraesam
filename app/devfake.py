@@ -120,6 +120,10 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
         return _comprehension(prompt)
     if system and "본문 워크북" in system:
         return _textbook(prompt)
+    if system and "개념 설명 카드" in system:
+        return {"title": "[가짜] 개념", "points": ["[가짜] 규칙 하나", "[가짜] 규칙 둘", "[가짜] 주의할 점"], "forms": "have/has + p.p.",
+                "examples": [{"en": "I have lived here for ten years.", "ko": "[가짜] 해석", "hl": "have lived"}, {"en": "She has finished it.", "ko": "[가짜] 해석", "hl": "has finished"}],
+                "tip": "[가짜] 시험 함정"}
     if system and "흐름분석" in system:
         words = [w for w in re.findall(r"[A-Za-z]{6,}", prompt.split("지문:")[-1])][:8] or ["learning"] * 8
         return {"title": "[가짜] 흐름 제목", "gist": "[가짜] 핵심 내용 한두 줄, 개조식 정리", "top": "[가짜] 중심 화제",

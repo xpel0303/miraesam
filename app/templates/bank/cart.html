@@ -2,12 +2,16 @@
 {% block title %}문법뱅크 시험지 · {{ APP_NAME }}{% endblock %}
 {% block main %}
 <div class="panel-head" style="margin-bottom:4px"><h1>담은 문항 {{ qs|length }}개</h1><a class="btn ghost" href="/bank">← 문법뱅크</a></div>
+{% if job %}<div class="job" data-job-id="{{ job }}"></div>{% endif %}
+{% if sets %}<p class="lead">시험지 {{ sets|length }}세트: {% for n in sets %}{{ "ABCDEFGHIJ"[loop.index0] }}세트 {{ n }}문항{% if not loop.last %} · {% endif %}{% endfor %} — 세트끼리 같은 문항이 없어요. PDF·워드는 세트마다 새 쪽에서 시작하고, 숙제는 A세트로 나가요.</p>{% endif %}
+{% if concept_total %}<p class="small muted">개념 설명: {{ concept_ready }} / {{ concept_total }}개 준비됨 — 시험지 맨 앞에 들어가요.{% if concept_ready < concept_total %} 만드는 중이면 끝난 뒤 PDF를 받으세요.{% endif %}</p>{% endif %}
 {% if qs %}
 <form method="get" class="panel" id="out">
   <div class="row">
     <div class="field"><label for="title">시험지 제목</label><input type="text" id="title" name="title" value="문법 시험지"></div>
-    <div class="field"><label for="answers">정답지</label><select id="answers" name="answers"><option value="1">맨 뒤 페이지에 넣기</option><option value="0">넣지 않기</option></select></div>
+    <div class="field"><label for="answers">정답지</label><select id="answers" name="answers"><option value="1">{{ "세트마다 뒤에 넣기" if sets else "맨 뒤 페이지에 넣기" }}</option><option value="0">넣지 않기</option></select></div>
     <div class="field"><label for="expl">해설</label><select id="expl" name="expl"><option value="0">정답만</option><option value="1">해설도</option></select></div>
+    {% if concept_total %}<div class="field"><label for="concept">개념 설명</label><select id="concept" name="concept"><option value="1">맨 앞에 넣기</option><option value="0">넣지 않기</option></select></div>{% endif %}
   </div>
   <button class="btn" type="submit" formaction="/bank/sheet.pdf">PDF 받기</button>
   <button class="btn ghost" type="submit" formaction="/bank/sheet.docx">워드 받기</button>

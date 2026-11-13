@@ -534,13 +534,11 @@ def _rich_run(doc, p, text, size=9.5, bold=False):
         r = doc.run(p, seg, bold=bold, size=size, underline=under)
 
 
-def bank_docx(academy, title, qs, answers=True, expl=False):
+def bank_docx(academy, title, qs, answers=True, expl=False, parts=None, concepts=None):
+    """parts: [{title, qs}] (세트별 시험지) — 없으면 qs 하나. concepts: 맨 앞 개념 정리 카드."""
     from .bank.service import segments
     doc = Doc(academy, title)
-    doc.title(title)
-    p = doc.para(size=9, space_after=8)
-    doc.run(p, "반:                    이름:                    점수:", size=9, color=INK_2)
-    doc.columns(2)
+    parts = parts or [{"title": title, "qs": qs}]
 
     def rich_para(text, **kw):
         p = doc.para(**kw)
@@ -548,33 +546,60 @@ def bank_docx(academy, title, qs, answers=True, expl=False):
             doc.run(p, t, underline=u, size=kw.get("size"))
         return p
 
-    for n, q in enumerate(qs, 1):
-        p = doc.para(keep=True, space_after=2)
-        doc.num(p, n)
-        if q["head"]:
-            for t, u in segments(q["head"]):
-                doc.run(p, t, bold=True, underline=u, size=9.5)
-        if q["passage"]:
-            doc.box(lambda bp, q=q: [doc.run(bp, t, underline=u, size=9) for t, u in segments(q["passage"])])
-        for line in service_lines(q["stem"]):
-            rich_para(line, size=9.5, space_after=1)
-        for line in service_lines(q["choices"]):
-            rich_para(line, hanging_cm=0.5, size=9.5, space_after=0)
-        for _ in range(q["lines"]):
-            doc.blank_line(0)
-        doc.para(space_after=5)
-    if answers:
-        doc.new_section(1)
-        doc.section_head("정답" + (" · 해설" if expl else ""))
+    first = True
+    if concepts:
+        doc.title(f"{title} · 개념 정리")
         doc.columns(2)
-        for n, q in enumerate(qs, 1):
-            p = doc.para(space_after=2)
+        for c in concepts:
+            doc.para(c["path"], size=7.5, color=INK_3, space_after=0, keep=True)
+            doc.para(c["title"], bold=True, size=10.5, space_after=2, keep=True)
+            if c.get("forms"):
+                doc.para(c["forms"], bold=True, size=9, space_after=2, keep=True)
+            for pt in c["points"]:
+                doc.para("• " + pt, size=9, space_after=0, hanging_cm=0.35, keep=True)
+            for e in c["examples"]:
+                doc.para(e["en"], size=9, space_after=0, indent_cm=0.3, keep=True)
+                doc.para(e["ko"], size=8.3, color=INK_2, space_after=1, indent_cm=0.3, keep=True)
+            if c.get("tip"):
+                doc.para("시험 포인트 · " + c["tip"], bold=True, size=8.6, space_after=8)
+            else:
+                doc.para(space_after=6)
+        first = False
+    for part in parts:
+        if not first:
+            doc.new_section(1)
+        first = False
+        doc.title(part["title"])
+        p = doc.para(size=9, space_after=8)
+        doc.run(p, "반:                    이름:                    점수:", size=9, color=INK_2)
+        doc.columns(2)
+        for n, q in enumerate(part["qs"], 1):
+            p = doc.para(keep=True, space_after=2)
             doc.num(p, n)
-            doc.run(p, q["answer"] or "-", bold=True, size=9.5)
-            if q["src"] == "확인 필요":
-                doc.run(p, "  (확인 필요)", size=8, color=INK_3)
-            if expl and q["expl"]:
-                doc.para(q["expl"], size=8.5, color=INK_2, indent_cm=0.6)
+            if q["head"]:
+                for t, u in segments(q["head"]):
+                    doc.run(p, t, bold=True, underline=u, size=9.5)
+            if q["passage"]:
+                doc.box(lambda bp, q=q: [doc.run(bp, t, underline=u, size=9) for t, u in segments(q["passage"])])
+            for line in service_lines(q["stem"]):
+                rich_para(line, size=9.5, space_after=1)
+            for line in service_lines(q["choices"]):
+                rich_para(line, hanging_cm=0.5, size=9.5, space_after=0)
+            for _ in range(q["lines"]):
+                doc.blank_line(0)
+            doc.para(space_after=5)
+        if answers:
+            doc.new_section(1)
+            doc.section_head(part["title"] + " · 정답" + (" · 해설" if expl else ""))
+            doc.columns(2)
+            for n, q in enumerate(part["qs"], 1):
+                p = doc.para(space_after=2)
+                doc.num(p, n)
+                doc.run(p, q["answer"] or "-", bold=True, size=9.5)
+                if q["src"] == "확인 필요":
+                    doc.run(p, "  (확인 필요)", size=8, color=INK_3)
+                if expl and q["expl"]:
+                    doc.para(q["expl"], size=8.5, color=INK_2, indent_cm=0.6)
     return doc
 
 

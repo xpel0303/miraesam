@@ -672,6 +672,27 @@ class MockSet(Base):
     school: Mapped["School | None"] = relationship()
 
 
+class BankCart(Base):
+    """문법뱅크 담은 문항 (선생님마다 하나). sets: 시험지 세트별 문항 id, concept: 개념 설명을 넣을 소분류 번호."""
+
+    __tablename__ = "bank_carts"
+
+    teacher_id: Mapped[int] = mapped_column(ForeignKey("teachers.id"), primary_key=True)
+    ids: Mapped[list] = mapped_column(JSON, default=list)
+    meta: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class BankConcept(Base):
+    """문법뱅크 소분류 개념 설명 (AI가 한 번 만들고 저장해 두고 다시 씀). body: {title, points[], examples[{en, ko}], tip}"""
+
+    __tablename__ = "bank_concepts"
+
+    sub_id: Mapped[str] = mapped_column(String(12), primary_key=True)
+    body: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
 class BankQuestion(Base):
     """문법뱅크 문항 (모든 학원이 함께 쓰는 공용 자료, 선생님 화면에서만 열람).
 
