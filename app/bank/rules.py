@@ -305,12 +305,12 @@ TOPIC_MAP = _topics()
 
 def topic_key(cat: str, subcat: str) -> str:
     first = (subcat or "").split(" / ")[0].strip()
-    return f"{(cat or '').strip()} > {first}"
+    return f"{(cat or '').strip()} > {first}".strip()
 
 
 def choose(cat: str, subcat: str, book: str, level: str) -> str | None:
     """문항 하나의 새 소분류 번호 (없으면 None)."""
-    cands = TOPIC_MAP.get(topic_key(cat, subcat)) or TOPIC_MAP.get(f"{(cat or '').strip()} > ")
+    cands = TOPIC_MAP.get(topic_key(cat, subcat)) or TOPIC_MAP.get(f"{(cat or '').strip()} >")
     if not cands:
         return None
     want = TIERS.index(target_tier(book, level))
