@@ -109,6 +109,7 @@ def gen_prompt(s: dict, siblings: list[str], n: int, seen: list[str]) -> str:
         f"단원(중분류): {s['cat']}", f"이번 문법(소분류): {s['label']}",
         f"같은 단원의 다른 소분류(이번엔 묻지 않음): {', '.join(x for x in siblings if x != s['label'])[:400]}", "",
         f"이 소분류만 묻는 문제 {n}개를 만들어 주세요. 구성: {mix}. 난이도는 하·중·상을 고르게.",
+        "- 밑줄은 HTML 태그 대신 〔 〕로 표시 (예: She has two 〔boxs〕.). 빈칸은 ____ .",
         "- 객관식: 보기 5개 '① … ② … ③ … ④ … ⑤ …' 한 줄, 정답은 '③'처럼 번호만. 문제 문장의 빈칸은 ____ 로.",
         "- 주관식: 빈칸 쓰기 / 오류 수정(틀린 부분 → 고친 말) / 단답. choices 는 빈 문자열. 정답은 짧게.",
         "- 서술형: 영작(우리말 주고 영어로, 조건 괄호로 제시) / 배열(단어 묶음을 / 로 나눠 제시) / 문장 전환. 정답은 완성 문장.",
@@ -143,6 +144,8 @@ def clean_gen(raw) -> list[dict]:
                 continue
         else:
             d["choices"] = ""
+        for k in ("instr", "stem", "choices", "answer", "expl"):
+            d[k] = _re.sub(r"</?(?!u>)[a-z]+[^>]*>", "", _re.sub(r"<u>(.*?)</u>", r"〔\1〕", d[k]))
         out.append(d)
     return out
 
@@ -152,6 +155,7 @@ def fill(ctx: JobContext) -> dict:
     """문항이 하나도 없는 중분류마다 per_cat 문항을 AI로 만들어 넣음 (소분류에 고르게 나눔).
     서버가 다시 시작돼도 이미 넣은 문항은 그대로 두고 모자란 만큼만 이어서 만듦."""
     import random
+    import re
     import threading
     from concurrent.futures import ThreadPoolExecutor
 
@@ -181,6 +185,9 @@ def fill(ctx: JobContext) -> dict:
         with session_scope() as db:
             job = db.get(Job, ctx.job_id)
             job.payload = {**(job.payload or {}), "targets": targets}
+    with session_scope() as db:  # 앞서 만든 문항의 <u>밑줄</u> → 〔밑줄〕
+        for q in db.execute(select(BankQuestion).where(BankQuestion.book == GEN_BOOK, BankQuestion.stem.contains("<u>"))).scalars():
+            q.stem = re.sub(r"<u>(.*?)</u>", r"〔\1〕", q.stem)
     if not targets:
         return {"reply": "비어 있는 중분류가 없어요.", "model": "문항 채우기"}
 
