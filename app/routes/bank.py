@@ -133,7 +133,8 @@ def cart_view(request: Request, job: int | None = None, teacher: Teacher = Depen
     ready = db.scalar(select(func.count()).select_from(BankConcept).where(BankConcept.sub_id.in_(concept_subs))) if concept_subs else 0
     return render(request, "bank/cart.html", {"teacher": teacher, "qs": qs, "classes": classes, "auto": auto, "auto_text": auto_text, "active": "grammar_bank",
                                               "max_cart": MAX_CART, "job": job, "sets": [len(x) for x in meta.get("sets") or []],
-                                              "concept_total": len(concept_subs), "concept_ready": ready or 0})
+                                              "concept_total": len(concept_subs), "concept_ready": ready or 0,
+                                              "concepts": _concept_cards(db, concept_subs) if concept_subs else []})
 
 
 @router.post("/cart")

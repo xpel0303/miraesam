@@ -2,9 +2,18 @@
 {% block title %}문법뱅크 시험지 · {{ APP_NAME }}{% endblock %}
 {% block main %}
 <div class="panel-head" style="margin-bottom:4px"><h1>담은 문항 {{ qs|length }}개</h1><a class="btn ghost" href="/bank">← 문법뱅크</a></div>
-{% if job %}<div class="job" data-job-id="{{ job }}"></div>{% endif %}
+{% if job %}<div class="job" data-job-id="{{ job }}" data-reload></div>
+<script>document.addEventListener("job:done", function (e) { if (e.target.matches("[data-reload]")) setTimeout(function () { location.href = "/bank/cart"; }, 800); });</script>{% endif %}
 {% if sets %}<p class="lead">시험지 {{ sets|length }}세트: {% for n in sets %}{{ "ABCDEFGHIJ"[loop.index0] }}세트 {{ n }}문항{% if not loop.last %} · {% endif %}{% endfor %} — 세트끼리 같은 문항이 없어요. PDF·워드는 세트마다 새 쪽에서 시작하고, 숙제는 A세트로 나가요.</p>{% endif %}
-{% if concept_total %}<p class="small muted">개념 설명: {{ concept_ready }} / {{ concept_total }}개 준비됨 — 시험지 맨 앞에 들어가요.{% if concept_ready < concept_total %} 만드는 중이면 끝난 뒤 PDF를 받으세요.{% endif %}</p>{% endif %}
+{% if concept_total %}<p class="small muted">개념 설명: {{ concept_ready }} / {{ concept_total }}개 준비됨 — 시험지 맨 앞에 들어가요.{% if concept_ready < concept_total %} 만드는 중이면 끝난 뒤 새로고침하고 PDF를 받으세요.{% endif %}</p>
+{% if concepts %}<details class="panel" id="concepts"><summary><b>개념 설명 미리 보기 ({{ concepts|length }}개)</b></summary>
+  {% for c in concepts %}<div style="border-top:1px solid var(--line);padding:10px 0">
+    <div class="small muted">{{ c.path }}</div><b>{{ c.title }}</b>{% if c.forms %} <span class="tag">{{ c.forms }}</span>{% endif %}
+    <ul style="margin:6px 0">{% for pt in c.points %}<li>{{ pt }}</li>{% endfor %}</ul>
+    {% for e in c.examples %}<div class="small">{{ e.en }} <span class="muted">— {{ e.ko }}</span></div>{% endfor %}
+    {% if c.tip %}<div class="small" style="color:#b3401a;margin-top:4px"><b>시험 포인트</b> {{ c.tip }}</div>{% endif %}
+  </div>{% endfor %}
+</details>{% endif %}{% endif %}
 {% if qs %}
 <form method="get" class="panel" id="out">
   <div class="row">
