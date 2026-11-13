@@ -4,7 +4,7 @@ import random
 import tempfile
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -234,6 +234,17 @@ def remap_rules_run(request: Request, teacher: Teacher = Depends(owner_only), db
     from ..jobs import enqueue
 
     job = enqueue(db, academy_id=teacher.academy_id, teacher_id=teacher.id, kind="bank_remap", title="문법뱅크 분류 재배치 (규칙)", payload={"rules": True})
+    return _go(f"/bank/import?job={job.id}")
+
+
+@router.post("/fill")
+def fill_run(request: Request, per_cat: int = Form(200), teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+    """문항이 하나도 없는 중분류를 AI 문항으로 채우기 (중분류마다 per_cat 문항)."""
+    from ..jobs import enqueue
+
+    per_cat = max(10, min(1000, per_cat))
+    job = enqueue(db, academy_id=teacher.academy_id, teacher_id=teacher.id, kind="bank_fill", title=f"빈 중분류 AI 문항 채우기 (중분류당 {per_cat})",
+                  payload={"per_cat": per_cat})
     return _go(f"/bank/import?job={job.id}")
 
 

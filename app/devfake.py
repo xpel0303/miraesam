@@ -120,6 +120,14 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
         return _comprehension(prompt)
     if system and "본문 워크북" in system:
         return _textbook(prompt)
+    if system and "문법 문제 출제 전문가" in system:
+        import random
+        k = random.randint(0, 10**6)
+        return {"questions": [{"kind": "mc", "qtype": "객관식", "level": "중", "instr": "다음 빈칸에 알맞은 것은?", "stem": f"[가짜 {k}-{i}] I ____ a cat.",
+                               "choices": "① has ② have ③ having ④ to have ⑤ had been", "answer": "②", "expl": "[가짜] 해설"} for i in range(8)]
+                + [{"kind": "short", "qtype": "빈칸 쓰기", "level": "하", "instr": "빈칸에 알맞은 말을 쓰시오.", "stem": f"[가짜 {k}-s{i}] She ____ (go) home.", "choices": "", "answer": "goes", "expl": "[가짜]"} for i in range(2)]}
+    if system and "문법 문제 검토자" in system:
+        return {"results": [{"i": i, "mine": "x", "agree": i != 3} for i in range(10)]}
     if system and "개념 설명 카드" in system:
         return {"title": "[가짜] 개념", "points": ["[가짜] 규칙 하나", "[가짜] 규칙 둘", "[가짜] 주의할 점"], "forms": "have/has + p.p.",
                 "examples": [{"en": "I have lived here for ten years.", "ko": "[가짜] 해석", "hl": "have lived"}, {"en": "She has finished it.", "ko": "[가짜] 해석", "hl": "has finished"}],
