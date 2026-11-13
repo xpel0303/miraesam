@@ -2,8 +2,8 @@
 import random
 import re
 
-MAX_WORDS = 200
-MAX_PASSAGES = 30
+MAX_WORDS = 3000  # 사실상 제한 없음 (실수로 너무 큰 입력만 막는 안전장치)
+MAX_PASSAGES = 100
 SEP = "\n\n[[지문]]\n\n"  # 여러 지문을 source_text 한 칸에 저장할 때 구분
 
 

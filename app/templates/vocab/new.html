@@ -3,7 +3,7 @@
 {% block main %}
 <style>.go-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;bottom:0;background:var(--bg,#fff);padding:10px 0;z-index:2}</style>
 <h1>새 단어장</h1>
-<p class="lead">단어는 한 단어장에 {{ max }}개까지 넣을 수 있어요.</p>
+<p class="lead">지문을 여러 개 넣으면 지문마다 정한 수만큼 뽑아요. 단어 수 제한은 없어요 (예: 지문 25개 × 20개 = 500개).</p>
 {% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
 
 <form method="post" action="/vocab">
@@ -20,7 +20,7 @@
     </div>
 
     <div data-kind="passage">
-      <div class="field" style="max-width:260px"><label for="count">지문마다 뽑을 단어 수</label><input type="text" id="count" name="count" inputmode="numeric" value="{{ form.count or 10 }}"><span class="hint">2~60개 · 앞 지문과 겹치는 단어는 빼요 (전체 {{ max }}개까지)</span></div>
+      <div class="field" style="max-width:260px"><label for="count">지문마다 뽑을 단어 수</label><input type="text" id="count" name="count" inputmode="numeric" value="{{ form.count or 10 }}"><span class="hint">2~60개 · 앞 지문과 겹치는 단어는 빼요</span></div>
     </div>
   </section>
 

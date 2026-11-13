@@ -75,8 +75,6 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         for i, p in enumerate(ps, 1):
             if len(p["text"]) > 8000:
                 errors.append(f"지문 {i}이 너무 깁니다 (8000자까지).")
-        if ps and count * len(ps) > spec.MAX_WORDS:
-            count = max(2, spec.MAX_WORDS // len(ps))
     else:
         words = [spec.clean_entry(w) for w in spec.parse_list(listtext)]
         if not words:
