@@ -170,6 +170,13 @@ def fill(ctx: JobContext) -> dict:
     targets: dict[str, int] = ctx.payload.get("targets") or {}
     tx = taxonomy.load()
     subs = tx["subs"]
+    if not targets and ctx.payload.get("resume"):  # 멈춘 채우기 작업의 목표를 그대로 이어받음
+        from ..models import Job
+        with session_scope() as db:
+            old = db.get(Job, int(ctx.payload["resume"]))
+            targets = dict((old.payload or {}).get("targets") or {}) if old else {}
+            job = db.get(Job, ctx.job_id)
+            job.payload = {**(job.payload or {}), "targets": targets}
     if not targets:  # 처음 실행: 지금 비어 있는 중분류를 찾아 목표를 정해 두고 저장 (다시 시작해도 같은 목표)
         with session_scope() as db:
             counts = dict(db.execute(select(BankQuestion.sub_id, func.count()).where(BankQuestion.review != "del", BankQuestion.sub_id != "")

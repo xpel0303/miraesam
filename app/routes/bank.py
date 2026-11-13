@@ -238,14 +238,14 @@ def remap_rules_run(request: Request, teacher: Teacher = Depends(owner_only), db
 
 
 @router.post("/fill")
-def fill_run(request: Request, per_cat: int = Form(200), per_sub: int = Form(0), teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+def fill_run(request: Request, per_cat: int = Form(200), per_sub: int = Form(0), resume: int = Form(0), teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
     """문항이 하나도 없는 중분류를 AI 문항으로 채우기 (중분류마다 per_cat 문항)."""
     from ..jobs import enqueue
 
     per_cat, per_sub = max(10, min(1000, per_cat)), max(0, min(200, per_sub))
-    title = f"빈 소분류 AI 문항 채우기 (소분류당 {per_sub})" if per_sub else f"빈 중분류 AI 문항 채우기 (중분류당 {per_cat})"
+    title = f"멈춘 채우기 작업({resume}) 이어서" if resume else f"빈 소분류 AI 문항 채우기 (소분류당 {per_sub})" if per_sub else f"빈 중분류 AI 문항 채우기 (중분류당 {per_cat})"
     job = enqueue(db, academy_id=teacher.academy_id, teacher_id=teacher.id, kind="bank_fill", title=title,
-                  payload={"per_cat": per_cat, "per_sub": per_sub})
+                  payload={"per_cat": per_cat, "per_sub": per_sub, **({"resume": resume} if resume else {})})
     return _go(f"/bank/import?job={job.id}")
 
 
