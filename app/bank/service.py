@@ -14,10 +14,10 @@ LEVEL_ORDER = {"하": 0, "중": 1, "상": 2}
 CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩"
 
 
-def import_rows(db: Session, rows: list[dict]) -> int:
-    """공용 문항 전체를 새로 넣음. 파일 순서가 곧 정렬 순서(ord)."""
-    # 검수한 문항은 다시 가져와도 고친 내용과 상태를 그대로 유지
-    kept = {r.id: r for r in db.execute(select(BankQuestion).where(BankQuestion.review != "")).scalars()}
+def import_rows(db: Session, rows: list[dict], keep_reviewed: bool = True) -> int:
+    """공용 문항 전체를 새로 넣음. 파일 순서가 곧 정렬 순서(ord).
+    keep_reviewed: 검수한 문항은 고친 내용과 상태를 그대로 유지 (끄면 파일 내용으로 덮어씀, 파일의 review 값 사용)."""
+    kept = {r.id: r for r in db.execute(select(BankQuestion).where(BankQuestion.review != "")).scalars()} if keep_reviewed else {}
     kept = {k: {f: getattr(v, f) for f in ("instr", "passage", "stem", "choices", "answer", "expl", "review")} for k, v in kept.items()}
     db.execute(delete(BankQuestion))
     batch, seen, n = [], set(), 0
@@ -31,7 +31,7 @@ def import_rows(db: Session, rows: list[dict]) -> int:
         d["page"] = r.get("page") if isinstance(r.get("page"), int) else None
         d["ord"] = i
         d["id"], d["cat"] = rid[:40], d["cat"][:60]
-        d["review"] = ""
+        d["review"] = "" if keep_reviewed else str(r.get("review") or "")[:6]
         if rid in kept:
             d.update(kept[rid])
         for k, w in (("subcat", 120), ("book", 80), ("chapter", 120), ("unit", 160), ("qtype", 30), ("src", 20)):
@@ -47,9 +47,9 @@ def import_rows(db: Session, rows: list[dict]) -> int:
     return n
 
 
-def import_file(db: Session, path: str) -> int:
+def import_file(db: Session, path: str, keep_reviewed: bool = True) -> int:
     with open(path, encoding="utf-8") as f:
-        return import_rows(db, json.load(f))
+        return import_rows(db, json.load(f), keep_reviewed)
 
 
 def facets(db: Session) -> dict:

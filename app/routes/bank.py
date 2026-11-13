@@ -151,6 +151,16 @@ def sheet_docx(request: Request, teacher: Teacher = Depends(current_teacher), db
     return bank_docx(ctx["academy"], ctx["title"], ctx["qs"], ctx["answers"], ctx["expl"]).response(f"{ctx['title']}.docx")
 
 
+@router.get("/export.json")
+def export(teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+    """전체 문항 내보내기 (가져오기와 같은 형식 + 검수 상태). 고친 내용·삭제 표시도 그대로."""
+    rows = db.execute(select(BankQuestion).order_by(BankQuestion.ord)).scalars().all()
+    data = [{**{k: getattr(r, k) for k in service.FIELDS}, "no": r.no, "page": r.page, "review": r.review} for r in rows]
+    body = json.dumps(data, ensure_ascii=False, indent=0)
+    return Response(body, media_type="application/json",
+                    headers={"Content-Disposition": "attachment; filename*=UTF-8''%EB%AC%B8%EB%B2%95%EB%B1%85%ED%81%AC_%EB%82%B4%EB%B3%B4%EB%82%B4%EA%B8%B0.json"})
+
+
 @router.get("/import")
 def import_page(request: Request, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
     n = db.scalar(select(func.count()).select_from(BankQuestion)) or 0
@@ -164,7 +174,8 @@ async def import_run(request: Request, file: UploadFile, teacher: Teacher = Depe
             tmp.write(chunk)
         tmp.flush()
         try:
-            n = service.import_file(db, tmp.name)
+            form = await request.form()
+            n = service.import_file(db, tmp.name, keep_reviewed=form.get("overwrite") != "1")
         except (ValueError, OSError):
             flash(request, "JSON 파일을 읽지 못했어요. 문법뱅크 통합 JSON을 올려 주세요.", "error")
             return _go("/bank/import")
