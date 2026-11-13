@@ -312,41 +312,43 @@ async def make_homework(request: Request, teacher: Teacher = Depends(current_tea
 
 @router.get("/build")
 def build_page(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
-    """문제 만들기: 난이도 → 문법 항목 → 세부 항목 → 문항 수 순서로 골라 한 번에 뽑기."""
-    fac = service.facets(db)
-    return render(request, "bank/build.html", {"teacher": teacher, "cats": fac["cats"], "subs_json": json.dumps(fac["subs"], ensure_ascii=False),
+    """문제 만들기: 학년 단계 → 중분류 → 소분류를 체크하고, 소분류당 문항 수·형식·난이도를 정해 한 번에 뽑기."""
+    return render(request, "bank/build.html", {"teacher": teacher, "tree_json": json.dumps(service.tree(db), ensure_ascii=False),
                                                "max_cart": MAX_CART, "active": "grammar_bank"})
 
 
 @router.post("/build")
 async def build_run(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    from ..bank import taxonomy
+
     f = await request.form()
-    items = []
-    for raw in f.getlist("item"):
-        cat, _, sub = str(raw).partition("||")
-        if cat:
-            items.append((cat.strip(), sub.strip()))
-    if not items:
-        flash(request, "문법 항목을 하나 이상 골라 주세요.", "error")
+    subs = taxonomy.load()["subs"]
+    sub_ids = list(dict.fromkeys(x for x in f.getlist("sub") if x in subs))
+    if not sub_ids:
+        flash(request, "출제할 소분류를 하나 이상 골라 주세요.", "error")
+        return _go("/bank/build")
+    per = int(f.get("per")) if str(f.get("per") or "").isdigit() else 3
+    per = max(1, min(30, per))
+    kinds = [k for k in f.getlist("kind") if k in service.KINDS]
+    if not kinds:
+        flash(request, "문항 형식(객관식·주관식·서술형)을 하나 이상 켜 주세요.", "error")
         return _go("/bank/build")
     levels = [x for x in f.getlist("level") if x in ("하", "중", "상")]
-    num = lambda k: max(0, min(MAX_CART, int(f.get(k) or 0))) if str(f.get(k) or "0").isdigit() else 0
-    per_item = {i: num(f"c{i}") for i in range(len(items))} if f.get("mode") == "manual" else None
-    n_obj, n_sub = num("n_obj"), num("n_sub")
-    total = sum(per_item.values()) if per_item else n_obj + n_sub
-    if total == 0:
-        flash(request, "문항 수를 정해 주세요.", "error")
-        return _go("/bank/build")
-    ids = service.pick_questions(db, items, levels, n_obj, n_sub, per_item, skip_unsure=f.get("unsure") != "1", with_passage=f.get("passage") != "0")
+    ids = service.pick_by_subs(db, sub_ids, per, kinds, levels, skip_unsure=f.get("unsure") != "1", with_passage=f.get("passage") != "0")
+    want = len(sub_ids) * per
+    cut = len(ids) > MAX_CART
     ids = ids[:MAX_CART]
     if f.get("shuffle") == "1":
         random.shuffle(ids)
-    else:  # 교재 순서(대분류·세부 순)로 정렬 — 같은 지문 문항이 붙어 있게
+    else:  # 분류 체계 순서 — 같은 소분류·지문 문항이 붙어 있게
         order = dict(db.execute(select(BankQuestion.id, BankQuestion.ord).where(BankQuestion.id.in_(ids))).all())
         ids.sort(key=lambda i: order.get(i, 0))
     request.session["bank_cart"] = ids
-    if len(ids) < total:
-        flash(request, f"조건에 맞는 문항이 모자라 {len(ids)}문항만 뽑았어요.", "error")
+    if cut:
+        flash(request, f"한 번에 {MAX_CART}문항까지라 {MAX_CART}문항만 뽑았어요. 소분류를 나눠서 여러 번 만들어 주세요.", "error")
+    elif len(ids) < want:
+        flash(request, f"켠 형식·난이도의 문항이 모자란 문법이 있어 {len(ids)}문항만 뽑았어요 (고른 {len(sub_ids)}개 × {per}문항 = {want}).", "error")
     else:
         flash(request, f"{len(ids)}문항을 뽑았어요. 아래에서 시험지로 받거나 숙제로 내세요.")
     return _go("/bank/cart")
+

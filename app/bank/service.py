@@ -302,6 +302,62 @@ def pick_questions(db: Session, items: list[tuple[str, str]], levels: list[str],
     return chosen
 
 
+# ---------------------------------------------------------------- 문제 만들기 (학년 단계 → 중분류 → 소분류에서 고르기)
+
+ESSAY_TYPES = {"서술형", "영작", "영작·쓰기", "문장 전환", "배열", "해석"}
+KINDS = {"mc": "객관식", "short": "주관식", "essay": "서술형"}
+
+
+def kind_of(q: BankQuestion, d: dict | None = None) -> str:
+    """객관식(보기 고르기) / 서술형(영작·전환·배열·해석) / 주관식(단답·빈칸·오류수정 등)."""
+    d = d or display(q)
+    if d["objective"]:
+        return "mc"
+    return "essay" if (q.qtype or "") in ESSAY_TYPES else "short"
+
+
+def tree(db: Session) -> list[dict]:
+    """분류 체계 전체 + 소분류마다 낼 수 있는 문항 수 → [{id, label, cats: [{label, subs: [[sub_id, label, n]]}]}]"""
+    from . import taxonomy
+
+    counts = dict(db.execute(select(BankQuestion.sub_id, func.count()).where(BankQuestion.review != "del", BankQuestion.sub_id != "")
+                             .group_by(BankQuestion.sub_id)).all())
+    tx = taxonomy.load()
+    out = {t: {"id": t, "label": tl, "cats": []} for t, tl in tx["tiers"]}
+    for sid, s in tx["subs"].items():
+        cats = out[s["tier"]]["cats"]
+        if not cats or cats[-1]["label"] != s["cat"]:
+            cats.append({"label": s["cat"], "subs": []})
+        cats[-1]["subs"].append([sid, s["label"], counts.get(sid, 0)])
+    return list(out.values())
+
+
+def pick_by_subs(db: Session, sub_ids: list[str], per: int, kinds: list[str], levels: list[str],
+                 skip_unsure: bool = True, with_passage: bool = True) -> list[str]:
+    """소분류마다 per 문항씩, 켠 형식(kinds)·난이도(levels)에서 무작위로. 모자라면 있는 만큼."""
+    import random as _r
+
+    chosen: list[str] = []
+    for sid in sub_ids:
+        stmt = select(BankQuestion).where(BankQuestion.sub_id == sid, BankQuestion.review != "del")
+        if levels:
+            stmt = stmt.where(BankQuestion.level.in_(levels))
+        if skip_unsure:
+            stmt = stmt.where(BankQuestion.src != "확인 필요")
+        rows = db.execute(stmt.order_by(func.random()).limit(max(60, per * 8))).scalars().all()
+        pool = []
+        for q in rows:
+            d = display(q)
+            if not with_passage and (d["passage"] or len(d["stem"]) > 300):
+                continue
+            if kinds and kind_of(q, d) not in kinds:
+                continue
+            pool.append(q.id)
+        _r.shuffle(pool)
+        chosen.extend(pool[:per])
+    return chosen
+
+
 # ---------------------------------------------------------------- 분류 재배치 (단원 묶음 → 학년 단계·소분류)
 
 UNIT_KEY = ("book", "chapter", "unit", "cat", "subcat", "level")

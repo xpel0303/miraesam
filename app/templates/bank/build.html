@@ -2,125 +2,185 @@
 {% block title %}문법뱅크 문제 만들기 · {{ APP_NAME }}{% endblock %}
 {% block main %}
 <style>
-  .bb { display:grid; grid-template-columns: 200px 1fr 1.2fr 1fr; gap:14px; align-items:start; }
-  @media (max-width: 1000px) { .bb { grid-template-columns: 1fr; } }
-  .bb section { border:1px solid var(--line); border-radius:10px; padding:14px; background:var(--surface, #fff); }
-  .bb h2 { display:flex; align-items:center; gap:8px; font-size:1rem; margin:0 0 10px; padding-bottom:8px; border-bottom:1px solid var(--line); }
-  .bb .num { display:inline-flex; width:22px; height:22px; border-radius:50%; background:var(--brand); color:#fff; font-size:.8rem; align-items:center; justify-content:center; }
-  .bb label.opt { display:flex; align-items:center; gap:8px; padding:9px 10px; margin:0 0 6px; border:1px solid var(--line); border-radius:8px; font-weight:400; cursor:pointer; }
-  .bb label.opt:has(input:checked) { border-color:var(--brand); background:var(--brand-soft, #eef); }
-  .bb .list { max-height:520px; overflow:auto; }
-  .bb .chip { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 10px; margin:0 0 6px; border:1px solid var(--line); border-radius:8px; font-size:.92rem; }
-  .bb .chip button { border:0; background:none; cursor:pointer; color:var(--ink-3, #888); font-size:1rem; }
-  .bb .chip input[type=text] { width:56px; text-align:right; }
-  .bb .muted2 { color:var(--ink-3, #888); font-size:.88rem; }
+  .gb { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .gb { grid-template-columns: 1fr; } }
+  .gb .card { border: 1px solid var(--line); border-radius: 14px; background: var(--surface, #fff); }
+  .gb .top { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .gb .search { flex: 1; min-width: 200px; position: relative; }
+  .gb .search input { width: 100%; padding-left: 32px; }
+  .gb .search:before { content: "⌕"; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-3, #999); font-size: 1.05rem; }
+  .gb .stat { white-space: nowrap; font-size: .92rem; }
+  .gb .stat b { color: var(--brand); }
+  .gb .tiers { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .gb .tiers button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 8px 16px; font-weight: 700; cursor: pointer; color: var(--ink-2, #444); }
+  .gb .tiers button.on { background: var(--brand-soft, #e8f1ec); border-color: var(--brand); color: var(--brand); }
+  .gb .tiers button .c { font-weight: 400; font-size: .8rem; color: var(--ink-3, #999); margin-left: 4px; }
+  .gb .head { padding: 10px 14px 6px; font-size: .9rem; color: var(--ink-3, #888); font-weight: 700; }
+  .gb .tree { max-height: 560px; overflow: auto; padding: 0 6px 10px; user-select: none; }
+  .gb .cat { border-bottom: 1px solid var(--line); }
+  .gb .cat > .row1 { display: flex; align-items: center; gap: 8px; padding: 10px 8px; cursor: pointer; }
+  .gb .cat > .row1 .arw { width: 14px; color: var(--ink-3, #888); font-size: .8rem; }
+  .gb .cat > .row1 .nm { font-weight: 800; flex: 1; }
+  .gb .cat > .row1 .cnt { font-size: .82rem; color: var(--ink-3, #999); }
+  .gb .subs { padding: 0 0 6px 30px; }
+  .gb .sub { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+  .gb .sub:hover { background: #f6f8fa; }
+  .gb .sub.on { background: var(--brand-soft, #e8f1ec); }
+  .gb .sub .nm { flex: 1; }
+  .gb .sub .n { font-size: .82rem; color: var(--ink-3, #999); }
+  .gb .sub.zero { opacity: .45; cursor: default; }
+  .gb .sub .path { font-size: .78rem; color: var(--ink-3, #999); margin-left: 4px; }
+  .gb input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--brand); pointer-events: none; }
+  .gb .cat > .row1 input { pointer-events: auto; }
+  .gb .side { padding: 14px; position: sticky; top: 12px; }
+  .gb .side h3 { font-size: .95rem; margin: 14px 0 8px; }
+  .gb .side h3:first-child { margin-top: 0; }
+  .gb .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gb .pills label { margin: 0; }
+  .gb .pills input { display: none; }
+  .gb .pills span { display: inline-block; min-width: 46px; text-align: center; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-weight: 700; color: var(--ink-2, #444); }
+  .gb .pills input:checked + span { background: var(--brand-soft, #e8f1ec); border-color: var(--brand); color: var(--brand); }
+  .gb .picked { max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 6px; }
+  .gb .picked .it { display: flex; gap: 6px; align-items: center; font-size: .88rem; padding: 4px 6px; border-radius: 6px; }
+  .gb .picked .it:hover { background: #f6f8fa; }
+  .gb .picked .it .t { flex: 1; }
+  .gb .picked .it small { color: var(--ink-3, #999); }
+  .gb .picked .it button { border: 0; background: none; cursor: pointer; color: var(--ink-3, #999); }
+  .gb .muted2 { color: var(--ink-3, #888); font-size: .86rem; }
+  .gb .opt { display: flex; gap: 8px; align-items: center; font-weight: 400; margin: 4px 0; }
 </style>
+
 <div class="panel-head" style="margin-bottom:4px"><h1>문제 만들기</h1><a class="btn ghost" href="/bank">← 직접 찾아서 담기</a></div>
-<p class="lead">난이도와 문법 항목을 고르고 문항 수를 정하면 문법뱅크에서 무작위로 뽑아 드려요. 뽑은 뒤에 시험지(PDF·워드)로 받거나 숙제로 낼 수 있어요. (한 번에 최대 {{ max_cart }}문항)</p>
+<p class="lead">학년 단계를 고르고, 중분류를 눌러 펼친 뒤 출제할 소분류를 체크하세요. 중분류 체크박스는 그 안을 통째로 골라요. 소분류는 <b>누른 채 끌면</b> 주르륵, <b>Shift+클릭</b>으로 범위를 한 번에 골라요. 뒤 숫자는 낼 수 있는 문항 수예요.</p>
 
 <form method="post" action="/bank/build" id="bf">
-<div class="bb">
-  <section>
-    <h2><span class="num">1</span> 난이도</h2>
-    {% for l, t in [("하","쉬움"),("중","보통"),("상","어려움")] %}<label class="opt"><input type="checkbox" name="level" value="{{ l }}" {% if l == "중" %}checked{% endif %}> {{ t }}</label>{% endfor %}
-    <p class="muted2">아무것도 고르지 않으면 모든 난이도에서 뽑아요.</p>
-  </section>
+<div class="gb">
+  <div class="card">
+    <div class="top">
+      <div class="search"><input type="text" id="q" placeholder="문법 이름으로 찾기 (예: 관계대명사, 수동태)" autocomplete="off"></div>
+      <div class="stat">고른 문법 <b id="n-pick">0</b>개 · 출제 <b id="n-total">0</b>문항</div>
+    </div>
+    <div class="tiers" id="tiers"></div>
+    <div class="head" id="head"></div>
+    <div class="tree" id="tree"></div>
+  </div>
 
-  <section>
-    <h2><span class="num">2</span> 문법 항목</h2>
-    <div class="list">{% for c, n in cats.items() %}<label class="opt"><input type="radio" name="_cat" value="{{ c }}"> {{ c }} <span class="muted2">({{ n }})</span></label>{% endfor %}</div>
-  </section>
-
-  <section>
-    <h2><span class="num">3</span> 세부 항목</h2>
-    <div id="subs" class="list"><p class="muted2">왼쪽에서 문법 항목을 고르세요.</p></div>
-    <h2 style="margin-top:14px"><span class="num">4</span> 고른 항목 <button class="btn ghost small" type="button" id="reset" style="margin-left:auto">↺ 선택 초기화</button></h2>
-    <div id="picked"><p class="muted2">세부 항목을 체크하면 여기에 모여요. 세부 항목을 고르지 않고 '대분류 전체 담기'를 눌러도 돼요.</p></div>
-  </section>
-
-  <section>
-    <h2><span class="num">5</span> 문항 수 · 모양</h2>
-    <div class="field"><label>객관식 <span class="muted2">(보기를 고르는 문제)</span></label><input type="text" name="n_obj" value="10" inputmode="numeric"></div>
-    <div class="field"><label>주관식 <span class="muted2">(직접 쓰는 문제)</span></label><input type="text" name="n_sub" value="5" inputmode="numeric"></div>
-    <p><b>합계</b> <span id="total">15</span> 문항 <span class="muted2">(최대 {{ max_cart }})</span></p>
-    <label class="opt"><input type="radio" name="mode" value="even" checked> 항목마다 고르게 나누기</label>
-    <label class="opt"><input type="radio" name="mode" value="manual"> 항목마다 직접 정하기 <span class="muted2">(4번 칸에 숫자 입력)</span></label>
-    <h3 style="margin:14px 0 6px">문제 모양</h3>
-    <label class="opt"><input type="checkbox" name="passage" value="0"> 긴 지문 문제는 빼기</label>
-    <label class="opt"><input type="checkbox" name="unsure" value="1"> 정답 '확인 필요' 문항도 넣기</label>
-    <label class="opt"><input type="checkbox" name="shuffle" value="1"> 문제 순서 섞기</label>
-    <button class="btn" type="submit" style="width:100%;margin-top:10px">문제 만들기</button>
-  </section>
+  <div class="card side">
+    <h3>분량 <span class="muted2">소분류당 문항 수</span></h3>
+    <div class="pills">{% for n in [1, 2, 3, 5, 10, 20, 30] %}<label><input type="radio" name="per" value="{{ n }}" {% if n == 3 %}checked{% endif %}><span>{{ n }}</span></label>{% endfor %}</div>
+    <h3>문항 형식</h3>
+    <div class="pills">{% for k, t in [("mc","객관식"),("short","주관식"),("essay","서술형")] %}<label><input type="checkbox" name="kind" value="{{ k }}" checked><span>{{ t }}</span></label>{% endfor %}</div>
+    <p class="muted2" style="margin:6px 0 0">서술형 = 영작·문장 전환·배열. 켠 형식의 문항이 모자라면 그만큼만 나가요.</p>
+    <h3>난이도</h3>
+    <div class="pills">{% for l, t in [("하","쉬움"),("중","보통"),("상","어려움")] %}<label><input type="checkbox" name="level" value="{{ l }}" checked><span>{{ t }}</span></label>{% endfor %}</div>
+    <h3>문제 모양</h3>
+    <label class="opt"><input type="checkbox" name="passage" value="0" style="pointer-events:auto"> 긴 지문 문제는 빼기</label>
+    <label class="opt"><input type="checkbox" name="unsure" value="1" style="pointer-events:auto"> 정답 '확인 필요' 문항도 넣기</label>
+    <label class="opt"><input type="checkbox" name="shuffle" value="1" style="pointer-events:auto"> 문제 순서 섞기</label>
+    <h3 style="display:flex;align-items:center">고른 문법 <button class="btn ghost small" type="button" id="clear" style="margin-left:auto">모두 지우기</button></h3>
+    <div class="picked" id="picked"><p class="muted2" style="margin:6px">아직 고른 문법이 없어요. 왼쪽에서 소분류를 골라 주세요.</p></div>
+    <p class="muted2" style="margin:8px 0 0">한 번에 최대 {{ max_cart }}문항까지 뽑아요.</p>
+    <div id="hidden"></div>
+    <button class="btn" type="submit" style="width:100%;margin-top:12px">문제 만들기</button>
+  </div>
 </div>
-<div id="hidden"></div>
 </form>
 
 <script>
 (function () {
-  var SUBS = {{ subs_json|safe }};
-  var picked = [];  // {cat, sub}
-  var subsBox = document.getElementById("subs"), pickedBox = document.getElementById("picked"), hidden = document.getElementById("hidden");
-  var form = document.getElementById("bf");
-  function key(p) { return p.cat + "||" + p.sub; }
-  function has(c, s) { return picked.some(function (p) { return p.cat === c && p.sub === s; }); }
-  function esc(t) { return String(t).replace(/[&<>"]/g, function (m) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[m]; }); }
-  function renderSubs(cat) {
-    var list = SUBS[cat] || [];
-    var h = '<label class="opt" style="background:#fafafa"><input type="checkbox" data-all="1"> <b>' + esc(cat) + ' 전체</b></label>';
-    list.forEach(function (x) { h += '<label class="opt"><input type="checkbox" data-sub="' + esc(x[0]) + '"' + (has(cat, x[0]) ? " checked" : "") + '> ' + esc(x[0] || "(세부 없음)") + ' <span class="muted2">(' + x[1] + ')</span></label>'; });
-    subsBox.innerHTML = h;
-    subsBox.dataset.cat = cat;
-    var all = subsBox.querySelector("[data-all]");
-    all.checked = has(cat, "");
-    all.addEventListener("change", function () {
-      if (all.checked) { picked = picked.filter(function (p) { return p.cat !== cat; }); picked.push({cat: cat, sub: ""}); renderSubs(cat); }
-      else { picked = picked.filter(function (p) { return !(p.cat === cat && p.sub === ""); }); }
-      renderPicked();
-    });
-    subsBox.querySelectorAll("[data-sub]").forEach(function (cb) {
-      cb.addEventListener("change", function () {
-        var s = cb.dataset.sub;
-        picked = picked.filter(function (p) { return !(p.cat === cat && p.sub === ""); });  // 세부를 고르면 '전체'는 해제
-        if (cb.checked) { if (!has(cat, s)) picked.push({cat: cat, sub: s}); }
-        else { picked = picked.filter(function (p) { return !(p.cat === cat && p.sub === s); }); }
-        var a = subsBox.querySelector("[data-all]"); if (a) a.checked = false;
-        renderPicked();
-      });
-    });
+  var TREE = {{ tree_json|safe }};
+  var MAX = {{ max_cart }};
+  var SUB = {}, ORDER = [];  // sub_id → {id, label, n, tier, tierLabel, cat}
+  TREE.forEach(function (t) { t.n = 0; t.cats.forEach(function (c) { c.subs.forEach(function (s) {
+    SUB[s[0]] = {id: s[0], label: s[1], n: s[2], tier: t.id, tierLabel: t.label, cat: c.label}; ORDER.push(s[0]); t.n += s[2]; }); }); });
+  var picked = new Set(), open = {}, tier = (TREE.find(function (t) { return t.n > 0; }) || TREE[0]).id, last = null;
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $("bf");
+  function esc(x) { return String(x).replace(/[&<>"]/g, function (m) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[m]; }); }
+  function per() { return parseInt((form.querySelector("input[name=per]:checked") || {}).value || 3, 10); }
+
+  function renderTiers() {
+    $("tiers").innerHTML = TREE.map(function (t) {
+      return '<button type="button" data-tier="' + t.id + '" class="' + (t.id === tier && !$("q").value.trim() ? "on" : "") + '">' + esc(t.label) + '<span class="c">' + t.n + '</span></button>';
+    }).join("");
+  }
+  function subRow(id, showPath) {
+    var s = SUB[id], on = picked.has(id);
+    return '<div class="sub' + (on ? " on" : "") + (s.n ? "" : " zero") + '" data-sub="' + id + '"><input type="checkbox"' + (on ? " checked" : "") + (s.n ? "" : " disabled") + '>' +
+      '<span class="nm">' + esc(s.label) + (showPath ? '<span class="path">' + esc(s.tierLabel + " · " + s.cat) + '</span>' : "") + '</span><span class="n">' + s.n + '</span></div>';
+  }
+  function renderTree() {
+    var q = $("q").value.trim().toLowerCase();
+    if (q) {
+      var hits = ORDER.filter(function (id) { var s = SUB[id]; return (s.label + " " + s.cat).toLowerCase().indexOf(q) >= 0; });
+      $("head").textContent = "검색 결과 " + hits.length + "개 (전체 학년 단계)";
+      $("tree").innerHTML = hits.length ? '<div class="subs" style="padding-left:6px">' + hits.map(function (id) { return subRow(id, true); }).join("") + "</div>" : '<p class="muted2" style="padding:10px">찾는 문법이 없어요.</p>';
+      return;
+    }
+    var t = TREE.find(function (x) { return x.id === tier; });
+    $("head").textContent = t.label + " · 중분류 " + t.cats.length + "개";
+    $("tree").innerHTML = t.cats.map(function (c, ci) {
+      var key = tier + ci, ids = c.subs.filter(function (s) { return s[2] > 0; }).map(function (s) { return s[0]; });
+      var nOn = ids.filter(function (id) { return picked.has(id); }).length, total = c.subs.reduce(function (a, s) { return a + s[2]; }, 0);
+      var isOpen = open[key] !== undefined ? open[key] : ci === 0;
+      return '<div class="cat"><div class="row1" data-cat="' + key + '"><span class="arw">' + (isOpen ? "▼" : "▶") + '</span>' +
+        '<input type="checkbox" data-catbox="' + ci + '"' + (ids.length && nOn === ids.length ? " checked" : "") + (ids.length ? "" : " disabled") + '>' +
+        '<span class="nm">' + esc(c.label) + '</span><span class="cnt">' + (nOn ? '<b style="color:var(--brand)">' + nOn + ' 선택</b> · ' : "") + '소분류 ' + c.subs.length + ' · ' + total + '문항</span></div>' +
+        (isOpen ? '<div class="subs">' + c.subs.map(function (s) { return subRow(s[0]); }).join("") + "</div>" : "") + "</div>";
+    }).join("");
+    var cb = $("tree").querySelectorAll("[data-catbox]");
+    cb.forEach(function (b) { var c = (b.closest(".cat").querySelector(".subs") || {}); b.indeterminate = !b.checked && t.cats[+b.dataset.catbox].subs.some(function (s) { return picked.has(s[0]); }); });
   }
   function renderPicked() {
-    var manual = form.mode.value === "manual";
-    if (!picked.length) { pickedBox.innerHTML = '<p class="muted2">세부 항목을 체크하면 여기에 모여요.</p>'; }
-    else {
-      pickedBox.innerHTML = picked.map(function (p, i) {
-        return '<div class="chip"><span>' + esc(p.cat) + (p.sub ? " › " + esc(p.sub) : " 전체") + '</span><span>' +
-          (manual ? '<input type="text" data-c="' + i + '" value="' + (p.n || 3) + '" inputmode="numeric"> ' : "") +
-          '<button type="button" data-rm="' + i + '" title="빼기">✕</button></span></div>';
-      }).join("");
-    }
-    pickedBox.querySelectorAll("[data-rm]").forEach(function (b) { b.addEventListener("click", function () {
-      picked.splice(+b.dataset.rm, 1); renderPicked(); if (subsBox.dataset.cat) renderSubs(subsBox.dataset.cat); }); });
-    pickedBox.querySelectorAll("[data-c]").forEach(function (inp) { inp.addEventListener("input", function () { picked[+inp.dataset.c].n = inp.value; total(); }); });
-    total();
+    var ids = ORDER.filter(function (id) { return picked.has(id); });
+    $("n-pick").textContent = ids.length;
+    var tot = ids.reduce(function (a, id) { return a + Math.min(per(), SUB[id].n); }, 0);
+    $("n-total").textContent = Math.min(tot, MAX) + (tot > MAX ? " (최대 " + MAX + ")" : "");
+    $("picked").innerHTML = ids.length ? ids.map(function (id) { var s = SUB[id];
+      return '<div class="it"><span class="t">' + esc(s.label) + ' <small>' + esc(s.tierLabel + " · " + s.cat) + '</small></span><button type="button" data-rm="' + id + '" title="빼기">✕</button></div>'; }).join("")
+      : '<p class="muted2" style="margin:6px">아직 고른 문법이 없어요. 왼쪽에서 소분류를 골라 주세요.</p>';
   }
-  function total() {
-    var t;
-    if (form.mode.value === "manual") t = picked.reduce(function (a, p) { return a + (parseInt(p.n || 3, 10) || 0); }, 0);
-    else t = (parseInt(form.n_obj.value, 10) || 0) + (parseInt(form.n_sub.value, 10) || 0);
-    document.getElementById("total").textContent = t;
-  }
-  document.querySelectorAll('input[name="_cat"]').forEach(function (r) { r.addEventListener("change", function () { renderSubs(r.value); }); });
-  document.getElementById("reset").addEventListener("click", function () { picked = []; renderPicked(); if (subsBox.dataset.cat) renderSubs(subsBox.dataset.cat); });
-  form.addEventListener("input", total);
-  form.addEventListener("change", function (e) { if (e.target.name === "mode") renderPicked(); });
-  form.addEventListener("submit", function (e) {
-    hidden.innerHTML = "";
-    picked.forEach(function (p, i) {
-      hidden.insertAdjacentHTML("beforeend", '<input type="hidden" name="item" value="' + esc(key(p)) + '">');
-      hidden.insertAdjacentHTML("beforeend", '<input type="hidden" name="c' + i + '" value="' + (parseInt(p.n || 3, 10) || 0) + '">');
-    });
-    if (!picked.length) { e.preventDefault(); alert("문법 항목을 하나 이상 골라 주세요."); }
+  function all() { renderTiers(); renderTree(); renderPicked(); }
+  function set(id, on) { if (!SUB[id] || !SUB[id].n) return; if (on) picked.add(id); else picked.delete(id); }
+
+  $("tiers").addEventListener("click", function (e) { var b = e.target.closest("[data-tier]"); if (!b) return; tier = b.dataset.tier; $("q").value = ""; all(); });
+  $("q").addEventListener("input", function () { renderTiers(); renderTree(); });
+  // 중분류: 줄을 누르면 펼치기/접기, 체크박스는 통째로 고르기
+  $("tree").addEventListener("click", function (e) {
+    var box = e.target.closest("[data-catbox]");
+    if (box) { var t = TREE.find(function (x) { return x.id === tier; }), c = t.cats[+box.dataset.catbox];
+      var ids = c.subs.filter(function (s) { return s[2] > 0; }).map(function (s) { return s[0]; });
+      var allOn = ids.every(function (id) { return picked.has(id); });
+      ids.forEach(function (id) { set(id, !allOn); }); open[tier + box.dataset.catbox] = true; all(); return; }
+    var row = e.target.closest("[data-cat]");
+    if (row) { var k = row.dataset.cat, ci = +k.slice(tier.length); open[k] = !(open[k] !== undefined ? open[k] : ci === 0); renderTree(); }
   });
+  // 소분류: 클릭 · Shift+클릭 범위 · 누른 채 끌기
+  var drag = null;
+  $("tree").addEventListener("mousedown", function (e) {
+    var r = e.target.closest("[data-sub]"); if (!r || e.button !== 0) return;
+    var id = r.dataset.sub; e.preventDefault();
+    var vis = Array.prototype.map.call($("tree").querySelectorAll("[data-sub]"), function (x) { return x.dataset.sub; });
+    if (e.shiftKey && last && vis.indexOf(last) >= 0) {
+      var a = vis.indexOf(last), b = vis.indexOf(id), on = picked.has(last);
+      vis.slice(Math.min(a, b), Math.max(a, b) + 1).forEach(function (x) { set(x, on); });
+      all(); return;
+    }
+    drag = !picked.has(id); set(id, drag); last = id; all();
+  });
+  $("tree").addEventListener("mouseover", function (e) {
+    if (drag === null) return; var r = e.target.closest("[data-sub]"); if (!r) return;
+    if (picked.has(r.dataset.sub) !== drag) { set(r.dataset.sub, drag); last = r.dataset.sub; all(); }
+  });
+  document.addEventListener("mouseup", function () { drag = null; });
+  $("picked").addEventListener("click", function (e) { var b = e.target.closest("[data-rm]"); if (b) { picked.delete(b.dataset.rm); all(); } });
+  $("clear").addEventListener("click", function () { picked.clear(); all(); });
+  form.addEventListener("change", function (e) { if (e.target.name === "per") renderPicked(); });
+  form.addEventListener("submit", function (e) {
+    if (!picked.size) { e.preventDefault(); alert("출제할 소분류를 하나 이상 골라 주세요."); return; }
+    $("hidden").innerHTML = ORDER.filter(function (id) { return picked.has(id); }).map(function (id) { return '<input type="hidden" name="sub" value="' + id + '">'; }).join("");
+  });
+  all();
 })();
 </script>
 {% endblock %}
