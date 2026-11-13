@@ -2,15 +2,31 @@
 {# 문법뱅크 시험지: 2단 문제 + 정답(맨 뒤 페이지) #}
 {% block style %}
   .part { break-before: page; }
-  .cc { columns: 2; column-gap: 14pt; }
-  .card { break-inside: avoid; border: 0.9pt solid var(--brand); border-radius: 8pt; padding: 7pt 9pt; margin: 0 0 10pt; font-size: 9pt; line-height: 1.55; }
-  .card .ct { font-weight: 800; font-size: 10.5pt; color: var(--brand); margin-bottom: 3pt; }
-  .card .ct .tg { display: block; font-size: 7.5pt; font-weight: 700; color: var(--ink-3); }
-  .card .fm { background: var(--fill); border-radius: 4pt; padding: 2pt 6pt; font-weight: 700; margin: 2pt 0 4pt; }
-  .card ul { margin: 0 0 4pt; padding-left: 13pt; }
-  .card .ex div { margin: 2pt 0; }
+  @font-face { font-family: "NanumSquareRound"; font-weight: 700; src: url("{{ font_dir }}/NanumSquareRoundB.woff2") format("woff2"); }
+  @font-face { font-family: "NanumSquareRound"; font-weight: 800; src: url("{{ font_dir }}/NanumSquareRoundEB.woff2") format("woff2"); }
+  .cpage-h { display: flex; align-items: baseline; gap: 8pt; border-bottom: 1.6pt solid var(--brand); padding-bottom: 5pt; margin-bottom: 10pt; }
+  .cpage-h .big { font-family: "NanumSquareRound", sans-serif; font-weight: 800; font-size: 17pt; color: var(--brand); }
+  .cpage-h .sub { font-size: 9.5pt; color: var(--ink-2); font-weight: 700; }
+  .card { break-inside: avoid; border: 1pt solid #c9d3e6; border-radius: 10pt; margin: 0 0 9pt; overflow: hidden; font-size: 9pt; line-height: 1.5; }
+  .card .band { background: var(--brand); color: #fff; padding: 5pt 11pt; display: flex; align-items: center; gap: 8pt; }
+  .card .band .no { font-family: "NanumSquareRound", sans-serif; font-weight: 800; font-size: 9pt; background: #fff; color: var(--brand); border-radius: 10pt; padding: 1pt 7pt; }
+  .card .band .tt { font-family: "NanumSquareRound", sans-serif; font-weight: 800; font-size: 12pt; flex: 1; }
+  .card .band .path { font-size: 7.5pt; opacity: .85; text-align: right; }
+  .card table.in { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .card table.in td { border: 0; vertical-align: top; padding: 7pt 11pt; }
+  .card table.in td.l { width: 52%; }
+  .card table.in td.r { width: 48%; background: #f6f8fc; border-left: 0.6pt dashed #c9d3e6; }
+  .card .lab { display: inline-block; font-family: "NanumSquareRound", sans-serif; font-weight: 800; font-size: 7.5pt; letter-spacing: .6pt; color: var(--brand); border: 0.8pt solid var(--brand); border-radius: 8pt; padding: 0 6pt; margin-bottom: 3pt; }
+  .card .fm { background: #eaf0fb; border-radius: 6pt; padding: 4pt 8pt; font-weight: 800; font-size: 9.6pt; color: #1b2a5c; margin: 0 0 6pt; }
+  .card ol.rules { list-style: none; margin: 0; padding: 0; counter-reset: r; }
+  .card ol.rules li { counter-increment: r; position: relative; padding-left: 16pt; margin: 0 0 2.5pt; }
+  .card ol.rules li:before { content: counter(r); position: absolute; left: 0; top: 1pt; width: 11pt; height: 11pt; line-height: 11pt; border-radius: 50%; background: var(--brand); color: #fff; font-size: 7pt; font-weight: 800; text-align: center; }
+  .card .ex { margin: 0 0 4pt; }
+  .card .ex .en { font-weight: 600; }
+  .card .ex .en b { background: linear-gradient(transparent 55%, #ffe36e 55%); font-weight: 800; }
   .card .ex .ko { display: block; color: var(--ink-2); font-size: 8.4pt; }
-  .card .tip { margin-top: 4pt; color: #b3401a; font-weight: 700; font-size: 8.6pt; }
+  .card .tip { margin: 0 11pt 8pt; background: #fff1ec; border: 0.8pt solid #f3b7a3; border-radius: 7pt; padding: 5pt 9pt; color: #a53b17; font-weight: 700; font-size: 8.8pt; }
+  .card .tip .star { font-family: "NanumSquareRound", sans-serif; font-weight: 800; margin-right: 4pt; }
   .head { border-bottom: 1.4pt solid var(--brand); padding-bottom: 5pt; margin-bottom: 8pt; }
   .head h1 { margin: 0; }
   .info { display: table; width: 100%; font-size: 8.8pt; margin-top: 5pt; }
@@ -64,18 +80,24 @@
 
 {% block body %}
 {% if concepts %}
-<div class="head"><h1>{{ title }} · 개념 정리</h1></div>
-<div class="cc">
+<div class="cpage-h"><span class="big">개념 정리</span><span class="sub">{{ title }} · 문법 {{ concepts|length }}개</span></div>
 {% for c in concepts %}
-  <div class="card">
-    <div class="ct"><span class="tg">{{ c.path }}</span>{{ c.title }}</div>
-    {% if c.forms %}<div class="fm">{{ c.forms }}</div>{% endif %}
-    <ul>{% for p in c.points %}<li>{{ p }}</li>{% endfor %}</ul>
-    <div class="ex">{% for e in c.examples %}<div>{% if e.hl %}{{ e.en.split(e.hl, 1)[0] }}<b>{{ e.hl }}</b>{{ e.en.split(e.hl, 1)[1] }}{% else %}{{ e.en }}{% endif %}<span class="ko">{{ e.ko }}</span></div>{% endfor %}</div>
-    {% if c.tip %}<div class="tip">시험 포인트 · {{ c.tip }}</div>{% endif %}
-  </div>
-{% endfor %}
+<div class="card">
+  <div class="band"><span class="no">{{ "%02d"|format(loop.index) }}</span><span class="tt">{{ c.title }}</span><span class="path">{{ c.path }}</span></div>
+  <table class="in"><tr>
+    <td class="l">
+      {% if c.forms %}<div class="lab">FORM</div><div class="fm">{{ c.forms }}</div>{% endif %}
+      <div class="lab">POINT</div>
+      <ol class="rules">{% for p in c.points %}<li>{{ p }}</li>{% endfor %}</ol>
+    </td>
+    <td class="r">
+      <div class="lab">EXAMPLE</div>
+      {% for e in c.examples %}<div class="ex"><span class="en">{% if e.hl %}{{ e.en.split(e.hl, 1)[0] }}<b>{{ e.hl }}</b>{{ e.en.split(e.hl, 1)[1] }}{% else %}{{ e.en }}{% endif %}</span><span class="ko">{{ e.ko }}</span></div>{% endfor %}
+    </td>
+  </tr></table>
+  {% if c.tip %}<div class="tip"><span class="star">★ 시험 포인트</span>{{ c.tip }}</div>{% endif %}
 </div>
+{% endfor %}
 {% endif %}
 {% for part in parts %}
 <div class="{{ 'part' if concepts or not loop.first else '' }}">{{ sheet(part.title, part.qs) }}</div>
