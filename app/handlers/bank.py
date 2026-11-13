@@ -174,6 +174,14 @@ def fill(ctx: JobContext) -> dict:
         with session_scope() as db:
             counts = dict(db.execute(select(BankQuestion.sub_id, func.count()).where(BankQuestion.review != "del", BankQuestion.sub_id != "")
                                      .group_by(BankQuestion.sub_id)).all())
+        from ..models import Job
+        with session_scope() as db:  # 다른 채우기 작업이 맡은 소분류는 건너뜀 (겹쳐 만들지 않게)
+            busy = set()
+            for p in db.execute(select(Job.payload).where(Job.kind == "bank_fill", Job.id != ctx.job_id, Job.status.in_(("queued", "running")))).scalars():
+                busy |= set((p or {}).get("targets") or {})
+                if not (p or {}).get("targets"):
+                    raise RuntimeError("앞의 채우기 작업이 아직 시작 전이에요. 그 작업이 끝난 뒤 다시 눌러 주세요.")
+            counts.update({sid: 1 for sid in busy})
         cats: dict[tuple, list[str]] = {}
         for sid, s in subs.items():
             cats.setdefault((s["tier"], s["cat"]), []).append(sid)
