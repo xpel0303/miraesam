@@ -10,7 +10,9 @@
 - **기준 녹음은 저장소에 없다**(공개 저장소라서 일부러 넣지 않음). 커밋하지 말 것.
   다음 순서로 구한다.
   1. 이번 세션에서 사용자가 첨부한 녹음 파일
-  2. 사용자 Google Drive의 `mirae_voice_ref.mp3`(있다면 내려받아 사용)
+  2. 사용자 Google Drive의 `mirae_voice_ref.mp3`(파일 ID `1_a91ayM8qblb3Xo6pQ3NmqNELNnkVGy9`, 비공개).
+     Google Drive 커넥터의 `download_file_content`로 받으면 mp3가 tool-results 폴더에 저장되고
+     그 경로가 결과에 나온다. 그 경로를 `--ref`로 쓴다. ID로 안 되면 제목으로 검색한다.
   3. 둘 다 없으면 사용자에게 녹음 파일 첨부를 요청
 - Higgsfield 목소리 복제는 크레딧 부족으로 쓰지 않는다. 사용자가 따로 요청할 때만 쓴다.
 
