@@ -108,6 +108,7 @@ def clean_passage_result(raw: dict, passage: str = "") -> dict:
                 "answer": answer,
                 "given": make_given(answer, proper=proper),
                 "grammar": str(x.get("grammar", "")).strip()[:60],
+                "target": re.sub(r"\s+", " ", str(x.get("target", "")).strip())[:80],
                 "point": str(x.get("point", "")).strip(),
                 "source": src if src in ("지문", "보충") else ("보충" if src else ""),
             }
@@ -185,7 +186,9 @@ SYSTEM_PROMPT = """당신은 한국 고등학교 영어 내신 문제를 만드�
 
 ## 목표어법 작문 compose (정확히 5문항)
 목표어법이 있을 때:
-1. 지문에서 목표어법이 실제로 쓰인 문장을 찾아 우선 출제합니다 (source: "지문"). 지문 문장을 그대로 쓰거나 조금만 줄입니다.
+0. **5문항 모두 목표어법이 문장의 핵심이어야 합니다.** 목표어법이 들어 있지 않거나, 곁가지로만 스쳐 지나가는 문장은 절대 내지 않습니다.
+   예) 목표어법 '관계대명사 계속적 용법' → 정답에 ", which/who …" 가 있어야 하고, 학생이 그 부분을 배열해야 함. 그냥 지문 핵심 문장은 안 됨.
+1. 지문에서 목표어법이 실제로 쓰인 문장을 찾아 우선 출제합니다 (source: "지문"). 지문 문장을 그대로 쓰거나, 목표어법 부분은 그대로 두고 나머지만 조금 줄입니다.
 2. 5개에 못 미치면 보충 문장으로 채웁니다 (source: "보충"). 보충 문장도 반드시 **이 지문의 내용**(나오는 사람·사물·주장·사건)과 지문 어휘로만 만듭니다.
    지문과 상관없는 새 상황·새 인물(예: 지문에 없는 '그 아이', '내 친구')은 절대 만들지 않습니다. 우리말만 읽어도 이 지문 이야기임을 알 수 있어야 합니다.
 3. 목표어법이 여러 개(/로 구분)면 이 지문에 어울리는 것만 고릅니다. 억지로 모두 쓰지 않습니다. 각 문항의 grammar에 쓴 목표어법 이름을 적습니다.
@@ -196,6 +199,7 @@ SYSTEM_PROMPT = """당신은 한국 고등학교 영어 내신 문제를 만드�
 - answer: 완성 영어 문장 하나 (마침표 포함). 학생은 answer의 단어를 섞어서 받으므로, 다른 어순으로도 맞는 문장이 되지 않게 우리말에 단서를 넣어 한 가지로 고정합니다. 축약형을 쓸지 풀어 쓸지도 answer 그대로 고정됩니다.
 - point: 답지에 실릴 어법 설명 한 줄.
 - grammar: 이 문항이 다루는 목표어법 이름 (목표어법 목록에 적힌 이름 그대로, 없으면 빈 문자열).
+- target: answer 안에서 목표어법이 드러나는 부분을 answer에 적힌 글자 그대로 (예: "having finished", "which was built", "so tired that"). 목표어법이 없으면 빈 문자열.
 - answer는 12~20단어 안쪽으로. 너무 길면 학생이 배열하기 어렵습니다.
 - source: "지문" 또는 "보충".
 - 단어를 섞은 괄호(given)는 만들지 마세요. 프로그램이 answer로 만듭니다.
@@ -212,7 +216,7 @@ SYSTEM_PROMPT = """당신은 한국 고등학교 영어 내신 문제를 만드�
   "ox_en_short": [...],
   "ox_ko_deep": [...],
   "ox_en_deep": [...],
-  "compose": [{"ko": "...", "answer": "...", "point": "...", "grammar": "...", "source": "지문"}],
+  "compose": [{"ko": "...", "answer": "...", "point": "...", "grammar": "...", "target": "...", "source": "지문"}],
   "vocab": [{"word": "...", "meaning": "..."}]
 }"""
 
@@ -230,6 +234,39 @@ def user_prompt(passage: str, *, target_grammar: str = "", need_title: bool = Fa
     lines.append("지문:")
     lines.append(passage.strip())
     return "\n".join(lines)
+
+
+def grammar_names(target_grammar: str) -> list[str]:
+    return [g.strip() for g in re.split(r"[/,\n]", target_grammar or "") if g.strip()]
+
+
+def _k(t: str) -> str:
+    return re.sub(r"[\s()\[\]·.,\-_~]", "", t or "").lower()
+
+
+def compose_target_errors(items: list[dict], target_grammar: str) -> list[str]:
+    """목표어법이 있을 때: 모든 작문 문항이 목표어법을 쓰고, 그 부분(target)이 정답 문장 안에 그대로 있어야 함."""
+    names = grammar_names(target_grammar)
+    if not names:
+        return []
+    errs = []
+    for j, x in enumerate(items, 1):
+        g, t, a = (x.get("grammar") or "").strip(), (x.get("target") or "").strip(), x.get("answer") or ""
+        if not g or not any(_k(n) in _k(g) or _k(g) in _k(n) for n in names):
+            errs.append(f"작문 {j}번: grammar가 목표어법({' / '.join(names)}) 중 하나가 아닙니다. 목표어법을 쓴 문장으로 바꾸세요.")
+        elif not t or t.lower() not in a.lower():
+            errs.append(f"작문 {j}번: target(목표어법 부분)이 비었거나 정답 문장 안에 그대로 없습니다.")
+    return errs
+
+
+CHECK_SYSTEM = """당신은 영어 문법 검토 교사입니다. 배열 영작 문항이 주어진 목표어법을 핵심으로 묻는지 판정해 JSON 하나로만 답합니다.
+'핵심'이란: 정답 문장에 그 문법 구조가 실제로 쓰였고, 학생이 그 문법을 알아야 배열할 수 있다는 뜻입니다. 비슷하지만 다른 문법(예: 관계대명사 제한적 용법 ↔ 계속적 용법, 동명사 ↔ 현재분사, to부정사 명사적 ↔ 부사적)이면 false 입니다."""
+
+
+def check_prompt(items: list[dict], target_grammar: str) -> str:
+    body = "\n".join(f"[{j}] 목표어법: {x.get('grammar') or target_grammar} / 정답: {x.get('answer')} / 표시한 부분: {x.get('target')}"
+                     for j, x in enumerate(items, 1))
+    return f"{body}\n\n출력: {{\"results\": [{{\"no\": 1, \"ok\": true, \"why\": \"짧은 이유\"}}, ...]}} — 모든 문항에 대해"
 
 
 def repair_prompt(previous_errors: list[str]) -> str:

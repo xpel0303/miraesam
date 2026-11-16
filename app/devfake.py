@@ -32,7 +32,7 @@ def _comprehension(prompt: str) -> dict:
 
     compose_src = [s for s in sents if 4 <= len(s.split()) <= 16] or sents
     compose = [
-        {"ko": f"[가짜] {i + 1}번 문장의 우리말", "answer": compose_src[i % len(compose_src)], "point": "가짜 어법 설명", "source": "지문" if i < len(compose_src) else "보충"}
+        {"ko": f"[가짜] {i + 1}번 문장의 우리말", "answer": compose_src[i % len(compose_src)], "point": "가짜 어법 설명", "grammar": "", "target": "", "source": "지문" if i < len(compose_src) else "보충"}
         for i in range(5)
     ]
     words = sorted({w.lower() for w in re.findall(r"[A-Za-z]{6,}", passage)}, key=len, reverse=True)[:5]
@@ -126,6 +126,8 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
         return {"questions": [{"kind": "mc", "qtype": "객관식", "level": "중", "instr": "다음 빈칸에 알맞은 것은?", "stem": f"[가짜 {k}-{i}] I ____ a cat.",
                                "choices": "① has ② have ③ having ④ to have ⑤ had been", "answer": "②", "expl": "[가짜] 해설"} for i in range(8)]
                 + [{"kind": "short", "qtype": "빈칸 쓰기", "level": "하", "instr": "빈칸에 알맞은 말을 쓰시오.", "stem": f"[가짜 {k}-s{i}] She ____ (go) home.", "choices": "", "answer": "goes", "expl": "[가짜]"} for i in range(2)]}
+    if system and "배열 영작 문항이 주어진 목표어법" in system:
+        return {"results": [{"no": i, "ok": True, "why": "가짜"} for i in range(1, 6)]}
     if system and "문법 문제 검토자" in system:
         return {"results": [{"i": i, "mine": "x", "agree": i != 3} for i in range(10)]}
     if system and "개념 설명 카드" in system:

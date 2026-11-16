@@ -34,13 +34,32 @@ def _save_passage(workbook_id: int, idx: int, data: dict):
         flag_modified(wb, "passages")
 
 
+def _check_grammar(key: str, model: str, items: list[dict], tg: str) -> list[str]:
+    try:
+        chk = llm.generate(key, spec.check_prompt(items, tg), system=spec.CHECK_SYSTEM, model=model, json_mode=True, temperature=0.1, max_tokens=2000)
+    except llm.LLMError as e:
+        if "API 키" in str(e):
+            raise
+        return []
+    out = []
+    for r in (chk.get("results") or []) if isinstance(chk, dict) else []:
+        if isinstance(r, dict) and r.get("ok") is False:
+            try:
+                no = int(r.get("no") or 0)
+            except (TypeError, ValueError):
+                continue
+            if 0 < no <= len(items):
+                out.append(f"작문 {no}번: '{items[no - 1]['answer']}' 은(는) 목표어법이 핵심인 문장이 아닙니다 ({str(r.get('why') or '')[:60]}). 목표어법이 쓰인 다른 문장으로 바꾸세요.")
+    return out
+
+
 def _generate_one(ctx: JobContext, key: str, model: str, p: dict) -> dict:
     need_title = not (p.get("title") or "").strip()
     need_ko = not (p.get("passage_ko") or "").strip()
     prompt = spec.user_prompt(p["passage"], target_grammar=p.get("target_grammar", ""), need_title=need_title, need_translation=need_ko)
 
     errors: list[str] = []
-    for attempt in range(2):
+    for attempt in range(3):
         full = prompt if not errors else prompt + "\n\n" + spec.repair_prompt(errors)
         raw = llm.generate(key, full, system=spec.SYSTEM_PROMPT, model=model, json_mode=True, temperature=0.5, max_tokens=14000)
         if isinstance(raw, list) and raw:
@@ -55,6 +74,15 @@ def _generate_one(ctx: JobContext, key: str, model: str, p: dict) -> dict:
         if need_ko and result.get("passage_ko"):
             merged["passage_ko"] = result["passage_ko"]
         errors, warnings = spec.validate_passage(merged)
+        tg = p.get("target_grammar", "")
+        if not errors and spec.grammar_names(tg):
+            soft = spec.compose_target_errors(merged.get("compose") or [], tg)
+            if not soft:  # 따로 한 번 더: 정말 그 문법이 핵심인 문장인지
+                soft = _check_grammar(key, model, merged["compose"], tg)
+            if soft and attempt == 2:  # 마지막 시도: 경고로 남기고 진행 (답지 화면에서 고칠 수 있게)
+                warnings = warnings + soft
+            else:
+                errors = soft
         if not errors:
             merged.update(status="done", error=None, warnings=warnings)
             return merged
