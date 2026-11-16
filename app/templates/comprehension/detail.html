@@ -3,7 +3,7 @@
 {% block main %}
 <p class="small"><a href="/comprehension">내용이해 워크북</a></p>
 <h1>{{ wb.title }}</h1>
-<p class="lead">지문 {{ wb.passages|length }}개 · {{ wb.passages|length * per }}문항 · {{ wb.teacher.name if wb.teacher else "" }} · {{ wb.created_at|kst("%Y-%m-%d") }}</p>
+<p class="lead">지문 {{ wb.passages|length }}개 · {{ counts|sum }}문항 · {{ wb.teacher.name if wb.teacher else "" }} · {{ wb.created_at|kst("%Y-%m-%d") }}</p>
 
 {% if busy %}
   <div class="job" data-job-id="{{ job.id }}" data-reload></div>
@@ -41,10 +41,10 @@
 
 {% for p in wb.passages %}
 {% set idx = loop.index0 %}
-{% set base_n = start + idx * per %}
+{% set base_n = starts[idx] %}{% set pcount = counts[idx] %}
 <section class="panel" id="p{{ idx }}">
   <div class="panel-head">
-    <h2>{{ p.title or ("지문 " ~ loop.index) }} <span class="small muted" style="font-weight:400">{{ base_n }}~{{ base_n + per - 1 }}번</span></h2>
+    <h2>{{ p.title or ("지문 " ~ loop.index) }} <span class="small muted" style="font-weight:400">{{ base_n }}~{{ base_n + pcount - 1 }}번</span></h2>
     <span class="tag">{% if p.status == "done" %}완성{% elif p.status == "making" %}만드는 중{% elif p.status == "failed" %}실패{% else %}대기{% endif %}</span>
   </div>
   {% if p.target_grammar %}<p class="small">목표어법: <b>{{ p.target_grammar }}</b></p>{% endif %}
@@ -67,7 +67,9 @@
         </div>
 
         {% set ns = namespace(n=base_n) %}
-        {% for key, cnt, instr in sections %}
+        {% for key, cnt0, instr in sections %}
+          {% set cnt = (p[key] or [])|length %}
+          {% if cnt %}
           <h3 style="margin-top:18px">{{ labels[key] }} <span class="small muted" style="font-weight:400">{{ ns.n }}~{{ ns.n + cnt - 1 }}번</span></h3>
           <div class="table-wrap">
           <table class="list edit-items">
@@ -96,6 +98,7 @@
           </table>
           </div>
           {% set ns.n = ns.n + cnt %}
+          {% endif %}
         {% endfor %}
         <p class="small muted" style="margin-top:10px">작문 정답 문장을 고치면 괄호 단어는 새 정답에서 자동으로 다시 뽑아요.</p>
         <div class="actions">

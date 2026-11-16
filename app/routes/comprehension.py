@@ -146,6 +146,8 @@ def detail(wid: int, request: Request, teacher: Teacher = Depends(current_teache
             "labels": spec.LABELS,
             "per": spec.PER_PASSAGE,
             "start": start,
+            "starts": spec.starts(wb.passages, start),
+            "counts": [spec.count(p) for p in wb.passages],
             "all_done": all(p.get("status") == "done" for p in wb.passages),
             "active": "comprehension",
         },

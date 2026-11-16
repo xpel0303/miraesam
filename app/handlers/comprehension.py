@@ -5,6 +5,7 @@ comprehension_build  : 지문마다 Gemini로 30문항을 만들고, 다 되면 
 comprehension_render : 선생님이 문항을 고친 뒤 PDF만 다시 만듭니다 (Gemini 호출 없음).
 """
 import copy
+import re
 
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -34,13 +35,32 @@ def _save_passage(workbook_id: int, idx: int, data: dict):
         flag_modified(wb, "passages")
 
 
+def _check_grammar(key: str, model: str, items: list[dict], tg: str) -> list[str]:
+    try:
+        chk = llm.generate(key, spec.check_prompt(items, tg), system=spec.CHECK_SYSTEM, model=model, json_mode=True, temperature=0.1, max_tokens=2000)
+    except llm.LLMError as e:
+        if "API 키" in str(e):
+            raise
+        return []
+    out = []
+    for r in (chk.get("results") or []) if isinstance(chk, dict) else []:
+        if isinstance(r, dict) and r.get("ok") is False:
+            try:
+                no = int(r.get("no") or 0)
+            except (TypeError, ValueError):
+                continue
+            if 0 < no <= len(items):
+                out.append(f"작문 {no}번: '{items[no - 1]['answer']}' 은(는) 목표어법이 핵심인 문장이 아닙니다 ({str(r.get('why') or '')[:60]}). 목표어법이 쓰인 다른 문장으로 바꾸세요.")
+    return out
+
+
 def _generate_one(ctx: JobContext, key: str, model: str, p: dict) -> dict:
     need_title = not (p.get("title") or "").strip()
     need_ko = not (p.get("passage_ko") or "").strip()
     prompt = spec.user_prompt(p["passage"], target_grammar=p.get("target_grammar", ""), need_title=need_title, need_translation=need_ko)
 
     errors: list[str] = []
-    for attempt in range(2):
+    for attempt in range(3):
         full = prompt if not errors else prompt + "\n\n" + spec.repair_prompt(errors)
         raw = llm.generate(key, full, system=spec.SYSTEM_PROMPT, model=model, json_mode=True, temperature=0.5, max_tokens=14000)
         if isinstance(raw, list) and raw:
@@ -55,7 +75,20 @@ def _generate_one(ctx: JobContext, key: str, model: str, p: dict) -> dict:
         if need_ko and result.get("passage_ko"):
             merged["passage_ko"] = result["passage_ko"]
         errors, warnings = spec.validate_passage(merged)
+        tg = p.get("target_grammar", "")
+        if not errors and spec.grammar_names(tg):
+            soft = spec.compose_target_errors(merged.get("compose") or [], tg, merged.get("passage", ""))
+            if not soft and merged.get("compose"):  # 따로 한 번 더: 정말 그 문법이 핵심인 문장인지
+                soft = _check_grammar(key, model, merged["compose"], tg)
+            if soft and attempt == 2:  # 마지막 시도: 걸린 문항은 빼고 진행 (목표어법이 확실한 문장만 남김)
+                bad = {int(m.group(1)) for m in (re.match(r"작문 (\d+)번", e) for e in soft) if m}
+                merged["compose"] = [x for j, x in enumerate(merged["compose"], 1) if j not in bad]
+                warnings = warnings + [f"목표어법이 확실하지 않은 작문 {len(bad)}문항을 뺐어요."]
+            else:
+                errors = soft
         if not errors:
+            if spec.grammar_names(tg) and len(merged.get("compose") or []) < 5:
+                warnings = warnings + [f"지문에 목표어법 문장이 {len(merged.get('compose') or [])}개뿐이라 작문은 그만큼만 냈어요."]
             merged.update(status="done", error=None, warnings=warnings)
             return merged
     raise llm.LLMError("규칙에 맞는 문제를 받지 못했습니다: " + " / ".join(errors[:3]))
@@ -75,7 +108,8 @@ def render_workbook_pdfs(ctx: JobContext, workbook_id: int) -> dict:
         db.expunge(academy)
 
     opts = {"start_number": 1, "show_grammar": True, "show_translation": True, "split": [6, 4], **(wb.options or {})}
-    base = dict(academy=academy, wb=wb, passages=wb.passages, opts=opts, sections=spec.SECTIONS, labels=spec.LABELS, per=spec.PER_PASSAGE)
+    base = dict(academy=academy, wb=wb, passages=wb.passages, opts=opts, sections=spec.SECTIONS, labels=spec.LABELS, per=spec.PER_PASSAGE,
+                starts=spec.starts(wb.passages, int(opts["start_number"])), counts=[spec.count(p) for p in wb.passages])
 
     ctx.step("문제지 PDF 만드는 중", 85)
     problem_pdf = render_pdf("pdf/comprehension.html", {**base, "answer": False, "doc_title": f"{wb.title} · 문제지"})
