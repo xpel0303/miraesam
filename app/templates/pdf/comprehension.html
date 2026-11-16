@@ -40,12 +40,12 @@
 {% block body %}
 {% set start = opts.start_number|int %}
 {% for p in passages %}
-  {% set base_n = start + loop.index0 * per %}
+  {% set base_n = starts[loop.index0] %}{% set pcount = counts[loop.index0] %}
   <div class="page {% if loop.first %}first{% endif %}">
     <div class="banner">{{ p.title or ("지문 " ~ loop.index) }}<small>{{ wb.title }}{% if answer %} · 정답 및 해설{% endif %}</small></div>
 
     {% if not answer %}
-      <div class="sec"><span class="pill">{{ base_n }}~{{ base_n + per - 1 }}</span>다음 글을 읽고 물음에 답하시오.</div>
+      <div class="sec"><span class="pill">{{ base_n }}~{{ base_n + pcount - 1 }}</span>다음 글을 읽고 물음에 답하시오.</div>
       {% set ko = (p.passage_ko or "")|trim %}
       <div class="pbox"><table><tr>
         {% if ko and opts.show_translation %}
@@ -63,7 +63,9 @@
 
     {% set ns = namespace(n=base_n) %}
     {% for key, cnt, instr in sections %}
-      {% set items = p[key] %}
+      {% set items = p[key] or [] %}
+      {% set cnt = items|length %}
+      {% if cnt %}
       {% set a, b = ns.n, ns.n + cnt - 1 %}
       {% if not answer %}
         <div class="sec"><span class="pill">{{ a }}~{{ b }}</span>{{ instr }}
@@ -95,6 +97,7 @@
         {% endfor %}
       {% endif %}
       {% set ns.n = ns.n + cnt %}
+      {% endif %}
     {% endfor %}
 
     {% if answer %}</div>{% endif %}
