@@ -119,6 +119,12 @@
       <button class="btn ghost small" type="submit">이 지문만 다시 만들기</button>
     </form>
   {% endif %}
+  {% if not busy and wb.passages|length > 1 %}
+    <form method="post" action="/comprehension/{{ wb.id }}/remove/{{ idx }}" style="margin-top:8px"
+          onsubmit="return confirm('이 지문을 워크북에서 뺄까요? 되돌릴 수 없어요. (남은 지문이 다 완성이면 PDF를 바로 다시 만들어요)')">
+      <button class="btn ghost small" type="submit" style="color:var(--err)">이 지문 빼기</button>
+    </form>
+  {% endif %}
 </section>
 {% endfor %}
 

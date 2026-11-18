@@ -107,7 +107,8 @@ def make_given(answer: str, seed=None, proper: set[str] | None = None) -> list[s
 
 
 def norm_words(s: str) -> list[str]:
-    return sorted(re.findall(r"[a-z0-9']+", s.lower().replace("’", "'")))
+    toks = (t.strip("'") for t in re.findall(r"[a-z0-9']+", s.lower().replace("’", "'").replace("‘", "'")))
+    return sorted(t for t in toks if t)  # students' / 'cause 처럼 앞뒤 따옴표는 괄호 단어에서 빠지므로 같이 뺌
 
 
 # ---------------------------------------------------------------- 정리 · 검증
@@ -265,7 +266,7 @@ def user_prompt(passage: str, *, target_grammar: str = "", need_title: bool = Fa
 
 
 def grammar_names(target_grammar: str) -> list[str]:
-    return [g.strip() for g in re.split(r"[/,\n]", target_grammar or "") if g.strip()]
+    return [g.strip() for g in re.split(r"[/,\n•·]", target_grammar or "") if g.strip()]
 
 
 def _k(t: str) -> str:

@@ -262,6 +262,33 @@ def regenerate(wid: int, idx: int, request: Request, teacher: Teacher = Depends(
     return _go(f"/comprehension/{wid}")
 
 
+@router.post("/{wid}/remove/{idx}")
+def remove_passage(wid: int, idx: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """지문 하나를 워크북에서 뺌. 남은 지문이 다 완성이면 바로 PDF를 만듦."""
+    wb = _own(db, wid, teacher)
+    if _busy(db, wb):
+        flash(request, "만드는 중에는 뺄 수 없어요. 끝난 뒤에 해 주세요.", "error")
+        return _go(f"/comprehension/{wid}")
+    if not 0 <= idx < len(wb.passages):
+        raise HTTPException(404)
+    if len(wb.passages) == 1:
+        flash(request, "지문이 하나뿐이라 뺄 수 없어요. 워크북을 지워 주세요.", "error")
+        return _go(f"/comprehension/{wid}")
+    passages = copy.deepcopy(wb.passages)
+    gone = passages.pop(idx)
+    wb.passages = passages
+    flag_modified(wb, "passages")
+    flash(request, f"'{gone.get('title') or f'지문 {idx + 1}'}'을(를) 뺐어요.")
+    if all(p.get("status") == "done" for p in passages):
+        opts = dict(wb.options or {})
+        opts.pop("dirty", None)
+        wb.options = opts
+        _start(db, wb, teacher, "comprehension_render", {}, f"워크북 PDF 만들기 · {wb.title}")
+    else:
+        db.commit()
+    return _go(f"/comprehension/{wid}")
+
+
 @router.post("/{wid}/retry")
 def retry(wid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     wb = _own(db, wid, teacher)
