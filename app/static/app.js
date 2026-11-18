@@ -79,3 +79,64 @@ function escapeHtml(s) {
 }
 
 document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
+
+// ---------------------------------------------------------------- PDF·사진에서 지문 가져오기
+// 지문 넣는 칸(textarea name=p_text / passage) 위에 버튼을 붙임. 지문 카드를 복제해도 같이 따라감.
+(function () {
+  const SEL = 'textarea[name="p_text"], textarea[name="passage"]';
+  function attach(root) {
+    (root.querySelectorAll ? root : document).querySelectorAll(SEL).forEach((ta) => {
+      const prev = ta.previousElementSibling;
+      if (prev && prev.classList && prev.classList.contains("ocr-bar")) return;
+      ta.insertAdjacentHTML("beforebegin",
+        '<div class="ocr-bar" style="display:flex;gap:8px;align-items:center;margin:0 0 4px">' +
+        '<button type="button" class="btn ghost small ocr-btn" style="padding:3px 10px;font-size:12.5px">📄 PDF·사진에서 지문 가져오기</button>' +
+        '<span class="small muted ocr-msg"></span></div>');
+    });
+  }
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".ocr-btn");
+    if (!btn) return;
+    const bar = btn.closest(".ocr-bar"), ta = bar.nextElementSibling, msg = bar.querySelector(".ocr-msg");
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.multiple = true; inp.accept = "application/pdf,image/*";
+    inp.onchange = async () => {
+      if (!inp.files.length) return;
+      const fd = new FormData();
+      for (const f of inp.files) fd.append("files", f);
+      btn.disabled = true; msg.style.color = ""; msg.textContent = "글자로 바꾸는 중… (쪽당 10~20초)";
+      try {
+        const r = await fetch("/api/ocr", { method: "POST", body: fd });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.text) throw new Error(j.error || "가져오지 못했어요.");
+        const parts = j.passages && j.passages.length ? j.passages : [j.text];
+        // 지문 여러 개 + '지문 추가' 버튼이 있으면 칸을 늘려 하나씩 넣음
+        const add = document.getElementById("add-passage");
+        if (parts.length > 1 && add && ta.name === "p_text") {
+          let cur = ta;
+          ta.value = (ta.value.trim() ? ta.value.trim() + "\n\n" : "") + parts[0];
+          for (const t of parts.slice(1)) {
+            const all = () => Array.from(document.querySelectorAll('textarea[name="p_text"]'));
+            let next = all()[all().indexOf(cur) + 1];
+            if (!next || next.value.trim()) { const n = all().length; add.click(); attach(document); next = all()[n] || all()[all().length - 1]; }
+            if (!next || next === cur) { cur.value += "\n\n" + t; continue; }
+            next.value = t; next.dispatchEvent(new Event("input", { bubbles: true })); cur = next;
+          }
+          msg.textContent = `지문 ${parts.length}개를 칸마다 넣었어요. 확인해 주세요.`;
+        } else {
+          ta.value = (ta.value.trim() ? ta.value.trim() + "\n\n" : "") + parts.join("\n\n");
+          msg.textContent = parts.length > 1 ? `지문 ${parts.length}개를 넣었어요. 확인해 주세요.` : "넣었어요. 틀린 글자가 없는지 확인해 주세요.";
+        }
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+      } catch (err) {
+        msg.style.color = "var(--err)"; msg.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        document.querySelectorAll(".ocr-bar").forEach((b) => { if (b !== bar) { b.querySelector(".ocr-btn").disabled = false; b.querySelector(".ocr-msg").textContent = ""; } });
+      }
+    };
+    inp.click();
+  });
+  attach(document);
+  new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && attach(n)))).observe(document.body, { childList: true, subtree: true });
+})();
