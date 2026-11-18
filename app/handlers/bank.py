@@ -129,6 +129,8 @@ def check_prompt(s: dict, qs: list[dict]) -> str:
 def clean_gen(raw) -> list[dict]:
     import re as _re
     out = []
+    if isinstance(raw, list):  # {"questions": [...]} 대신 목록만 온 경우
+        raw = {"questions": raw}
     for q in (raw or {}).get("questions") or [] if isinstance(raw, dict) else []:
         if not isinstance(q, dict):
             continue
@@ -258,7 +260,14 @@ def fill(ctx: JobContext) -> dict:
                 if not qs:
                     continue
                 res = llm.generate(key, check_prompt(s, qs), system=CHECK_SYSTEM, model=model, json_mode=True, temperature=0.1, max_tokens=4000)
-                ok = {int(r.get("i", -1)) for r in (res or {}).get("results") or [] if isinstance(r, dict) and r.get("agree") is True}
+                rows = res.get("results") if isinstance(res, dict) else res if isinstance(res, list) else []
+                ok = set()
+                for r in rows or []:
+                    try:
+                        if isinstance(r, dict) and r.get("agree") is True:
+                            ok.add(int(r.get("i", -1)))
+                    except (TypeError, ValueError):
+                        pass
             except llm.LLMError as e:
                 if "API 키" in str(e):
                     raise
