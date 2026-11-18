@@ -108,7 +108,10 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         "show_grammar": f.get("show_grammar") == "1",
         "show_translation": f.get("show_translation") == "1",
         "split": SPLITS.get(str(f.get("split")), [6, 4]),
+        "sections": [k for k in spec.SECTION_KEYS if k in f.getlist("sec")],
     }
+    if not options["sections"]:
+        errors.append("넣을 문제 종류를 하나 이상 골라 주세요.")
     title = str(f.get("title", "")).strip()[:120] or "내용이해 워크북"
 
     if errors:
@@ -142,12 +145,14 @@ def detail(wid: int, request: Request, teacher: Teacher = Depends(current_teache
             "wb": wb,
             "job": job,
             "busy": job is not None and job.status in ("queued", "running"),
-            "sections": spec.SECTIONS,
+            "sections": spec.active(wb.options),
             "labels": spec.LABELS,
             "per": spec.PER_PASSAGE,
             "start": start,
-            "starts": spec.starts(wb.passages, start),
-            "counts": [spec.count(p) for p in wb.passages],
+            "starts": spec.starts(wb.passages, start, spec.picked(wb.options)),
+            "counts": [spec.count(p, spec.picked(wb.options)) for p in wb.passages],
+            "picked": spec.picked(wb.options),
+            "all_sections": spec.SECTIONS,
             "all_done": all(p.get("status") == "done" for p in wb.passages),
             "active": "comprehension",
         },
@@ -208,6 +213,23 @@ def docx(wid: int, part: str = "problem", teacher: Teacher = Depends(current_tea
     if not all(p.get("status") == "done" for p in wb.passages):
         raise HTTPException(404, "아직 다 만들어지지 않았어요.")
     return comprehension_docx(wb, db.get(Academy, wb.academy_id), answer=(part == "answer"))
+
+
+@router.post("/{wid}/sections")
+async def set_sections(wid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """문제 종류 고르기를 바꿈 (AI 다시 부르지 않음, PDF만 다시 만들면 됨)."""
+    wb = _own(db, wid, teacher)
+    f = await request.form()
+    keys = [k for k in spec.SECTION_KEYS if k in f.getlist("sec")]
+    if not keys:
+        flash(request, "문제 종류를 하나 이상 골라 주세요.", "error")
+        return _go(f"/comprehension/{wid}")
+    opts = dict(wb.options or {})
+    opts["sections"], opts["dirty"] = keys, True
+    wb.options = opts
+    db.commit()
+    flash(request, "문제 구성을 바꿨어요. 'PDF 다시 만들기'를 눌러 주세요.")
+    return _go(f"/comprehension/{wid}")
 
 
 @router.post("/{wid}/render")

@@ -25,19 +25,31 @@ SECTION_KEYS = [k for k, _, _ in SECTIONS]
 PER_PASSAGE = sum(n for _, n, _ in SECTIONS)  # 30 (목표어법 문장이 지문에 적으면 작문이 줄어 30보다 적을 수 있음)
 
 
-def count(p: dict) -> int:
-    """이 지문의 실제 문항 수."""
+def picked(opts: dict | None) -> list[str]:
+    """워크북에 넣기로 고른 문제 종류 (옛 워크북은 전부)."""
+    keys = [k for k in ((opts or {}).get("sections") or []) if k in SECTION_KEYS]
+    return keys or list(SECTION_KEYS)
+
+
+def active(opts: dict | None) -> list[tuple]:
+    keys = picked(opts)
+    return [s for s in SECTIONS if s[0] in keys]
+
+
+def count(p: dict, keys: list[str] | None = None) -> int:
+    """이 지문의 실제 문항 수 (고른 문제 종류만)."""
+    keys = keys or SECTION_KEYS
     if p.get("status") != "done":
-        return PER_PASSAGE
-    return sum(len(p.get(k) or []) for k in SECTION_KEYS)
+        return sum(n for k, n, _ in SECTIONS if k in keys)
+    return sum(len(p.get(k) or []) for k in keys)
 
 
-def starts(passages: list[dict], start: int = 1) -> list[int]:
+def starts(passages: list[dict], start: int = 1, keys: list[str] | None = None) -> list[int]:
     """지문마다 첫 문항 번호."""
     out, n = [], start
     for p in passages:
         out.append(n)
-        n += count(p)
+        n += count(p, keys)
     return out
 
 LABELS = {

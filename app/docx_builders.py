@@ -93,7 +93,7 @@ def comprehension_docx(wb, academy, answer: bool):
         doc.section_head(f"{p.get('title') or f'지문 {idx + 1}'}   {wb.title}" + (" · 정답 및 해설" if answer else ""))
         if not answer:
             head = doc.para(keep=True)
-            doc.run(head, f"{n}~{n + cspec.count(p) - 1}  ", bold=True, color=doc.brand)
+            doc.run(head, f"{n}~{n + cspec.count(p, cspec.picked(opts)) - 1}  ", bold=True, color=doc.brand)
             doc.run(head, "다음 글을 읽고 물음에 답하시오.", bold=True)
             ko = (p.get("passage_ko") or "").strip()
             if ko and opts["show_translation"]:
@@ -106,7 +106,7 @@ def comprehension_docx(wb, academy, answer: bool):
                 doc.para()
             else:
                 doc.box(lambda bp, p=p: doc.run(bp, p["passage"], size=9.5))
-        for key, _cnt, instr in cspec.SECTIONS:
+        for key, _cnt, instr in cspec.active(opts):
             items = p.get(key) or []
             cnt = len(items)
             if not cnt:

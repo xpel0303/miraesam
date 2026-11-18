@@ -54,7 +54,7 @@ def _check_grammar(key: str, model: str, items: list[dict], tg: str) -> list[str
     return out
 
 
-def _generate_one(ctx: JobContext, key: str, model: str, p: dict) -> dict:
+def _generate_one(ctx: JobContext, key: str, model: str, p: dict, compose_on: bool = True) -> dict:
     need_title = not (p.get("title") or "").strip()
     need_ko = not (p.get("passage_ko") or "").strip()
     prompt = spec.user_prompt(p["passage"], target_grammar=p.get("target_grammar", ""), need_title=need_title, need_translation=need_ko)
@@ -76,7 +76,7 @@ def _generate_one(ctx: JobContext, key: str, model: str, p: dict) -> dict:
             merged["passage_ko"] = result["passage_ko"]
         errors, warnings = spec.validate_passage(merged)
         tg = p.get("target_grammar", "")
-        if not errors and spec.grammar_names(tg):
+        if not errors and spec.grammar_names(tg) and compose_on:
             soft = spec.compose_target_errors(merged.get("compose") or [], tg, merged.get("passage", ""))
             if not soft and merged.get("compose"):  # 따로 한 번 더: 정말 그 문법이 핵심인 문장인지
                 soft = _check_grammar(key, model, merged["compose"], tg)
@@ -87,7 +87,7 @@ def _generate_one(ctx: JobContext, key: str, model: str, p: dict) -> dict:
             else:
                 errors = soft
         if not errors:
-            if spec.grammar_names(tg) and len(merged.get("compose") or []) < 5:
+            if compose_on and spec.grammar_names(tg) and len(merged.get("compose") or []) < 5:
                 warnings = warnings + [f"지문에 목표어법 문장이 {len(merged.get('compose') or [])}개뿐이라 작문은 그만큼만 냈어요."]
             merged.update(status="done", error=None, warnings=warnings)
             return merged
@@ -108,8 +108,9 @@ def render_workbook_pdfs(ctx: JobContext, workbook_id: int) -> dict:
         db.expunge(academy)
 
     opts = {"start_number": 1, "show_grammar": True, "show_translation": True, "split": [6, 4], **(wb.options or {})}
-    base = dict(academy=academy, wb=wb, passages=wb.passages, opts=opts, sections=spec.SECTIONS, labels=spec.LABELS, per=spec.PER_PASSAGE,
-                starts=spec.starts(wb.passages, int(opts["start_number"])), counts=[spec.count(p) for p in wb.passages])
+    base = dict(academy=academy, wb=wb, passages=wb.passages, opts=opts, sections=spec.active(opts), labels=spec.LABELS, per=spec.PER_PASSAGE,
+                starts=spec.starts(wb.passages, int(opts["start_number"]), spec.picked(opts)),
+                counts=[spec.count(p, spec.picked(opts)) for p in wb.passages])
 
     ctx.step("문제지 PDF 만드는 중", 85)
     problem_pdf = render_pdf("pdf/comprehension.html", {**base, "answer": False, "doc_title": f"{wb.title} · 문제지"})
@@ -149,7 +150,7 @@ def build(ctx: JobContext) -> dict:
         ctx.step(f"{name} 문제 만드는 중 ({n}/{len(targets)})", int(5 + 75 * (n - 1) / max(1, len(targets))))
         _save_passage(workbook_id, idx, {"status": "making", "error": None})
         try:
-            done = _generate_one(ctx, key, model, p)
+            done = _generate_one(ctx, key, model, p, compose_on="compose" in spec.picked(wb.options))
             _save_passage(workbook_id, idx, done)
         except llm.LLMError as e:
             _save_passage(workbook_id, idx, {"status": "failed", "error": str(e)})

@@ -47,6 +47,17 @@
   <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
 
   <section class="panel">
+    <h2>넣을 문제 고르기</h2>
+    {% set chosen = o.sections or ["ox_ko_short", "ox_en_short", "ox_ko_deep", "ox_en_deep", "compose", "vocab"] %}
+    <div style="display:flex;flex-wrap:wrap;gap:6px 18px">
+      {% for k, lab, n in [("ox_ko_short", "OX 한글 (기본)", 5), ("ox_en_short", "OX 영어 (기본)", 5), ("ox_ko_deep", "OX 한글 (심화)", 5), ("ox_en_deep", "OX 영어 (심화)", 5), ("compose", "목표어법 배열 영작", 5), ("vocab", "단어 뜻", 5)] %}
+      <label style="font-weight:400"><input type="checkbox" name="sec" value="{{ k }}" {% if k in chosen %}checked{% endif %}> {{ lab }} <span class="muted small">{{ n }}문항</span></label>
+      {% endfor %}
+    </div>
+    <p class="small muted" style="margin:8px 0 0">예: OX만 → 위 네 개만 체크. 목표어법 영작은 지문에 그 문법 문장이 있는 만큼만 나와요.</p>
+  </section>
+
+  <section class="panel">
     <h2>문제지 설정</h2>
     <div class="row">
       <div class="field">
