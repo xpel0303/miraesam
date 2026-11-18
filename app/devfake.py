@@ -127,7 +127,7 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
                                "choices": "① has ② have ③ having ④ to have ⑤ had been", "answer": "②", "expl": "[가짜] 해설"} for i in range(8)]
                 + [{"kind": "short", "qtype": "빈칸 쓰기", "level": "하", "instr": "빈칸에 알맞은 말을 쓰시오.", "stem": f"[가짜 {k}-s{i}] She ____ (go) home.", "choices": "", "answer": "goes", "expl": "[가짜]"} for i in range(2)]}
     if system and "영어 지문을 글자 그대로 옮겨" in system:
-        return "[가짜] Dolphins are known for their intelligence. They communicate using clicks and whistles.\n=====\n[가짜] Second passage text here."
+        return "[19]\n[가짜] Dolphins are known for their intelligence. They communicate using clicks and whistles.\n=====\n[18]\n[가짜] Second passage text here, which is long enough to be saved."
     if system and "배열 영작 문항이 주어진 목표어법" in system:
         return {"results": [{"no": i, "ok": True, "why": "가짜"} for i in range(1, 6)]}
     if system and "문법 문제 검토자" in system:

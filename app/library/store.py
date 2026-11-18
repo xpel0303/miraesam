@@ -53,3 +53,42 @@ def remember_form(db, teacher: Teacher, f) -> int:
 def _auto_title(text: str) -> str:
     first = re.split(r"(?<=[.!?])\s", text.strip(), maxsplit=1)[0]
     return (first[:60] + "…") if len(first) > 60 else first
+
+
+# ---------------------------------------------------------------- 번호 붙은 지문 여러 개를 한 번에 붙여 넣을 때
+
+_HEAD = re.compile(r"^\s*(?:\[\s*(\d{1,3}(?:\s*[~\-–]\s*\d{1,3})?)\s*\]|(\d{1,3}(?:\s*[~\-–]\s*\d{1,3})?)\s*(?:번|\.|\)|번\.)(?=\s|$))\s*(.*)$")
+_CHOICE = re.compile(r"^\s*[①②③④⑤]")
+
+
+def num_key(title: str) -> tuple:
+    """'18번', '[20~21]', '2025 고2 3월 20번' → 정렬 열쇠 (번호 없는 것은 뒤로)."""
+    m = re.search(r"(\d{1,3})(?:\s*[~\-–]\s*\d{1,3})?\s*번", title or "") or re.match(r"\s*\[?(\d{1,3})", title or "")
+    return (0, int(m.group(1)), title) if m else (1, 0, title or "")
+
+
+def _is_korean_line(line: str) -> bool:
+    ko = len(re.findall(r"[가-힣]", line))
+    en = len(re.findall(r"[A-Za-z]", line))
+    return ko >= 4 and ko > en
+
+
+def split_numbered(text: str) -> list[tuple[str, str]]:
+    """'18. 다음 글의 목적으로… Dear Mr. Kim, …' 처럼 번호로 시작하는 지문이 여러 개면 번호마다 나눔.
+    번호 머리가 2개 미만이면 [] (나누지 않음). 우리말 발문 줄, ①~⑤ 선택지 줄은 뺌. 번호 순서로 정렬."""
+    lines = (text or "").replace("\r\n", "\n").split("\n")
+    heads = [(i, _HEAD.match(ln)) for i, ln in enumerate(lines)]
+    heads = [(i, m) for i, m in heads if m]
+    if len(heads) < 2:
+        return []
+    out = []
+    for k, (i, m) in enumerate(heads):
+        end = heads[k + 1][0] if k + 1 < len(heads) else len(lines)
+        num = re.sub(r"\s+", "", m.group(1) or m.group(2)).replace("–", "~").replace("-", "~")
+        body = [m.group(3)] + lines[i + 1:end]
+        keep = [ln for ln in body if ln.strip() and not _CHOICE.match(ln) and not _is_korean_line(ln)]
+        txt = "\n".join(ln.strip() for ln in keep).strip()
+        if txt:
+            out.append((f"{num}번", txt))
+    out.sort(key=lambda x: num_key(x[0]))
+    return out

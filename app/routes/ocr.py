@@ -20,6 +20,7 @@ SYSTEM = """당신은 영어 시험지·교재 사진에서 영어 지문을 글
 - 지문 속 글자는 고치지 말고 그대로 (철자·문장부호·대소문자 포함). 빈칸(____)이나 (A)(B)·①~⑤가 본문 안에 있으면 그대로 둡니다.
 - 줄 끝에서 끊긴 낱말(hyphen-\\nation)은 이어 붙이고, 줄바꿈은 문단이 바뀔 때만 넣습니다.
 - 지문이 여러 개면 지문 사이에 '=====' 한 줄을 넣어 나눕니다.
+- 지문에 문제 번호가 붙어 있으면(18. / [20~21] 등) 그 지문 맨 앞 줄에 '[18]' 또는 '[20~21]' 처럼 번호만 적고, 다음 줄부터 지문을 적습니다.
 - 영어 지문이 없으면 '(지문 없음)' 이라고만 답합니다."""
 
 
@@ -68,5 +69,18 @@ async def ocr(files: list[UploadFile], teacher: Teacher = Depends(current_teache
     text = str(text).strip()
     if text.startswith("(지문 없음)"):
         return JSONResponse({"error": "파일에서 영어 지문을 찾지 못했어요."}, status_code=422)
-    parts = [p.strip() for p in text.split("=====") if p.strip()]
-    return {"text": "\n\n".join(parts), "passages": parts}
+    import re
+
+    parts, nums = [], []
+    for p in (x.strip() for x in text.split("=====")):
+        if not p:
+            continue
+        m = re.match(r"\[\s*(\d{1,3}(?:\s*[~\-–]\s*\d{1,3})?)\s*\]\s*\n?", p)
+        nums.append(re.sub(r"\s+", "", m.group(1)) if m else "")
+        parts.append(p[m.end():].strip() if m else p)
+    from ..library.store import num_key
+
+    order = sorted(range(len(parts)), key=lambda i: num_key(f"{nums[i]}번") if nums[i] else (1, i, ""))
+    parts, nums = [parts[i] for i in order], [nums[i] for i in order]
+    numbered = "\n\n".join((f"[{n}]\n" if n else "") + t for n, t in zip(nums, parts))
+    return {"text": "\n\n".join(parts), "passages": parts, "numbers": nums, "numbered": numbered}

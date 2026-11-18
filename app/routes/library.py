@@ -5,7 +5,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..library.store import MIN_LEN, _auto_title, text_hash
+from ..library.store import MIN_LEN, _auto_title, num_key, split_numbered, text_hash
 from ..models import Passage, Teacher
 from ..web import current_teacher, flash, render
 
@@ -44,6 +44,8 @@ def _groups(db: Session, teacher: Teacher) -> list[tuple[str, int]]:
 @router.get("/library")
 def index(request: Request, q: str = "", group: str = "", teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     items = list(db.execute(_query(db, teacher, q, group).limit(300)).scalars())
+    if group:  # 분류 하나를 볼 때는 번호(18번, 20~21번…) 순서로
+        items.sort(key=lambda p: num_key(p.title))
     return render(request, "library/index.html", {"teacher": teacher, "items": items, "groups": _groups(db, teacher), "q": q, "group": group,
                                                   "active": "library"})
 
@@ -54,14 +56,22 @@ async def add(request: Request, teacher: Teacher = Depends(current_teacher), db:
     f = await request.form()
     group, source = str(f.get("group", "")).strip()[:80], str(f.get("source", "")).strip()[:120]
     title = str(f.get("title", "")).strip()[:160]
-    chunks = [c.strip() for c in str(f.get("text", "")).replace("\r\n", "\n").split("\n===") if c.strip()]
+    raw = str(f.get("text", "")).replace("\r\n", "\n")
+    numbered = [] if "\n===" in raw else split_numbered(raw)
+    if numbered:  # '18. … 19. …' 처럼 번호로 시작하는 지문 여러 개 → 번호마다 나눠 '18번' 제목으로, 번호 순서대로
+        pairs = [(t, c) for t, c in numbered]
+    else:
+        pairs = []
+        chunks = [c.strip() for c in raw.split("\n===") if c.strip()]
+        for c in chunks:
+            c = c.lstrip("=").strip()
+            t = title if len(chunks) == 1 else ""
+            if c.startswith("#"):
+                head, _, c = c.partition("\n")
+                t, c = head.lstrip("#").strip()[:160], c.strip()
+            pairs.append((t, c))
     added, dup = 0, 0
-    for i, c in enumerate(chunks):
-        c = c.lstrip("=").strip()
-        t = title if len(chunks) == 1 else ""
-        if c.startswith("#"):
-            head, _, c = c.partition("\n")
-            t, c = head.lstrip("#").strip()[:160], c.strip()
+    for t, c in pairs:
         if len(c) < MIN_LEN:
             continue
         h = text_hash(c)

@@ -83,7 +83,7 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
 // ---------------------------------------------------------------- PDF·사진에서 지문 가져오기
 // 지문 넣는 칸(textarea name=p_text / passage) 위에 버튼을 붙임. 지문 카드를 복제해도 같이 따라감.
 (function () {
-  const SEL = 'textarea[name="p_text"], textarea[name="passage"]';
+  const SEL = 'textarea[name="p_text"], textarea[name="passage"], textarea#l-text';
   function attach(root) {
     (root.querySelectorAll ? root : document).querySelectorAll(SEL).forEach((ta) => {
       const prev = ta.previousElementSibling;
@@ -110,20 +110,35 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
         const j = await r.json().catch(() => ({}));
         if (!r.ok || !j.text) throw new Error(j.error || "가져오지 못했어요.");
         const parts = j.passages && j.passages.length ? j.passages : [j.text];
+        const nums = j.numbers || [];
+        const setTitle = (t, i) => {  // 번호가 있으면 그 지문 카드의 제목 칸이 비었을 때 '18번' 으로
+          const card = t.closest(".passage-card, section, .panel"); const ti = card && card.querySelector('input[name="p_title"]');
+          if (ti && !ti.value.trim() && nums[i]) ti.value = nums[i] + "번";
+        };
+        if (ta.id === "l-text") {  // 지문 보관함: 번호 줄째 넣으면 저장할 때 번호마다 나눠 정렬됨
+          ta.value = (ta.value.trim() ? ta.value.trim() + "\n\n" : "") + (j.numbered || parts.join("\n===\n"));
+          msg.textContent = `지문 ${parts.length}개를 넣었어요. 확인한 뒤 '보관함에 저장'을 눌러 주세요.`;
+          ta.dispatchEvent(new Event("input", { bubbles: true }));
+          return;
+        }
         // 지문 여러 개 + '지문 추가' 버튼이 있으면 칸을 늘려 하나씩 넣음
         const add = document.getElementById("add-passage");
         if (parts.length > 1 && add && ta.name === "p_text") {
           let cur = ta;
           ta.value = (ta.value.trim() ? ta.value.trim() + "\n\n" : "") + parts[0];
+          setTitle(ta, 0);
+          let pi = 0;
           for (const t of parts.slice(1)) {
+            pi++;
             const all = () => Array.from(document.querySelectorAll('textarea[name="p_text"]'));
             let next = all()[all().indexOf(cur) + 1];
             if (!next || next.value.trim()) { const n = all().length; add.click(); attach(document); next = all()[n] || all()[all().length - 1]; }
             if (!next || next === cur) { cur.value += "\n\n" + t; continue; }
-            next.value = t; next.dispatchEvent(new Event("input", { bubbles: true })); cur = next;
+            next.value = t; setTitle(next, pi); next.dispatchEvent(new Event("input", { bubbles: true })); cur = next;
           }
           msg.textContent = `지문 ${parts.length}개를 칸마다 넣었어요. 확인해 주세요.`;
         } else {
+          if (parts.length === 1) setTitle(ta, 0);
           ta.value = (ta.value.trim() ? ta.value.trim() + "\n\n" : "") + parts.join("\n\n");
           msg.textContent = parts.length > 1 ? `지문 ${parts.length}개를 넣었어요. 확인해 주세요.` : "넣었어요. 틀린 글자가 없는지 확인해 주세요.";
         }
