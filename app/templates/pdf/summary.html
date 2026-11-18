@@ -1,5 +1,5 @@
 {% extends "pdf/_base.html" %}
-{# 지문 한쪽 정리: 지문마다 1쪽(지문 및 해석 · 핵심 정리 · 주요 어휘) + 2쪽(한 줄 해석) #}
+{# 지문 한쪽 정리: 지문마다 1쪽(지문 위·해석 아래 · 핵심 정리 · 주요 어휘) + 2쪽(한 줄 해석: 영어 줄 아래 우리말 줄) #}
 {% set CIR = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳" %}
 {% set SCALES = [1.45, 1.36, 1.27, 1.19, 1.12, 1.05, 1.0, 0.94, 0.88, 0.82] %}
 {% block style %}
@@ -15,10 +15,8 @@
   .banner .l { margin-left: 6pt; font-weight: 700; }
   .pill { display: inline-block; background: var(--pk); color: #fff; font-weight: 800; }
   .box { border: 0.8pt solid var(--pk); }
-  .pass { display: table; width: 100%; table-layout: fixed; }
-  .pass > div { display: table-cell; vertical-align: top; text-align: justify; }
-  .pass .en { width: 53%; border-right: 0.8pt solid var(--pk); }
-  .pass .ko { width: 47%; }
+  .pass > div { text-align: justify; }
+  .pass .ko { border-top: 0.8pt dashed var(--pk); color: #333; }
   table.key td, table.voc td { border: 0; }
   table.key td.k { color: var(--pk); font-weight: 800; text-align: center; vertical-align: middle; white-space: nowrap; }
   table.voc td.sep { border-left: 0.6pt dotted var(--pk); }
@@ -26,33 +24,27 @@
   table.voc td.w { font-weight: 700; }
   .keep { break-inside: avoid; }
   .lines-page { break-before: page; }
-  table.ln { border-collapse: separate; border-spacing: 0; table-layout: fixed; }
-  table.ln td { border: 0; vertical-align: top; }
-  table.ln tr { break-inside: avoid; }
-  table.ln td.l { width: 57%; border-left: 0.8pt solid var(--pk); border-right: 0.8pt solid var(--pk); }
-  table.ln td.r { width: 43%; background: var(--pk-bg); }
-  table.ln td.l .no { display: inline-block; text-align: center; border: 0.7pt solid var(--ink); font-weight: 700; margin-right: 4pt; }
-  table.ln tr.top td, table.ln tr.bot td { padding: 0; }
-  table.ln tr.top td.l { border-top: 0.8pt solid var(--pk); }
-  table.ln tr.bot td.l { border-bottom: 0.8pt solid var(--pk); }
+  .ln { border: 0.8pt solid var(--pk); }
+  .ln .row { break-inside: avoid; border-top: 0.6pt dotted var(--pk); }
+  .ln .row:first-child { border-top: 0; }
+  .ln .en .no { display: inline-block; text-align: center; border: 0.7pt solid var(--ink); font-weight: 700; margin-right: 4pt; }
+  .ln .ko { background: var(--pk-bg); }
   {# 글자 크기 단계: 0 = 가장 크게 … 끝 = 가장 작게. 지문마다 한 쪽에 들어가는 가장 큰 단계를 골라 씀 #}
   {% for k in range(SCALES|length) %}{% set x = SCALES[k] %}{% set lh = 1.78 if x >= 1 else 1.78 - (1 - x) * 1.9 %}
   .a{{ k }} .banner { border-radius: {{ 20 * x }}pt; padding: {{ 9 * x }}pt 14pt {{ 8 * x }}pt; margin: 0 0 {{ 12 * x }}pt; }
   .a{{ k }} .banner .t { font-size: {{ 15 * x }}pt; } .a{{ k }} .banner .l { font-size: {{ 10.5 * x }}pt; }
   .a{{ k }} .pill, .b{{ k }} .pill { font-size: {{ 9 * x }}pt; border-radius: {{ 11 * x }}pt; padding: {{ 2.5 * x }}pt {{ 13 * x }}pt; margin: {{ 2 * x }}pt 0 {{ 5 * x }}pt 3pt; }
   .a{{ k }} .box { border-radius: {{ 15 * x }}pt; padding: {{ 10 * x }}pt {{ 12 * x }}pt; margin: 0 0 {{ 9 * x }}pt; }
-  .a{{ k }} .pass .en { font-size: {{ 8.9 * x }}pt; line-height: {{ lh }}; padding-right: {{ 10 * x }}pt; }
-  .a{{ k }} .pass .ko { font-size: {{ 8.4 * x }}pt; line-height: {{ lh }}; padding-left: {{ 10 * x }}pt; }
+  .a{{ k }} .pass .en { font-size: {{ 8.9 * x }}pt; line-height: {{ lh }}; padding-bottom: {{ 7 * x }}pt; }
+  .a{{ k }} .pass .ko { font-size: {{ 8.4 * x }}pt; line-height: {{ lh }}; padding-top: {{ 7 * x }}pt; margin-top: {{ 1 * x }}pt; }
   .a{{ k }} table.key td { padding: {{ 3.2 * x }}pt 3pt; font-size: {{ 8.8 * x }}pt; line-height: {{ lh - 0.1 }}; }
   .a{{ k }} table.key td.k { width: {{ 54 * x }}pt; font-size: {{ 9.3 * x }}pt; }
   .a{{ k }} table.voc td { padding: {{ 2.6 * x }}pt 5pt; font-size: {{ 8.7 * x }}pt; }
   .a{{ k }} .box.vbox { padding: {{ 7 * x }}pt 10pt; border-radius: {{ 12 * x }}pt; }
-  .b{{ k }} table.ln td { padding: {{ 7 * x }}pt {{ 11 * x }}pt; line-height: {{ lh - 0.05 }}; }
-  .b{{ k }} table.ln td.l { font-size: {{ 8.9 * x }}pt; padding-left: {{ 13 * x }}pt; } .b{{ k }} table.ln td.r { font-size: {{ 8.4 * x }}pt; }
-  .b{{ k }} table.ln td.l .no { min-width: {{ 11.5 * x }}pt; height: {{ 11.5 * x }}pt; line-height: {{ 11.5 * x }}pt; border-radius: {{ 6 * x }}pt; font-size: {{ 7 * x }}pt; padding: 0 {{ 2 * x }}pt; vertical-align: {{ 1 * x }}pt; }
-  .b{{ k }} table.ln tr.top td, .b{{ k }} table.ln tr.bot td { height: {{ 9 * x }}pt; padding: 0; }
-  .b{{ k }} table.ln tr.top td.l { border-top-left-radius: {{ 15 * x }}pt; } .b{{ k }} table.ln tr.top td.r { border-top-right-radius: {{ 15 * x }}pt; }
-  .b{{ k }} table.ln tr.bot td.l { border-bottom-left-radius: {{ 15 * x }}pt; } .b{{ k }} table.ln tr.bot td.r { border-bottom-right-radius: {{ 15 * x }}pt; }
+  .b{{ k }} .ln { border-radius: {{ 15 * x }}pt; overflow: hidden; }
+  .b{{ k }} .ln .en { font-size: {{ 8.9 * x }}pt; line-height: {{ lh - 0.05 }}; padding: {{ 6 * x }}pt {{ 12 * x }}pt {{ 3 * x }}pt; }
+  .b{{ k }} .ln .ko { font-size: {{ 8.4 * x }}pt; line-height: {{ lh - 0.05 }}; padding: {{ 3 * x }}pt {{ 12 * x }}pt {{ 6 * x }}pt {{ 12 * x + 15.5 * x }}pt; }
+  .b{{ k }} .ln .en .no { min-width: {{ 11.5 * x }}pt; height: {{ 11.5 * x }}pt; line-height: {{ 11.5 * x }}pt; border-radius: {{ 6 * x }}pt; font-size: {{ 7 * x }}pt; padding: 0 {{ 2 * x }}pt; vertical-align: {{ 1 * x }}pt; }
   {% endfor %}
 {% endblock %}
 
@@ -93,13 +85,11 @@
   {% if show_lines and o.sentences and part != "p1" %}
   <div class="{{ 'lines-page' if part == 'all' else '' }}">
     <div class="pill">한 줄 해석</div>
-    <table class="ln">
-      <tr class="top"><td class="l"></td><td class="r"></td></tr>
+    <div class="ln">
       {% for r in o.sentences %}
-      <tr><td class="l"><span class="no">{{ loop.index }}</span>{{ r.en|join(" / ") }}</td><td class="r">{{ r.ko|join(" / ") }}</td></tr>
+      <div class="row"><div class="en"><span class="no">{{ loop.index }}</span>{{ r.en|join(" / ") }}</div><div class="ko">{{ r.ko|join(" / ") }}</div></div>
       {% endfor %}
-      <tr class="bot"><td class="l"></td><td class="r"></td></tr>
-    </table>
+    </div>
   </div>
   {% endif %}
 </div>
