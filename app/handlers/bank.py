@@ -154,10 +154,16 @@ def clean_gen(raw) -> list[dict]:
     return out
 
 
+# 원장님 요청(2026-11-18): 문법뱅크 AI 문항 만들기 중단. 다시 켜려면 False 로.
+FILL_PAUSED = True
+
+
 @job_handler("bank_fill")
 def fill(ctx: JobContext) -> dict:
     """문항이 하나도 없는 중분류마다 per_cat 문항을 AI로 만들어 넣음 (소분류에 고르게 나눔).
     서버가 다시 시작돼도 이미 넣은 문항은 그대로 두고 모자란 만큼만 이어서 만듦."""
+    if FILL_PAUSED:  # 대기 중이던 작업, 배포 뒤 다시 시작된 작업도 여기서 바로 끝남
+        return {"reply": "문법뱅크 AI 문항 만들기를 멈춰 두었어요. 이미 만든 문항은 그대로 있어요.", "model": "문항 채우기"}
     import random
     import re
     import threading

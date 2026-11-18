@@ -240,6 +240,10 @@ def remap_rules_run(request: Request, teacher: Teacher = Depends(owner_only), db
 @router.post("/fill")
 def fill_run(request: Request, per_cat: int = Form(200), per_sub: int = Form(0), resume: int = Form(0), min_total: int = Form(0), teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
     """문항이 하나도 없는 중분류를 AI 문항으로 채우기 (중분류마다 per_cat 문항)."""
+    from ..handlers.bank import FILL_PAUSED
+    if FILL_PAUSED:
+        flash(request, "문법뱅크 AI 문항 만들기는 멈춰 두었어요.", "error")
+        return _go("/bank/import")
     from ..jobs import enqueue
 
     per_cat, per_sub = max(10, min(1000, per_cat)), max(0, min(200, per_sub))
@@ -257,10 +261,11 @@ def fill_run(request: Request, per_cat: int = Form(200), per_sub: int = Form(0),
 
 @router.get("/import")
 def import_page(request: Request, job: int | None = None, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+    from ..handlers.bank import FILL_PAUSED
     n = db.scalar(select(func.count()).select_from(BankQuestion)) or 0
     mapped = db.scalar(select(func.count()).select_from(BankQuestion).where(BankQuestion.sub_id != "")) or 0
     return render(request, "bank/import.html", {"teacher": teacher, "n": n, "mapped": mapped, "job": job, "active": "grammar_bank",
-                                                "fills": _fill_jobs(db, teacher), "empty_subs": _empty_subs(db)})
+                                                "fills": _fill_jobs(db, teacher), "empty_subs": _empty_subs(db), "fill_paused": FILL_PAUSED})
 
 
 def _empty_subs(db: Session) -> int:

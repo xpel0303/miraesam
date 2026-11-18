@@ -15,12 +15,14 @@
     ① 단원 목록을 받아 Claude에게 주면 → ② 분류 재배치 파일을 만들어 줘요 → ③ 그 파일을 여기 올리면 전체 문항이 한 번에 옮겨져요. 문항 내용(정답 등)은 바뀌지 않아요.</p>
   <form method="post" action="/bank/remap_rules" onsubmit="return confirm('전체 문항을 새 분류(학년 단계 → 중분류 → 소분류)로 옮길까요? 문항 내용은 바뀌지 않아요.')" style="margin-bottom:10px">
     <button class="btn" type="submit">규칙으로 전체 재배치 (교재 학년 단계 + 기존 분류)</button></form>
+  {% if not fill_paused %}
   <form method="post" action="/bank/fill" onsubmit="return confirm('문항이 하나도 없는 중분류마다 AI로 문항을 만들어 넣을까요? 몇 시간 걸려요.')" style="margin-bottom:10px">
     <button class="btn" type="submit">빈 중분류 AI 문항으로 채우기</button> 중분류마다 <input type="number" name="per_cat" value="200" min="10" max="1000" style="width:80px">문항</form>
   <form method="post" action="/bank/fill" onsubmit="return confirm('모든 소분류가 이 문항 수가 되도록 모자란 만큼 AI로 만들어 넣을까요? 몇 시간 걸려요.')" style="margin-bottom:10px">
     <button class="btn" type="submit">소분류마다 문항 수 맞추기</button> 소분류마다 <input type="number" name="min_total" value="100" min="10" max="500" style="width:80px">문항이 되게 (교재 문항 + AI 문항)</form>
   <form method="post" action="/bank/fill" onsubmit="return confirm('문항이 하나도 없는 소분류마다 AI로 문항을 만들어 넣을까요?')" style="margin-bottom:10px">
     <button class="btn" type="submit">빈 소분류 AI 문항으로 채우기</button> 소분류마다 <input type="number" name="per_sub" value="20" min="5" max="200" style="width:80px">문항</form>
+  {% else %}<p class="small muted">AI 문항 만들기는 멈춰 두었어요. 이미 만든 문항은 그대로 있어요.</p>{% endif %}
   <p class="small muted">지금 문항이 하나도 없는 소분류: <b>{{ "{:,}".format(empty_subs) }}개</b></p>
   {% if fills %}
   <h3 style="margin-top:14px">AI 문항 채우기 작업</h3>
@@ -35,7 +37,7 @@
         {% if f.status == "failed" and f.error %}<br><span class="muted">{{ f.error[:120] }}</span>{% endif %}
         {% if f.status == "done" and f.reply %}<br><span class="muted">{{ f.reply[:160] }}</span>{% endif %}</td>
       <td>{% if f.need %}{{ "{:,}".format(f.got) }} / {{ "{:,}".format(f.need) }}<br><span class="muted">소분류 {{ f.subs }}개{% if f.short %}, 덜 찬 곳 {{ f.short }}개{% endif %}</span>{% else %}-{% endif %}</td>
-      <td>{% if f.can_resume %}
+      <td>{% if f.can_resume and not fill_paused %}
         <form method="post" action="/bank/fill" onsubmit="return confirm('작업 {{ f.id }}에서 덜 채운 소분류 {{ f.short }}개를 이어서 채울까요? 이미 만든 문항은 그대로 둬요.')">
           <input type="hidden" name="resume" value="{{ f.id }}"><button class="btn" type="submit">이어서 채우기</button></form>
         {% elif f.status in ("queued", "running") %}<a class="btn ghost" href="/bank/import?job={{ f.id }}">진행 보기</a>{% endif %}</td>
