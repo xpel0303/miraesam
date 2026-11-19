@@ -241,7 +241,11 @@ def test_items(words: list[dict], mode: str, count: int, shuffle: bool, seed: in
             n = min(count, len(ws))
         else:
             n = max(1, round(count * len(ws) / total)) if count < total else len(ws)
-        picked = rng.sample(ws, min(n, len(ws))) if shuffle else ws[:n]
+        if shuffle:
+            picked = rng.sample(ws, min(n, len(ws)))
+        else:
+            chosen = _spread(ws)[:n] if not by_src else ws[:n]
+            picked = [w for w in ws if any(w is c for c in chosen)]  # 단어장 순서는 그대로
         qs = []
         for w in picked:
             m = mode
@@ -309,15 +313,34 @@ def _four(rng, right: str, pool: list[str], avoid: set[str] = frozenset()) -> tu
 
 
 def _split(total: int, sizes: list[int]) -> list[int]:
-    """total개를 그룹 크기에 비례해 나눔 (합 = total, 그룹마다 크기 넘지 않게)."""
+    """total개를 그룹 크기에 비례해 나눔 (합 = total, 그룹마다 크기 넘지 않게).
+    남는 몫은 앞 지문부터가 아니라 지문 전체에 고르게 흩어 줌 (앞쪽 지문에만 몰리지 않게)."""
     whole = sum(sizes) or 1
     out = [min(s, int(total * s / whole)) for s in sizes]
-    i = 0
-    while sum(out) < min(total, whole) and i < 10000:
-        j = i % len(sizes)
-        if out[j] < sizes[j]:
-            out[j] += 1
-        i += 1
+    want = min(total, whole)
+    for _ in range(10000):
+        left = want - sum(out)
+        cand = [j for j, sz in enumerate(sizes) if out[j] < sz]
+        if left <= 0 or not cand:
+            break
+        least = min(out[j] for j in cand)  # 가장 적게 받은 지문들 중에서
+        cand = [j for j in cand if out[j] == least]
+        step = len(cand) / min(left, len(cand))
+        for k in range(min(left, len(cand))):
+            out[cand[int(k * step)]] += 1
+    return out
+
+
+def _spread(ws: list[dict]) -> list[dict]:
+    """지문 구분 없이 앞에서부터 뽑을 때도 여러 지문이 골고루 나오게, 지문을 번갈아 가며 줄 세움."""
+    groups: dict[str, list[dict]] = {}
+    for w in ws:
+        groups.setdefault(w.get("src") or "", []).append(w)
+    if len(groups) < 2:
+        return ws
+    out, lists = [], list(groups.values())
+    for i in range(max(len(g) for g in lists)):
+        out += [g[i] for g in lists if i < len(g)]
     return out
 
 
@@ -355,7 +378,7 @@ def exam_items(words: list[dict], n_mc: int, n_sa: int, shuffle: bool, seed: int
     out, k = [], 0
     for gi, src in enumerate(keys):
         ws = groups[src]
-        ws = rng.sample(ws, len(ws)) if shuffle else list(ws)
+        ws = rng.sample(ws, len(ws)) if shuffle else (_spread(ws) if not by_src else list(ws))
         if per_src and by_src:
             want_mc, want_sa = fit(n_mc, n_sa, len(ws), len([w for w in ws if exam_blank(w)]))
         else:
