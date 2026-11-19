@@ -222,6 +222,11 @@ def test_items(words: list[dict], mode: str, count: int, shuffle: bool, seed: in
                srcs: list[str] | None = None, per_src: bool = False) -> list[dict]:
     """시험지 → [{src, qs[{kind, mode, show, ko, choices, answer, ans_no}]}]. 지문별이면 지문 순서대로 묶고, 그 안에서 섞음.
     srcs: 출제할 지문만 (None이면 전부). per_src: count를 지문마다 문항 수로 씀."""
+    if per_src and not by_src:  # 지문마다 N문제씩 뽑은 뒤 지문 구분 없이 한데 섞음
+        gs = test_items(words, mode, count, shuffle, seed, True, srcs, True)
+        qs = [q for g in gs for q in g["qs"]]
+        random.Random(seed + 1).shuffle(qs)
+        return [{"src": "", "qs": qs}] if qs else []
     rng = random.Random(seed)
     pool = [w for w in words if w.get("word") and w.get("meaning")]
     if srcs is not None:
@@ -349,6 +354,13 @@ def exam_items(words: list[dict], n_mc: int, n_sa: int, shuffle: bool, seed: int
     """실전형 → [{src, mc[{stem, show, choices, ans_no, answer}], sa[{sent, ko, answer}]}].
     n_mc·n_sa: 객관식·주관식 문항 수 (per_src면 지문마다, 아니면 전체를 지문 크기대로 나눔).
     주관식은 예문 빈칸이 되는 단어만, 한 단어는 한 번만 나옴."""
+    if per_src and not by_src:  # 지문마다 객관식·주관식을 뽑은 뒤 지문 구분 없이 한데 섞음
+        gs = exam_items(words, n_mc, n_sa, shuffle, seed, True, srcs, True)
+        mc, sa = [q for g in gs for q in g["mc"]], [q for g in gs for q in g["sa"]]
+        r2 = random.Random(seed + 1)
+        r2.shuffle(mc)
+        r2.shuffle(sa)
+        return [{"src": "", "mc": mc, "sa": sa}] if mc or sa else []
     rng = random.Random(seed)
     pool = [w for w in words if w.get("word") and w.get("meaning")]
     if srcs is not None:
