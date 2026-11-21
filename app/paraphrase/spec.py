@@ -9,9 +9,12 @@ import re
 from ..analysis.spec import split_sentences
 
 STRENGTHS = {
-    "light": {"name": "약", "band": (8, 25), "rule": "어휘만 바꿉니다. 핵심 단어 일부를 문맥에 맞는 동의어·유사 표현으로 교체하고, 문장 구조와 순서는 그대로 둡니다."},
-    "medium": {"name": "중", "band": (22, 45), "rule": "어휘 교체에 더해 문장 구조를 바꿉니다 (능동↔수동, 분사구문, 관계사절, 명사구↔절, 연결어 교체 등). 문장 순서와 문장 수는 유지합니다."},
-    "strong": {"name": "강", "band": (40, 75), "rule": "내용과 논리 흐름은 같게 두되, 대부분의 문장을 다른 표현과 구조로 다시 씁니다. 두 문장을 합치거나 나눠도 됩니다."},
+    "light": {"name": "하", "band": (10, 30), "target": 20,
+              "rule": "주로 어휘를 바꿉니다. 문장마다 핵심 단어·어구 1~3군데를 문맥에 맞는 동의어·유사 표현으로 교체하고, 문장 구조·순서·문장 수는 그대로 둡니다. 나머지 단어는 원문 그대로 둡니다."},
+    "medium": {"name": "중", "band": (30, 60), "target": 45,
+               "rule": "어휘 교체에 더해, 절반 정도의 문장은 구조를 바꿉니다 (능동↔수동, 분사구문, 관계사절, 명사구↔절, 연결어 교체 등). 나머지 문장은 어휘만 조금 바꿉니다. 문장 순서와 문장 수는 유지하고, 원문 단어도 절반가량은 그대로 남깁니다."},
+    "strong": {"name": "상", "band": (60, 90), "target": 75,
+               "rule": "내용과 논리 흐름은 같게 두되, 대부분의 문장을 다른 표현과 구조로 다시 씁니다. 두 문장을 합치거나 나눠도 됩니다. 핵심 내용어 일부만 원문 그대로 둡니다."},
 }
 MAX_PASSAGES = 30
 _TOKEN = re.compile(r"[A-Za-z0-9']+|[^\sA-Za-z0-9']")
@@ -95,10 +98,45 @@ JSON 객체 하나로만 답합니다: {"text": "변형한 지문 전체", "note
 
 def prompt(original: str, strength: str, level: str, focus: str, fix: list[str] | None = None) -> str:
     st = STRENGTHS[strength]
-    lines = [f"대상: {level or '고등학생'}", f"변형 강도: {st['name']} — {st['rule']}"]
+    lo, hi = st["band"]
+    lines = [f"대상: {level or '고등학생'}", f"변형 강도: {st['name']} — {st['rule']}",
+             f"변형도 목표: 원문 대비 단어 기준 약 {st['target']}% (반드시 {lo}~{hi}% 안). 변형도 = 원문과 달라진 단어의 비율입니다."]
     if focus:
         lines.append(f"특히 신경 쓸 것: {focus}")
     if fix:
         lines.append("직전 답의 문제점 (고쳐서 다시):\n- " + "\n- ".join(fix))
     lines.append("\n원문:\n" + original.strip())
     return "\n".join(lines)
+
+
+def fit_ratio(original: str, changed: str, strength: str) -> tuple[str, int]:
+    """변형도가 범위보다 높으면 문장 몇 개를 원문으로 되돌려 범위 안(가능하면 목표 근처)으로 맞춤.
+    문장 수가 원문과 같을 때만 (문장끼리 짝이 맞을 때). → (지문, 변형도)"""
+    lo, hi = STRENGTHS[strength]["band"]
+    target = STRENGTHS[strength]["target"]
+    _, ratio = diff(original, changed)
+    if ratio <= hi:
+        return changed, ratio
+    sa, sb = split_sentences(original), split_sentences(changed)
+    if len(sa) != len(sb) or len(sa) < 2:
+        return changed, ratio
+    cur = list(sb)
+    for _ in range(len(sa)):
+        best = None
+        for i in range(len(cur)):
+            if cur[i] == sa[i]:
+                continue
+            trial = cur[:i] + [sa[i]] + cur[i + 1:]
+            _, r = diff(original, " ".join(trial))
+            if r < lo:
+                continue
+            score = abs(r - target)
+            if best is None or score < best[0]:
+                best = (score, i, r)
+        if best is None:
+            break
+        cur[best[1]] = sa[best[1]]
+        ratio = best[2]
+        if ratio <= hi and abs(ratio - target) <= 8:
+            break
+    return " ".join(cur), ratio

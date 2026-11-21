@@ -10,6 +10,10 @@
       <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 교과서 3과 변형"></div>
       <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
     </div>
+    <div class="field"><label>변형 강도 <span class="hint">모든 지문에 똑같이 적용 · 변형도 = 원문과 달라진 단어 비율</span></label>
+      <div class="seg" role="radiogroup" aria-label="변형 강도" style="max-width:560px">
+        {% for k, v in spec.STRENGTHS.items() %}<label><input type="radio" name="strength" value="{{ k }}" {% if (form.strength or "medium") == k %}checked{% endif %}>{{ v.name }} ({{ v.band[0] }}~{{ v.band[1] }}%)</label>{% endfor %}
+      </div></div>
     <div class="field"><label for="focus">특히 신경 쓸 것 <span class="hint">선택. 예: "관계사절과 분사구문을 많이 넣어 주세요", "어휘는 교과서 수준으로"</span></label><input type="text" id="focus" name="focus" value="{{ form.focus or '' }}"></div>
     <label style="font-weight:400"><input type="checkbox" name="show_compare" value="1" {% if form.show_compare %}checked{% endif %}> PDF 뒤쪽에 교사용 원문 대조 넣기</label>
   </section>
@@ -17,10 +21,7 @@
     {% for r in form.passages %}
     <section class="panel passage-card">
       <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
-      <div class="row" style="grid-template-columns: 2fr 1fr">
-        <div class="field"><label>제목 <span class="hint">선택</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
-        <div class="field"><label>강도</label><select name="p_strength">{% for k, v in spec.STRENGTHS.items() %}<option value="{{ k }}" {% if (r.strength or "medium") == k %}selected{% endif %}>{{ v.name }}</option>{% endfor %}</select></div>
-      </div>
+      <div class="field"><label>제목 <span class="hint">선택</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
       <div class="field"><label>영어 원문</label><textarea name="p_text" rows="7">{{ r.text or '' }}</textarea></div>
     </section>
     {% endfor %}

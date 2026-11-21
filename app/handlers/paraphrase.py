@@ -64,22 +64,27 @@ def build(ctx: JobContext) -> dict:
         ctx.step(f"{p.get('title') or f'지문 {i + 1}'} 변형하는 중 ({k}/{len(targets)})", int(5 + 80 * (k - 1) / max(1, len(targets))))
         strength = p.get("strength", "medium")
         fix, best = None, None
+        lo, hi = spec.STRENGTHS[strength]["band"]
         try:
-            for _ in range(2):
+            for _ in range(4):
                 raw = llm.generate(key, spec.prompt(p["text"], strength, o.get("level", ""), o.get("focus", ""), fix), system=spec.SYSTEM_PROMPT,
                                    model=model, json_mode=True, temperature=0.7, max_tokens=2500 + len(p["text"]))
                 out = (raw.get("text") if isinstance(raw, dict) else "") or ""
                 out = " ".join(out.split())
+                if out:
+                    out, _r = spec.fit_ratio(p["text"], out, strength)  # 너무 많이 바뀌었으면 문장 몇 개를 원문으로
                 errs, warns, ratio = spec.check(p["text"], out, strength)
                 notes = [str(n).strip() for n in (raw.get("notes") or []) if str(n).strip()][:6] if isinstance(raw, dict) else []
-                if out and (best is None or not errs):
-                    best = {"out": out, "notes": notes, "ratio": ratio, "warnings": warns + errs}
+                gap = 0 if lo <= ratio <= hi else min(abs(ratio - lo), abs(ratio - hi))
+                if out and (best is None or (not errs and best["gap"]) or gap < best["gap"]):
+                    best = {"out": out, "notes": notes, "ratio": ratio, "warnings": warns + errs, "gap": gap if errs else 0}
                 if not errs:
                     break
                 fix = errs
             if not best:
                 raise llm.LLMError("변형 지문을 받지 못했습니다.")
             # 두 번째도 강도 범위를 벗어나면 결과는 살리고 경고로 알림 (선생님이 직접 고칠 수 있음)
+            best.pop("gap", None)
             _save(set_id, i, {**best, "status": "done", "error": None})
         except llm.LLMError as e:
             _save(set_id, i, {"status": "failed", "error": str(e)})

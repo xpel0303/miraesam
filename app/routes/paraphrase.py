@@ -50,14 +50,16 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher)):
-    return render(request, "paraphrase/new.html", {"teacher": teacher, "form": {"passages": [{"strength": "medium"}], "show_compare": True},
+    return render(request, "paraphrase/new.html", {"teacher": teacher, "form": {"passages": [{}], "strength": "medium", "show_compare": True},
                                                    "spec": spec, "levels": LEVELS, "active": "paraphrase"})
 
 
 @router.post("")
 async def create(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     f = await request.form()
-    titles, texts, strengths = f.getlist("p_title"), f.getlist("p_text"), f.getlist("p_strength")
+    titles, texts = f.getlist("p_title"), f.getlist("p_text")
+    strength = str(f.get("strength") or "medium")
+    strength = strength if strength in spec.STRENGTHS else "medium"
     title = str(f.get("title", "")).strip()[:120] or "지문 변형"
     level = str(f.get("level") or "")
     passages, errors = [], []
@@ -65,10 +67,9 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         x = " ".join(str(x).split())
         if not x:
             continue
-        st = str(strengths[i]) if i < len(strengths) else "medium"
         if len(x) > 4000:
             errors.append(f"지문 {i + 1}이 너무 깁니다 (4000자까지).")
-        passages.append({"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "text": x, "strength": st if st in spec.STRENGTHS else "medium", "status": "waiting"})
+        passages.append({"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "text": x, "strength": strength, "status": "waiting"})
     if not passages:
         errors.append("지문을 하나 이상 넣어 주세요.")
     if len(passages) > spec.MAX_PASSAGES:
@@ -77,7 +78,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 먼저 넣어 주세요.")
     options = {"level": level if level in LEVELS else "", "focus": str(f.get("focus", "")).strip()[:200], "show_compare": f.get("show_compare") == "1"}
     if errors:
-        form = {"title": title, **options, "passages": [{"title": t, "text": x, "strength": s} for t, x, s in zip(titles, texts, strengths)]}
+        form = {"title": title, **options, "strength": strength, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)]}
         return render(request, "paraphrase/new.html", {"teacher": teacher, "form": form, "errors": errors, "spec": spec, "levels": LEVELS, "active": "paraphrase"}, 400)
     s = ParaphraseSet(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, options=options, passages=passages)
     db.add(s)
