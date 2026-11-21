@@ -163,11 +163,12 @@ def remove(sid: int, request: Request, teacher: Teacher = Depends(current_teache
     s = _own(db, sid, teacher)
     if _busy(db, s):
         return _go(f"/paraphrase/{sid}")
-    title, fid = s.title, s.file_id
+    title, fids = s.title, [s.file_id, (s.options or {}).get("teacher_file_id")]
     db.delete(s)
     db.flush()
-    if fid and (sf := db.get(StoredFile, fid)) is not None:
-        db.delete(sf)
+    for fid in fids:
+        if fid and (sf := db.get(StoredFile, fid)) is not None:
+            db.delete(sf)
     db.commit()
     flash(request, f"'{title}'을(를) 지웠어요.")
     return _go("/paraphrase")

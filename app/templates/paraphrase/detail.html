@@ -12,12 +12,11 @@
   <div class="panel-head"><h2>PDF</h2>
     {% if not busy %}<div class="actions">
       {% if all_done %}<form method="post" action="/paraphrase/{{ s.id }}/render" class="actions">
-          <label class="small" style="font-weight:400;margin:0"><input type="checkbox" name="show_compare" value="1" {% if s.options.show_compare %}checked{% endif %}> 교사용 대조 넣기</label>
           <button class="btn {{ '' if s.options.dirty else 'ghost' }} small" type="submit">PDF 다시 만들기</button></form>
       {% else %}<form method="post" action="/paraphrase/{{ s.id }}/retry"><button class="btn small" type="submit">못 만든 지문 이어서 만들기</button></form>{% endif %}
     </div>{% endif %}
   </div>
-  {% if s.file_id %}<div class="actions"><a class="btn" href="/files/{{ s.file_id }}" target="_blank" rel="noopener">지문 변형 PDF</a>
+  {% if s.file_id %}<div class="actions"><a class="btn" href="/files/{{ s.file_id }}" target="_blank" rel="noopener">학생용 PDF</a>{% if s.options.teacher_file_id %}<a class="btn" href="/files/{{ s.options.teacher_file_id }}" target="_blank" rel="noopener">교사용 PDF (원문 대조)</a>{% endif %}
     {% if not busy and all_done %}<a class="btn ghost" href="/paraphrase/{{ s.id }}/docx?compare=1">워드 (대조 포함)</a><a class="btn ghost" href="/paraphrase/{{ s.id }}/docx?compare=0">워드 (변형 지문만)</a>{% endif %}</div>
     {% if s.options.dirty %}<p class="small" style="margin:10px 0 0;color:var(--err)">고친 내용이 아직 PDF에 반영되지 않았어요.</p>{% endif %}
   {% elif busy %}<p class="muted small" style="margin:0">다 만들면 여기에 PDF가 생겨요.</p>{% else %}<p class="muted small" style="margin:0">아직 PDF가 없어요.</p>{% endif %}

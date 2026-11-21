@@ -25,6 +25,7 @@
   table.ch td:last-child { color: #2f5e3e; }
 {% endblock %}
 {% block body %}
+{% if part != "teacher" %}
 {% for v in views %}
   <div class="pg {% if loop.first %}first{% endif %}">
     <div class="ptitle">{{ v.title }}<small>{{ s.title }}</small></div>
@@ -32,8 +33,9 @@
   </div>
 {% endfor %}
 
-{% if show_compare %}
-<div class="teacher-cover"><b>교사용</b> · 원문 대조와 변형 포인트입니다. 학생에게 나눠 줄 때는 이 쪽부터 빼고 인쇄하세요.</div>
+{% endif %}
+{% if part == "teacher" %}
+<div class="teacher-cover" style="break-before:avoid"><b>교사용</b> · 원문 대조와 변형 포인트입니다.</div>
 {% for v in views %}
   <div class="{% if not loop.first %}pg{% endif %}">
     <div class="ptitle">{{ v.title }} · 원문 대조<small>강도 {{ v.strength }} · 변형도 {{ v.ratio }}%</small></div>

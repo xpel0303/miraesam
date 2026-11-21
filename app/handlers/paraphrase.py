@@ -36,16 +36,22 @@ def render_paraphrase_pdf(ctx: JobContext, set_id: int) -> dict:
         db.expunge(s)
         db.expunge(academy)
     ctx.step("PDF 만드는 중", 90)
-    pdf = render_pdf("pdf/paraphrase.html", {"academy": academy, "s": s, "views": views(s), "doc_title": s.title,
-                                             "show_compare": (s.options or {}).get("show_compare", True)})
+    base = {"academy": academy, "s": s, "views": views(s)}
+    pdf = render_pdf("pdf/paraphrase.html", {**base, "doc_title": s.title, "part": "student"})
+    tpdf = render_pdf("pdf/paraphrase.html", {**base, "doc_title": f"{s.title} · 교사용", "part": "teacher"})
     fid = ctx.save_file(f"{s.title}_지문변형.pdf", "application/pdf", pdf)
+    tfid = ctx.save_file(f"{s.title}_지문변형_교사용.pdf", "application/pdf", tpdf)
     with session_scope() as db:
         row = db.get(ParaphraseSet, set_id)
         old, row.file_id = row.file_id, fid
+        old_t = (row.options or {}).get("teacher_file_id")
+        row.options = {**(row.options or {}), "teacher_file_id": tfid}
         db.flush()
-        if old and (f := db.get(StoredFile, old)) is not None:
-            db.delete(f)
-    return {"file_id": fid, "filename": f"{s.title}_지문변형.pdf", "paraphrase_id": set_id}
+        for o in (old, old_t):
+            if o and (f := db.get(StoredFile, o)) is not None:
+                db.delete(f)
+    return {"file_id": fid, "filename": f"{s.title}_지문변형.pdf", "paraphrase_id": set_id,
+            "files": [{"file_id": fid, "filename": f"{s.title}_지문변형.pdf"}, {"file_id": tfid, "filename": f"{s.title}_지문변형_교사용.pdf"}]}
 
 
 @job_handler("paraphrase_build")

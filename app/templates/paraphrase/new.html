@@ -15,7 +15,7 @@
         {% for k, v in spec.STRENGTHS.items() %}<label><input type="radio" name="strength" value="{{ k }}" {% if (form.strength or "medium") == k %}checked{% endif %}>{{ v.name }} ({{ v.band[0] }}~{{ v.band[1] }}%)</label>{% endfor %}
       </div></div>
     <div class="field"><label for="focus">특히 신경 쓸 것 <span class="hint">선택. 예: "관계사절과 분사구문을 많이 넣어 주세요", "어휘는 교과서 수준으로"</span></label><input type="text" id="focus" name="focus" value="{{ form.focus or '' }}"></div>
-    <label style="font-weight:400"><input type="checkbox" name="show_compare" value="1" {% if form.show_compare %}checked{% endif %}> PDF 뒤쪽에 교사용 원문 대조 넣기</label>
+    <p class="small muted" style="margin:0">PDF는 학생용(변형 지문)과 교사용(원문 대조) 두 개로 따로 만들어져요.</p>
   </section>
   <div id="passages">
     {% for r in form.passages %}
