@@ -59,11 +59,12 @@ def new(request: Request, teacher: Teacher = Depends(current_teacher)):
 @router.post("")
 async def create(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     f = await request.form()
-    titles, texts = f.getlist("p_title"), f.getlist("p_text")
+    titles, texts, grams = f.getlist("p_title"), f.getlist("p_text"), f.getlist("p_grammar")
     types = [t for t in spec.TYPES if t in f.getlist("types")]
     level = str(f.get("level") or "")
     title = str(f.get("title", "")).strip()[:120] or "변형문제"
-    passages = [{"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "text": " ".join(str(x).split())}
+    passages = [{"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "text": " ".join(str(x).split()),
+                 "grammar": " ".join(str(grams[i]).split())[:300] if i < len(grams) else ""}
                 for i, x in enumerate(texts) if str(x).strip()]
     errors = []
     if not passages:
@@ -93,7 +94,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     if any(t in spec.AI_TYPES for t in types) and not teacher.gemini_key_enc:
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 넣거나, 순서 배열·문장 삽입만 골라 주세요.")
     if errors:
-        form = {"title": title, "level": level, "types": types, "mode": mode, "mix_n": mix_n, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)]}
+        form = {"title": title, "level": level, "types": types, "mode": mode, "mix_n": mix_n, "passages": [{"title": t, "text": x, "grammar": grams[i] if i < len(grams) else ""} for i, (t, x) in enumerate(zip(titles, texts))]}
         return render(request, "variant/new.html", {"teacher": teacher, "form": form, "errors": errors, "spec": spec, "levels": LEVELS, "active": "variant"}, 400)
     vs = VariantSet(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, passages=passages,
                     options={"types": types, "level": level if level in LEVELS else "", "mode": mode,

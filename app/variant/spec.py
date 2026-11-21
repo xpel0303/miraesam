@@ -339,10 +339,33 @@ FORMATS = {
 }
 
 
-def ai_prompt(passage: str, types: list[str], level: str, fix_notes: list[str] | None = None) -> str:
+GRAMMAR_TYPES = ("grammar", "sa_grammar", "sa_arrange")
+
+
+def grammar_note(target: str, types: list[str]) -> str:
+    """목표어법이 있을 때 어법·서술형 유형에 붙이는 지시."""
+    target = (target or "").strip()
+    if not target or not any(t in GRAMMAR_TYPES for t in types):
+        return ""
+    out = [f"\n목표어법: {target}  (이번 시험 범위의 핵심 문법)",
+           "- 지문에서 목표어법이 실제로 쓰인 곳을 먼저 찾으세요. 지문에 없는 문법을 억지로 만들어 넣지 마세요."]
+    if "grammar" in types:
+        out.append("- grammar: 틀린 곳(wrong: true) 1개는 목표어법이 쓰인 부분에 만드세요. 나머지 밑줄도 가능하면 목표어법 관련 부분을 포함하세요.")
+    if "sa_grammar" in types:
+        out.append("- sa_grammar: 틀린 곳 2개는 목표어법이 쓰인 부분에 만드세요 (지문에 그런 곳이 하나뿐이면 1개만 목표어법, 나머지는 다른 내신 단골 어법).")
+    if "sa_arrange" in types:
+        out.append("- sa_arrange: sentence는 목표어법이 쓰인 지문 문장으로 고르고, point에 그 목표어법 이름을 쓰세요.")
+    out.append("- 지문에 목표어법이 전혀 없으면 위 지시는 무시하고 평소처럼 내신 단골 어법으로 내되, why/point에 실제 출제한 어법을 정확히 쓰세요.")
+    return "\n".join(out)
+
+
+def ai_prompt(passage: str, types: list[str], level: str, fix_notes: list[str] | None = None, target: str = "") -> str:
     lines = [f"대상: {level or '고등학생'}", "아래 지문으로 다음 유형의 문제를 하나씩 만드세요. 출력은 유형 이름을 키로 하는 JSON 객체입니다.", "{"]
     lines += ["  " + FORMATS[t] + "," for t in types]
     lines.append("}")
+    note = grammar_note(target, types)
+    if note:
+        lines.append(note)
     if fix_notes:
         lines.append("\n직전 답의 문제점 (이 유형들은 규칙에 맞게 다시):\n- " + "\n- ".join(fix_notes))
     lines.append("\n지문:\n" + passage.strip())

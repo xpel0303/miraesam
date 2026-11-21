@@ -15,8 +15,8 @@ from ..pdf import render_pdf
 from ..variant import spec
 
 
-def _ai(key, model, passage, types, level, notes=None) -> dict:
-    raw = llm.generate(key, spec.ai_prompt(passage, types, level, notes), system=spec.SYSTEM_PROMPT, model=model,
+def _ai(key, model, passage, types, level, notes=None, target="") -> dict:
+    raw = llm.generate(key, spec.ai_prompt(passage, types, level, notes, target), system=spec.SYSTEM_PROMPT, model=model,
                        json_mode=True, temperature=0.5, max_tokens=3000 + 900 * len(types) + len(passage))
     return raw if isinstance(raw, dict) else {}
 
@@ -50,7 +50,7 @@ def _one_passage(key, model, vs: VariantSet, pi: int) -> tuple[list[dict], list[
     for _ in range(2):
         if not todo:
             break
-        raw = _ai(key, model, text, todo, level, notes)
+        raw = _ai(key, model, text, todo, level, notes, p.get("grammar", ""))
         still, notes = [], []
         for t in todo:
             q = spec.clean_ai(t, raw.get(t), text, seed)

@@ -30,6 +30,7 @@
     <section class="panel passage-card">
       <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
       <div class="field"><label>제목 <span class="hint">선택 (예: 3월 모고 22번)</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+      <div class="field"><label>목표어법 <span class="hint">선택 · 어법·서술형(어법 고쳐 쓰기·배열 영작) 문제를 이 문법이 쓰인 문장으로 내요 (여러 개면 / 로 구분)</span></label><input type="text" name="p_grammar" value="{{ r.grammar or '' }}" placeholder="예: 관계대명사 what / 분사구문"></div>
       <div class="field"><label>영어 지문</label><textarea name="p_text" rows="7">{{ r.text or '' }}</textarea></div>
     </section>
     {% endfor %}
