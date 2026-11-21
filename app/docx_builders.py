@@ -510,21 +510,23 @@ def paraphrase_docx(s, academy, views, show_compare: bool):
         doc.title("교사용 · 원문 대조", s.title)
         for i, v in enumerate(views):
             doc.section_head(f"{v['title']} · 강도 {v['strength']} · 변형도 {v['ratio']}%")
-            p = doc.para(size=9.5)
-            for o in v["ops"]:
-                if o.get("sp"):
-                    doc.run(p, " ", size=9.5)
-                if o["op"] == "equal":
-                    doc.run(p, o["text"], size=9.5)
-                elif o["op"] == "delete":
-                    doc.run(p, o["text"], size=9.5, color=red).font.strike = True
-                else:
-                    doc.run(p, o["text"], size=9.5, color=green, bold=True, underline=True)
+            for st in v.get("sents") or []:
+                p = doc.para(size=9.5, space_after=1)
+                for g in st["segs"]:
+                    if g.get("sp"):
+                        doc.run(p, " ", size=9.5)
+                    if g["n"]:
+                        if g["t"]:
+                            doc.run(p, g["t"], size=9.5, bold=True, underline=True)
+                        else:
+                            doc.run(p, "∧", size=8, color=red)
+                        doc.run(p, str(g["n"]), size=6.5, color=green, bold=True).font.superscript = True
+                    else:
+                        doc.run(p, g["t"], size=9.5)
+                if st["orig"]:
+                    doc.para("원문  " + "   ".join(f"{c['n']} {c['t']}" for c in st["orig"]), size=8.4, color=INK_2, indent_cm=0.3, space_after=5)
             for n in v["p"].get("notes") or []:
                 doc.para("• " + n, size=9, color=INK_2, indent_cm=0.3, space_after=1)
-            if v["changes"]:
-                doc.para()
-                doc.table(["원문", "변형"], [[c["from"], c["to"]] for c in v["changes"]], [8.9, 8.9], size=8.6)
     return doc.response(f"{s.title}_지문변형.docx")
 
 

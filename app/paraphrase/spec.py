@@ -140,3 +140,59 @@ def fit_ratio(original: str, changed: str, strength: str) -> tuple[str, int]:
         if ratio <= hi and abs(ratio - target) <= 8:
             break
     return " ".join(cur), ratio
+
+
+_END = re.compile(r'([.!?]["”’)]*)(\s+)(?=["“‘(]?[A-Z0-9])')
+
+
+def annotated(ops: list[dict]) -> list[dict]:
+    """교사용 대조: 변형 지문을 문장마다 나눠, 바뀐 부분은 번호 붙여 밑줄, 그 문장 아래에 원래 표현.
+    → [{"segs": [{"t", "n", "sp"}], "orig": [{"n", "t"}]}]  (n 없는 seg는 그대로인 부분, t 빈 seg는 지워진 자리 표시)"""
+    sents = [{"segs": [], "orig": []}]
+    n = 0
+
+    def add(text, num, sp):
+        last = sents[-1]["segs"][-1]["t"] if sents[-1]["segs"] else ""
+        if last and re.search(r'[.!?]["”’)]*$', last) and re.match(r'["“‘(]?[A-Z0-9]', text or ""):
+            sents.append({"segs": [], "orig": []})  # 앞 조각이 문장 끝이면 새 문장
+            sp = False
+        # 그대로인 부분만 문장 경계에서 나눔 (바뀐 부분은 한 덩어리로)
+        if num is None:
+            parts = _END.split(text)
+            # parts: [앞, 끝문장부호, 공백, 다음, ...]
+            buf = parts[0]
+            k = 1
+            first = True
+            while k < len(parts):
+                buf += parts[k]
+                sents[-1]["segs"].append({"t": buf, "n": None, "sp": sp if first else False})
+                sents.append({"segs": [], "orig": []})
+                first = False
+                buf = parts[k + 2] if k + 2 < len(parts) else ""
+                k += 3
+            if buf:
+                sents[-1]["segs"].append({"t": buf, "n": None, "sp": sp if first else False})
+        else:
+            sents[-1]["segs"].append({"t": text, "n": num, "sp": sp})
+
+    i = 0
+    while i < len(ops):
+        o = ops[i]
+        if o["op"] == "equal":
+            add(o["text"], None, o.get("sp"))
+            i += 1
+            continue
+        n += 1
+        if o["op"] == "delete" and i + 1 < len(ops) and ops[i + 1]["op"] == "insert":
+            add(ops[i + 1]["text"], n, o.get("sp"))
+            sents[-1]["orig"].append({"n": n, "t": o["text"]})
+            i += 2
+        elif o["op"] == "delete":
+            add("", n, o.get("sp"))
+            sents[-1]["orig"].append({"n": n, "t": o["text"]})
+            i += 1
+        else:
+            add(o["text"], n, o.get("sp"))
+            sents[-1]["orig"].append({"n": n, "t": "(새로 넣은 말)"})
+            i += 1
+    return [s for s in sents if any(g["t"] or g["n"] for g in s["segs"])]

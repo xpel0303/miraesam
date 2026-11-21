@@ -24,7 +24,7 @@ def views(s: ParaphraseSet) -> list[dict]:
     out = []
     for i, p in enumerate(s.passages):
         ops, ratio = spec.diff(p["text"], p.get("out", ""))
-        out.append({"title": p.get("title") or f"지문 {i + 1}", "p": p, "ops": ops, "ratio": ratio, "changes": spec.change_list(ops),
+        out.append({"title": p.get("title") or f"지문 {i + 1}", "p": p, "ops": ops, "ratio": ratio, "changes": spec.change_list(ops), "sents": spec.annotated(ops),
                     "strength": spec.STRENGTHS[p.get("strength", "medium")]["name"]})
     return out
 

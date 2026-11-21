@@ -30,8 +30,11 @@
   {% if p.status == "failed" and p.error %}<div class="flash error">{{ p.error }}</div>{% endif %}
   {% if p.warnings %}<div class="flash small">확인해 볼 점: {{ p.warnings|join(" / ") }}</div>{% endif %}
   {% if p.status == "done" %}
-    <p class="small muted" style="margin-bottom:4px">원문 대조 · <span class="pd-del">지운 부분</span> <span class="pd-ins">새로 넣은 부분</span></p>
-    <div class="box-preview pd">{% for o in v.ops %}{% if o.sp %} {% endif %}{% if o.op == "equal" %}{{ o.text }}{% elif o.op == "delete" %}<span class="pd-del">{{ o.text }}</span>{% else %}<span class="pd-ins">{{ o.text }}</span>{% endif %}{% endfor %}</div>
+    <p class="small muted" style="margin-bottom:4px">변형 지문 · <u>밑줄</u>이 바뀐 부분, 문장 아래 회색 줄이 원래 표현</p>
+    <div class="box-preview pd">{% for st in v.sents %}<div style="padding:5px 0;border-bottom:1px dotted var(--line)">
+      <div>{% for g in st.segs %}{% if g.sp %} {% endif %}{% if g.n %}{% if g.t %}<u style="text-decoration-color:var(--brand);text-underline-offset:3px;font-weight:700">{{ g.t }}</u>{% else %}<span style="color:var(--err)">∧</span>{% endif %}<sup style="color:var(--brand);font-weight:800">{{ g.n }}</sup>{% else %}{{ g.t }}{% endif %}{% endfor %}</div>
+      {% if st.orig %}<div class="small muted" style="padding-left:10px">원문 {% for c in st.orig %}<span style="margin-right:10px"><b style="color:var(--brand)">{{ c.n }}</b> {{ c.t }}</span>{% endfor %}</div>{% endif %}
+    </div>{% endfor %}</div>
     {% if p.notes %}<ul class="small" style="margin:10px 0">{% for n in p.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
     <details style="margin-top:10px"><summary class="small"><b>변형 지문 직접 고치기</b></summary>
       <form method="post" action="/paraphrase/{{ s.id }}/passages/{{ idx }}" style="margin-top:10px">

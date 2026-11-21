@@ -11,6 +11,14 @@
   .cmp { font-size: 9.6pt; line-height: 1.75; text-align: justify; border: 0.7pt solid var(--line); border-radius: 3pt; padding: 7pt 9pt; }
   .del { text-decoration: line-through; color: #9a3324; }
   .ins { text-decoration: underline; text-decoration-thickness: 1pt; color: #2f5e3e; font-weight: 700; }
+  .sent { break-inside: avoid; padding: 4pt 0 5pt; border-bottom: 0.5pt dotted var(--line); }
+  .sent .en { font-size: 10pt; line-height: 1.75; }
+  .sent u { text-decoration: underline; text-decoration-thickness: 1.1pt; text-underline-offset: 2pt; text-decoration-color: var(--brand); font-weight: 700; }
+  .sent sup { font-size: 6.5pt; color: var(--brand); font-weight: 800; margin-left: 1pt; }
+  .sent .gap { color: #9a3324; font-size: 8pt; }
+  .sent .org { font-size: 8.4pt; color: var(--ink-2); line-height: 1.55; margin-top: 2pt; padding-left: 8pt; }
+  .sent .org b { color: var(--brand); font-weight: 800; }
+  .sent .org span { margin-right: 9pt; }
   .legend { font-size: 8pt; color: var(--ink-2); margin: 3pt 0 6pt; }
   .meta { font-size: 8.8pt; color: var(--ink-2); margin: 4pt 0; }
   .notes { font-size: 8.8pt; margin: 6pt 0; padding-left: 14pt; }
@@ -31,12 +39,15 @@
 {% for v in views %}
   <div class="{% if not loop.first %}pg{% endif %}">
     <div class="ptitle">{{ v.title }} · 원문 대조<small>강도 {{ v.strength }} · 변형도 {{ v.ratio }}%</small></div>
-    <div class="legend"><span class="del">지운 부분</span> · <span class="ins">새로 넣은 부분</span></div>
-    <div class="cmp">{% for o in v.ops %}{% if o.sp %} {% endif %}{% if o.op == "equal" %}{{ o.text }}{% elif o.op == "delete" %}<span class="del">{{ o.text }}</span>{% else %}<span class="ins">{{ o.text }}</span>{% endif %}{% endfor %}</div>
+    <div class="legend">변형 지문 · <u style="text-decoration-color:var(--brand)">밑줄</u>이 바뀐 부분, 문장 아래 회색 줄이 원래 표현</div>
+    {% for st in v.sents %}
+    <div class="sent">
+      <div class="en">{% for g in st.segs %}{% if g.sp %} {% endif %}{% if g.n %}{% if g.t %}<u>{{ g.t }}</u>{% else %}<span class="gap">∧</span>{% endif %}<sup>{{ g.n }}</sup>{% else %}{{ g.t }}{% endif %}{% endfor %}</div>
+      {% if st.orig %}<div class="org">원문 {% for c in st.orig %}<span><b>{{ c.n }}</b> {{ c.t }}</span>{% endfor %}</div>{% endif %}
+    </div>
+    {% endfor %}
     {% if v.p.notes %}<h3 style="margin-top:10pt">주요 변형 포인트</h3><ul class="notes">{% for n in v.p.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
-    {% if v.changes %}<h3>바뀐 표현</h3>
-      <table class="ch"><thead><tr><th>원문</th><th>변형</th></tr></thead><tbody>
-        {% for c in v.changes %}<tr><td>{{ c["from"] }}</td><td>{{ c.to }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+
   </div>
 {% endfor %}
 {% endif %}
