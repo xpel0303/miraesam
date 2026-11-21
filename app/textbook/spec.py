@@ -40,7 +40,7 @@ SYSTEM_PROMPT = """당신은 한국 고등학교 교과서 본문 워크북(본�
 - 해석은 자연스러운 한국어로, 문장마다 따로."""
 
 
-def prompt(sentences: list[tuple[int, str]], with_odd: bool, level: str = "", fix: list[str] | None = None) -> str:
+def prompt(sentences: list[tuple[int, str]], with_odd: bool, level: str = "", fix: list[str] | None = None, target: str = "") -> str:
     lines = [f"대상: {level or '고등학생'}", "아래 본문 문장마다 워크북 재료를 만들어 주세요.", "",
              "출력 형식:",
              "{",
@@ -57,7 +57,12 @@ def prompt(sentences: list[tuple[int, str]], with_odd: bool, level: str = "", fi
              ]
     if with_odd:
         lines += ['  "odd": [{"text": "문단 속 내용어 하나 그대로 (문장 번호 n 의 문장에 있는 것)", "n": 문장 번호, "wrong": "문맥상 어색해지는 말 (주로 반의어, 같은 품사·형태)"}]  // 정확히 3개, 서로 다른 문장에서']
-    lines += ["}", "", "본문 (문장 번호):"]
+    lines += ["}"]
+    if target:
+        lines += ["", f"목표어법: {target}",
+                  "- grammar(어법 포인트)는 문장에 목표어법이 쓰인 곳이 있으면 그 부분을 먼저 고르세요 (없는 문장은 평소대로).",
+                  "- verbs도 목표어법과 관련된 동사·준동사(분사, to부정사, 동명사, 수동태 등)는 빠뜨리지 마세요."]
+    lines += ["", "본문 (문장 번호):"]
     lines += [f"[{n}] {s}" for n, s in sentences]
     if fix:
         lines += ["", "직전 답의 문제점 (고쳐서 다시):", *[f"- {x}" for x in fix[:12]]]

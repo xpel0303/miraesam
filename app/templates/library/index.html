@@ -2,6 +2,7 @@
 {% block title %}지문 보관함 · {{ APP_NAME }}{% endblock %}
 {% block main %}
 <h1>지문 보관함</h1>
+<p class="small" style="margin:-4px 0 10px"><b>지문</b> · <a href="/library/grammar">교과서 목표어법</a></p>
 <p class="lead">지문 분석·워크북·변형문제 등 자료를 만들 때 넣은 지문이 여기에 자동으로 모여요. 자료를 만드는 화면에서 <b>📚 저장된 지문 불러오기</b>를 누르면 골라서 바로 넣을 수 있어요.</p>
 
 <details class="panel" {% if not items and not q and not group %}open{% endif %}>

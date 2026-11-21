@@ -23,6 +23,10 @@
       </div></div>
     <label style="font-weight:400"><input type="checkbox" name="show_key" value="1" {% if form.show_key %}checked{% endif %}> 맨 뒤에 정답(Answer Key) 넣기</label>
   </section>
+  <section class="panel">
+    <div class="field" style="margin:0"><label for="common_grammar">전체 목표어법 <span class="hint">지문이 몇 개든 모든 지문에 적용돼요 (어법 선택·동사형 문제를 이 문법 위주로) · 여러 개면 / 로 구분</span></label>
+      <input type="text" id="common_grammar" name="common_grammar" value="{{ form.common_grammar or '' }}" placeholder="예: 관계대명사 what / 분사구문"></div>
+  </section>
   <div id="passages">
     {% for r in form.passages %}
     <section class="panel passage-card">

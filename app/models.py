@@ -724,3 +724,19 @@ class BankQuestion(Base):
     sub_id: Mapped[str] = mapped_column(String(12), default="")  # 소분류 번호 (G5-B-03)
     old_cat: Mapped[str] = mapped_column(String(60), default="")  # 재배치 전 원래 대분류 (규칙 다시 돌릴 때 기준)
     old_sub: Mapped[str] = mapped_column(String(400), default="")
+
+
+class GrammarBook(Base):
+    """교과서 목표어법 목록: 교과서(공통영어1 · 능률(민병천) 등) → 과 → 목표어법. 목표어법 칸에서 골라 넣음.
+
+    lessons: [{"name": "1과", "points": ["관계대명사 what", "분사구문"]}, ...]
+    """
+
+    __tablename__ = "grammar_books"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    subject: Mapped[str] = mapped_column(String(40), default="")  # 공통영어1 / 공통영어2 / 영어I …
+    name: Mapped[str] = mapped_column(String(80), default="")  # 능률(민병천)
+    lessons: Mapped[list] = mapped_column(JSON, default=list)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)

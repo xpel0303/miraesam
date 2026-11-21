@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}교과서 목표어법 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<h1>교과서 목표어법</h1>
+<p class="small" style="margin:-4px 0 10px"><a href="/library">지문</a> · <b>교과서 목표어법</b></p>
+<p class="lead">교과서마다 과별 목표어법을 한 번 적어 두면, 내용이해 워크북·변형문제의 <b>목표어법</b> 칸 옆 <b>📚 교과서에서 고르기</b>로 체크만 해서 넣을 수 있어요.</p>
+
+{% for subj in subjects %}
+{% set bs = books|selectattr("subject", "equalto", subj)|list %}
+{% if bs %}
+<section class="panel">
+  <h2>{{ subj }}</h2>
+  {% for b in bs %}
+  {% set n = (b.lessons or [])|length %}
+  {% set filled = (b.lessons or [])|selectattr("points")|list|length %}
+  <details id="b{{ b.id }}" {% if open == b.id %}open{% endif %} style="border-top:1px solid var(--line);padding:8px 0">
+    <summary><b>{{ b.name }}</b> <span class="small muted">{% if n %}{{ n }}개 과 · 문법 적힌 과 {{ filled }}개{% else %}아직 비어 있어요{% endif %}</span></summary>
+    <form method="post" action="/library/grammar" style="margin-top:10px">
+      <input type="hidden" name="id" value="{{ b.id }}">
+      <div class="row" style="grid-template-columns: 160px 1fr">
+        <div class="field"><label>과목</label><select name="subject">{% for s in subjects %}<option {% if s == b.subject %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+        <div class="field"><label>교과서 (출판사·저자)</label><input type="text" name="name" value="{{ b.name }}"></div>
+      </div>
+      <div class="field"><label>과별 목표어법 <span class="hint">한 줄에 한 과 · "과 이름: 문법 / 문법" (예: 1과: 관계대명사 what / 분사구문)</span></label>
+        <textarea name="lessons" rows="{{ [n + 2, 5]|max }}" placeholder="1과: 관계대명사 what / 분사구문&#10;2과: 가주어-진주어 it / 현재완료 수동태&#10;Special Lesson 1: 강조구문 it is ~ that">{{ to_text(b.lessons) }}</textarea></div>
+      <button class="btn small" type="submit">저장</button>
+      <button class="btn ghost small" type="submit" name="delete" value="1" style="color:var(--err)" onclick="return confirm('{{ b.subject }} {{ b.name }}을(를) 목록에서 지울까요?')">이 교과서 지우기</button>
+    </form>
+  </details>
+  {% endfor %}
+</section>
+{% endif %}
+{% endfor %}
+
+<section class="panel">
+  <h2>교과서 추가</h2>
+  <form method="post" action="/library/grammar">
+    <div class="row" style="grid-template-columns: 160px 1fr">
+      <div class="field"><label>과목</label><select name="subject">{% for s in subjects %}<option>{{ s }}</option>{% endfor %}</select></div>
+      <div class="field"><label>교과서 (출판사·저자)</label><input type="text" name="name" placeholder="예: 능률(민병천), 학교 부교재 이름"></div>
+    </div>
+    <div class="field"><label>과별 목표어법</label><textarea name="lessons" rows="4" placeholder="1과: 관계대명사 what / 분사구문"></textarea></div>
+    <button class="btn small" type="submit">추가</button>
+  </form>
+</section>
+{% endblock %}

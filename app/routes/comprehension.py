@@ -14,7 +14,7 @@ from ..library.store import remember_form
 from ..docx_builders import comprehension_docx
 from ..jobs import enqueue
 from ..models import Academy, Job, StoredFile, Teacher, Workbook
-from ..web import current_teacher, flash, render
+from ..web import merge_grammar, current_teacher, flash, render
 
 router = APIRouter(prefix="/comprehension")
 
@@ -86,7 +86,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         passages.append(
             {
                 "title": str(titles[i]).strip()[:80] if i < len(titles) else "",
-                "target_grammar": (str(grammars[i]).strip() if i < len(grammars) else "") or common_grammar,
+                "target_grammar": merge_grammar(grammars[i] if i < len(grammars) else "", common_grammar),
                 "passage": text,
                 "passage_ko": str(kos[i]).strip() if i < len(kos) else "",
                 "status": "waiting",

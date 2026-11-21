@@ -76,3 +76,14 @@ def render(request: Request, name: str, ctx: dict | None = None, status_code: in
     ctx.setdefault("flashes", request.session.pop("_flash", []))
     ctx.setdefault("active", "")
     return templates.TemplateResponse(request, name, ctx, status_code=status_code)
+
+
+def merge_grammar(*parts) -> str:
+    """'관계대명사 what / 분사구문' 처럼 / 로 이은 목표어법 여러 개를 겹치지 않게 합침 (지문별 + 전체)."""
+    out = []
+    for part in parts:
+        for g in str(part or "").split("/"):
+            g = " ".join(g.split())
+            if g and g not in out:
+                out.append(g)
+    return " / ".join(out)[:300]

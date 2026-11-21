@@ -155,3 +155,74 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
   attach(document);
   new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && attach(n)))).observe(document.body, { childList: true, subtree: true });
 })();
+
+// ---------------------------------------------------------------- 목표어법 칸: 교과서에서 고르기
+(function () {
+  let books = null;
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  function attach(root) {
+    (root.querySelectorAll ? root : document).querySelectorAll('input[name="p_grammar"], input[name="common_grammar"], input[name="p_target"], form[action="/grammar"] input[name="target"]').forEach((inp) => {
+      const nx = inp.nextElementSibling;
+      if (nx && nx.classList && nx.classList.contains("gb-btn")) return;
+      inp.insertAdjacentHTML("afterend", '<button type="button" class="btn ghost small gb-btn" style="margin-top:4px;padding:3px 10px;font-size:12.5px">📚 교과서에서 고르기</button>');
+    });
+  }
+  let dlg, target;
+  function build() {
+    dlg = document.createElement("dialog");
+    dlg.className = "picker";
+    dlg.innerHTML = `<form method="dialog" class="picker-inner">
+      <div class="picker-head"><h2>교과서 목표어법</h2><button class="linklike" value="cancel">닫기 ✕</button></div>
+      <div class="picker-filters"><select data-book aria-label="교과서"></select></div>
+      <div class="picker-list" data-list></div>
+      <div class="picker-foot"><a class="small" href="/library/grammar" target="_blank" rel="noopener">목록 고치기</a>
+        <span class="small muted" data-count></span><button class="btn" value="ok" data-ok>넣기</button></div></form>`;
+    document.body.appendChild(dlg);
+    const sel = dlg.querySelector("[data-book]"), list = dlg.querySelector("[data-list]"), cnt = dlg.querySelector("[data-count]");
+    const draw = () => {
+      const b = books.find((x) => String(x.id) === sel.value);
+      try { localStorage.setItem("gb-last", sel.value); } catch (e) {}
+      const ls = (b && b.lessons) || [];
+      list.innerHTML = ls.length ? ls.map((l) => `<div style="padding:6px 2px;border-bottom:1px solid var(--line)"><b class="small">${esc(l.name)}</b>
+        ${(l.points || []).length ? `<label class="small" style="font-weight:400;margin-left:8px"><input type="checkbox" data-all-lesson> 이 과 전체</label>` : ""}<div style="display:flex;flex-wrap:wrap;gap:2px 14px;margin-top:3px">
+        ${(l.points || []).map((p) => `<label class="small" style="font-weight:400;margin:0"><input type="checkbox" name="gp" value="${esc(p)}"> ${esc(p)}</label>`).join("") || '<span class="small muted">문법이 아직 없어요</span>'}</div></div>`).join("")
+        : `<p class="small muted">이 교과서에는 아직 과별 목표어법이 없어요. <a href="/library/grammar?open=${b ? b.id : ""}#b${b ? b.id : ""}" target="_blank" rel="noopener">여기서 적어 두세요</a>.</p>`;
+      sync();
+    };
+    const sync = () => { cnt.textContent = `고른 문법 ${dlg.querySelectorAll("[name=gp]:checked").length}개`; };
+    list.addEventListener("change", (e) => {
+      if (e.target.matches("[data-all-lesson]")) e.target.closest("div").querySelectorAll("[name=gp]").forEach((x) => (x.checked = e.target.checked));
+      sync();
+    });
+    sel.addEventListener("change", draw);
+    dlg.addEventListener("close", () => {
+      if (dlg.returnValue !== "ok" || !target) return;
+      const picked = [...dlg.querySelectorAll("[name=gp]:checked")].map((x) => x.value);
+      if (!picked.length) return;
+      const have = target.value.split("/").map((x) => x.trim()).filter(Boolean);
+      picked.forEach((p) => { if (!have.includes(p)) have.push(p); });
+      target.value = have.join(" / ");
+      target.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    dlg._draw = draw; dlg._sel = sel;
+  }
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".gb-btn");
+    if (!btn) return;
+    target = btn.previousElementSibling;
+    if (!books) {
+      const r = await fetch("/api/grammar-books");
+      if (!r.ok) { alert("교과서 목록을 불러오지 못했어요."); return; }
+      books = (await r.json()).books;
+    }
+    if (!dlg) build();
+    dlg._sel.innerHTML = books.map((b) => `<option value="${b.id}">${esc(b.subject)} · ${esc(b.name)}${(b.lessons || []).some((l) => (l.points || []).length) ? "" : " (비어 있음)"}</option>`).join("");
+    let last = null; try { last = localStorage.getItem("gb-last"); } catch (e2) {}
+    if (last && books.some((b) => String(b.id) === last)) dlg._sel.value = last;
+    else { const f = books.find((b) => (b.lessons || []).some((l) => (l.points || []).length)); if (f) dlg._sel.value = String(f.id); }
+    dlg._draw();
+    dlg.showModal();
+  });
+  attach(document);
+  new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && attach(n)))).observe(document.body, { childList: true, subtree: true });
+})();

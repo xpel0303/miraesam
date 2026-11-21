@@ -78,7 +78,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     level = str(f.get("level") or "")
     options = {"lesson": str(f.get("lesson", "")).strip()[:20], "book": str(f.get("book", "")).strip()[:60],
                "level": level if level in LEVELS else "", "sections": sections, "show_key": f.get("show_key") == "1",
-               "order": "passage" if f.get("order") == "passage" else "type"}
+               "order": "passage" if f.get("order") == "passage" else "type",
+               "common_grammar": " ".join(str(f.get("common_grammar", "")).split())[:300]}
     if errors:
         form = {"title": title, **options, "passages": [{"title": t, "text": x} for t, x in zip(titles, texts)] or [{}]}
         return render(request, "textbook/new.html", {"teacher": teacher, "form": form, "errors": errors, "spec": spec, "levels": LEVELS,

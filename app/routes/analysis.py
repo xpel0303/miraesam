@@ -12,7 +12,7 @@ from ..db import get_db
 from ..library.store import remember_form
 from ..jobs import enqueue
 from ..models import AnalysisSet, Job, StoredFile, Teacher
-from ..web import current_teacher, flash, render
+from ..web import merge_grammar, current_teacher, flash, render
 
 router = APIRouter(prefix="/analysis")
 
@@ -85,7 +85,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         if len(text) > MAX_CHARS or len(sents) > MAX_SENTENCES:
             errors.append(f"지문 {i + 1}이 너무 깁니다 ({len(sents)}문장). {MAX_SENTENCES}문장 이하로 나눠 주세요.")
         passages.append({"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "passage": text, "level": level, "sentences_src": sents,
-                         "target": str(targets[i]).strip()[:80] if i < len(targets) else "", "status": "waiting"})
+                         "target": merge_grammar(targets[i] if i < len(targets) else "", f.get("common_grammar"))[:160], "status": "waiting"})
     if not passages:
         errors.append("지문을 하나 이상 넣어 주세요.")
     if len(passages) > spec.MAX_PASSAGES:

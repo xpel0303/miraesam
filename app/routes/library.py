@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..library.store import MIN_LEN, _auto_title, num_key, split_numbered, text_hash
-from ..models import Passage, Teacher
+from ..library import grammar_books as gb
+from ..models import GrammarBook, Passage, Teacher
 from ..web import current_teacher, flash, render
 
 router = APIRouter()
@@ -110,6 +111,56 @@ async def bulk(request: Request, teacher: Teacher = Depends(current_teacher), db
     db.commit()
     flash(request, msg)
     return _go("/library")
+
+
+def _books(db: Session, teacher: Teacher) -> list[GrammarBook]:
+    """학원의 교과서 목표어법 목록. 처음이면 2022 개정 교과서 이름을 넣어 둠 (과·문법은 비어 있음)."""
+    rows = list(db.execute(select(GrammarBook).where(GrammarBook.academy_id == teacher.academy_id)).scalars())
+    if not rows:
+        for subj, name in gb.DEFAULT_BOOKS:
+            db.add(GrammarBook(academy_id=teacher.academy_id, subject=subj, name=name, lessons=[]))
+        db.commit()
+        rows = list(db.execute(select(GrammarBook).where(GrammarBook.academy_id == teacher.academy_id)).scalars())
+    order = {s: i for i, s in enumerate(gb.SUBJECTS)}
+    rows.sort(key=lambda b: (order.get(b.subject, 99), b.subject, b.name))
+    return rows
+
+
+@router.get("/library/grammar")
+def grammar_index(request: Request, open: int = 0, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    books = _books(db, teacher)
+    return render(request, "library/grammar.html", {"teacher": teacher, "books": books, "subjects": gb.SUBJECTS, "open": open,
+                                                    "to_text": gb.lessons_to_text, "active": "library"})
+
+
+@router.post("/library/grammar")
+async def grammar_save(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    f = await request.form()
+    bid = int(f.get("id") or 0)
+    if bid:
+        b = db.get(GrammarBook, bid)
+        if b is None or b.academy_id != teacher.academy_id:
+            raise HTTPException(404)
+    else:
+        b = GrammarBook(academy_id=teacher.academy_id, lessons=[])
+        db.add(b)
+    if f.get("delete") == "1" and bid:
+        db.delete(b)
+        db.commit()
+        flash(request, "교과서를 지웠어요.")
+        return _go("/library/grammar")
+    b.subject = str(f.get("subject") or b.subject or "기타").strip()[:40]
+    b.name = str(f.get("name") or b.name or "").strip()[:80] or "이름 없는 교과서"
+    if "lessons" in f:
+        b.lessons = gb.text_to_lessons(str(f.get("lessons")))
+    db.commit()
+    flash(request, f"{b.subject} {b.name} 저장했어요.")
+    return _go(f"/library/grammar?open={b.id}#b{b.id}")
+
+
+@router.get("/api/grammar-books")
+def grammar_api(teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    return {"books": [{"id": b.id, "subject": b.subject, "name": b.name, "lessons": b.lessons or []} for b in _books(db, teacher)]}
 
 
 @router.get("/library/{pid}")

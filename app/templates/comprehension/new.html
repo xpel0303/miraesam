@@ -15,7 +15,7 @@
         <input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 3월 모의고사 내용이해 워크북">
       </div>
       <div class="field">
-        <label for="common_grammar">공통 목표어법 <span class="hint">지문마다 따로 안 쓰면 이걸 씁니다. 비우면 작문은 일반 영작으로</span></label>
+        <label for="common_grammar">전체 목표어법 <span class="hint">지문이 몇 개든 모든 지문에 적용 (지문마다 따로 적은 것이 있으면 함께 써요) · 비우면 작문은 일반 영작으로</span></label>
         <input type="text" id="common_grammar" name="common_grammar" value="{{ form.common_grammar or '' }}" placeholder="예: 관계대명사 what">
       </div>
     </div>

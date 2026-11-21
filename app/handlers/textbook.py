@@ -21,7 +21,7 @@ def _save(set_id, idx, data):
         flag_modified(s, "passages")
 
 
-def _one(key, model, p: dict, level: str) -> dict:
+def _one(key, model, p: dict, level: str, target: str = "") -> dict:
     sents = spec.split(p["text"])
     rows, odd, warns = [], [], []
     seed = secrets.randbits(31)
@@ -30,7 +30,7 @@ def _one(key, model, p: dict, level: str) -> dict:
         with_odd = start == 0  # 어색한 곳 3개는 문단 앞부분 문장에서
         fix, best = None, None
         for _ in range(2):
-            raw = llm.generate(key, spec.prompt(part, with_odd, level, fix), system=spec.SYSTEM_PROMPT, model=model, json_mode=True,
+            raw = llm.generate(key, spec.prompt(part, with_odd, level, fix, target), system=spec.SYSTEM_PROMPT, model=model, json_mode=True,
                                temperature=0.4, max_tokens=min(32000, 3000 + 900 * len(part)))
             r, o, errs, w = spec.clean(raw, part, seed + start)
             if best is None or len(errs) < len(best[2]):
@@ -124,7 +124,7 @@ def build(ctx: JobContext) -> dict:
         ctx.step(f"{p.get('title') or f'문단 {i + 1}'} 만드는 중 ({k}/{len(targets)})", int(5 + 80 * (k - 1) / max(1, len(targets))))
         _save(set_id, i, {"status": "making", "error": None})
         try:
-            _save(set_id, i, _one(key, model, p, level))
+            _save(set_id, i, _one(key, model, p, level, (s.options or {}).get("common_grammar", "")))
         except llm.LLMError as e:
             _save(set_id, i, {"status": "failed", "error": str(e)})
             failed.append(f"문단 {i + 1}")
