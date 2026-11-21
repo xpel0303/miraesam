@@ -11,14 +11,12 @@
   .cmp { font-size: 9.6pt; line-height: 1.75; text-align: justify; border: 0.7pt solid var(--line); border-radius: 3pt; padding: 7pt 9pt; }
   .del { text-decoration: line-through; color: #9a3324; }
   .ins { text-decoration: underline; text-decoration-thickness: 1pt; color: #2f5e3e; font-weight: 700; }
-  .sent { break-inside: avoid; padding: 4pt 0 5pt; border-bottom: 0.5pt dotted var(--line); }
-  .sent .en { font-size: 10pt; line-height: 1.75; }
-  .sent u { text-decoration: underline; text-decoration-thickness: 1.1pt; text-underline-offset: 2pt; text-decoration-color: var(--brand); font-weight: 700; }
-  .sent sup { font-size: 6.5pt; color: var(--brand); font-weight: 800; margin-left: 1pt; }
-  .sent .gap { color: #9a3324; font-size: 8pt; }
-  .sent .org { font-size: 8.4pt; color: var(--ink-2); line-height: 1.55; margin-top: 2pt; padding-left: 8pt; }
-  .sent .org b { color: var(--brand); font-weight: 800; }
-  .sent .org span { margin-right: 9pt; }
+  .sent { break-inside: avoid; padding: 3pt 0 6pt; border-bottom: 0.5pt dotted var(--line); }
+  .sent .en { font-size: 10pt; line-height: 1.5; }
+  .ch { display: inline-block; vertical-align: top; max-width: 100%; margin-bottom: 2pt; }
+  .ch .new { display: block; font-weight: 700; text-decoration: underline; text-decoration-thickness: 1.1pt; text-underline-offset: 2pt; text-decoration-color: var(--brand); }
+  .ch .old { display: block; font-size: 7.6pt; line-height: 1.25; color: #8a5a2b; }
+  .ch .gap { color: #9a3324; font-weight: 700; }
   .legend { font-size: 8pt; color: var(--ink-2); margin: 3pt 0 6pt; }
   .meta { font-size: 8.8pt; color: var(--ink-2); margin: 4pt 0; }
   .notes { font-size: 8.8pt; margin: 6pt 0; padding-left: 14pt; }
@@ -39,12 +37,10 @@
 {% for v in views %}
   <div class="{% if not loop.first %}pg{% endif %}">
     <div class="ptitle">{{ v.title }} · 원문 대조<small>강도 {{ v.strength }} · 변형도 {{ v.ratio }}%</small></div>
-    <div class="legend">변형 지문 · <u style="text-decoration-color:var(--brand)">밑줄</u>이 바뀐 부분, 문장 아래 회색 줄이 원래 표현</div>
+    <div class="legend">변형 지문 · <span style="text-decoration:underline;text-decoration-color:var(--brand)">밑줄</span>이 바뀐 부분, 밑줄 바로 아래 작은 글씨가 원래 표현 (∧ = 지운 자리, (추가) = 새로 넣은 말)</div>
     {% for st in v.sents %}
-    <div class="sent">
-      <div class="en">{% for g in st.segs %}{% if g.sp %} {% endif %}{% if g.n %}{% if g.t %}<u>{{ g.t }}</u>{% else %}<span class="gap">∧</span>{% endif %}<sup>{{ g.n }}</sup>{% else %}{{ g.t }}{% endif %}{% endfor %}</div>
-      {% if st.orig %}<div class="org">원문 {% for c in st.orig %}<span><b>{{ c.n }}</b> {{ c.t }}</span>{% endfor %}</div>{% endif %}
-    </div>
+    {% set org = {} %}{% for c in st.orig %}{% set _ = org.update({c.n: c.t}) %}{% endfor %}
+    <div class="sent"><div class="en">{% for g in st.segs %}{% if g.sp %} {% endif %}{% if g.n %}<span class="ch">{% if g.t %}<span class="new">{{ g.t }}</span>{% else %}<span class="new gap">∧</span>{% endif %}<span class="old">{{ "(추가)" if org[g.n] == "(새로 넣은 말)" else org[g.n] }}</span></span>{% else %}{{ g.t }}{% endif %}{% endfor %}</div></div>
     {% endfor %}
     {% if v.p.notes %}<h3 style="margin-top:10pt">주요 변형 포인트</h3><ul class="notes">{% for n in v.p.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
 

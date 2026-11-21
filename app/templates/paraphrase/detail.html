@@ -30,11 +30,8 @@
   {% if p.status == "failed" and p.error %}<div class="flash error">{{ p.error }}</div>{% endif %}
   {% if p.warnings %}<div class="flash small">확인해 볼 점: {{ p.warnings|join(" / ") }}</div>{% endif %}
   {% if p.status == "done" %}
-    <p class="small muted" style="margin-bottom:4px">변형 지문 · <u>밑줄</u>이 바뀐 부분, 문장 아래 회색 줄이 원래 표현</p>
-    <div class="box-preview pd">{% for st in v.sents %}<div style="padding:5px 0;border-bottom:1px dotted var(--line)">
-      <div>{% for g in st.segs %}{% if g.sp %} {% endif %}{% if g.n %}{% if g.t %}<u style="text-decoration-color:var(--brand);text-underline-offset:3px;font-weight:700">{{ g.t }}</u>{% else %}<span style="color:var(--err)">∧</span>{% endif %}<sup style="color:var(--brand);font-weight:800">{{ g.n }}</sup>{% else %}{{ g.t }}{% endif %}{% endfor %}</div>
-      {% if st.orig %}<div class="small muted" style="padding-left:10px">원문 {% for c in st.orig %}<span style="margin-right:10px"><b style="color:var(--brand)">{{ c.n }}</b> {{ c.t }}</span>{% endfor %}</div>{% endif %}
-    </div>{% endfor %}</div>
+    <p class="small muted" style="margin-bottom:4px">변형 지문 · <u>밑줄</u>이 바뀐 부분, 밑줄 바로 아래 작은 글씨가 원래 표현 (∧ = 지운 자리, (추가) = 새로 넣은 말)</p>
+    <div class="box-preview pd" style="line-height:1.55">{% for st in v.sents %}{% set org = {} %}{% for c in st.orig %}{% set _ = org.update({c.n: c.t}) %}{% endfor %}<div style="padding:5px 0;border-bottom:1px dotted var(--line)">{% for g in st.segs %}{% if g.sp %} {% endif %}{% if g.n %}<span style="display:inline-block;vertical-align:top;max-width:100%">{% if g.t %}<span style="display:block;font-weight:700;text-decoration:underline;text-decoration-color:var(--brand);text-underline-offset:3px">{{ g.t }}</span>{% else %}<span style="display:block;color:var(--err);font-weight:700">∧</span>{% endif %}<span style="display:block;font-size:11px;line-height:1.25;color:#8a5a2b">{{ "(추가)" if org[g.n] == "(새로 넣은 말)" else org[g.n] }}</span></span>{% else %}{{ g.t }}{% endif %}{% endfor %}</div>{% endfor %}</div>
     {% if p.notes %}<ul class="small" style="margin:10px 0">{% for n in p.notes %}<li>{{ n }}</li>{% endfor %}</ul>{% endif %}
     <details style="margin-top:10px"><summary class="small"><b>변형 지문 직접 고치기</b></summary>
       <form method="post" action="/paraphrase/{{ s.id }}/passages/{{ idx }}" style="margin-top:10px">
