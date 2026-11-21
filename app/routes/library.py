@@ -121,6 +121,21 @@ def _books(db: Session, teacher: Teacher) -> list[GrammarBook]:
             db.add(GrammarBook(academy_id=teacher.academy_id, subject=subj, name=name, lessons=[]))
         db.commit()
         rows = list(db.execute(select(GrammarBook).where(GrammarBook.academy_id == teacher.academy_id)).scalars())
+    # 기본 자료(SEED)로 빈 교과서 채우기, 없는 교과서(영어II 등) 더하기 — 원장님이 적어 둔 과는 건드리지 않음
+    have = {(b.subject, b.name): b for b in rows}
+    changed = False
+    for k, lessons in gb.SEED.items():
+        subj, name = k.split("|", 1)
+        b = have.get((subj, name))
+        if b is None:
+            b = GrammarBook(academy_id=teacher.academy_id, subject=subj, name=name, lessons=[])
+            db.add(b)
+            rows.append(b)
+        if not any(l.get("points") for l in (b.lessons or [])):
+            b.lessons = lessons
+            changed = True
+    if changed:
+        db.commit()
     order = {s: i for i, s in enumerate(gb.SUBJECTS)}
     rows.sort(key=lambda b: (order.get(b.subject, 99), b.subject, b.name))
     return rows
