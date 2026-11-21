@@ -36,7 +36,7 @@ CODE_TYPES = ["order", "insert"]
 AI_TYPES = [t for t in TYPES if t not in CODE_TYPES]
 DEFAULT_TYPES = ["topic", "blank", "order", "insert", "irrelevant", "summary"]
 LETTERS = "ⓐⓑⓒⓓⓔ"
-MAX_PASSAGES = 30
+MAX_PASSAGES = 60
 
 ORDER_CHOICES = ["(A)-(C)-(B)", "(B)-(A)-(C)", "(B)-(C)-(A)", "(C)-(A)-(B)", "(C)-(B)-(A)"]
 
@@ -79,7 +79,7 @@ def _idx(v) -> int:
 
 # ---------------------------------------------------------------- 섞어서 만들기 (랜덤)
 
-MAX_MIX = 60
+MAX_MIX = 500
 
 
 def feasible(text: str, t: str) -> bool:
@@ -87,29 +87,28 @@ def feasible(text: str, t: str) -> bool:
 
 
 def plan_mix(passages: list[dict], types: list[str], n: int, seed: int) -> list[dict]:
-    """고른 유형으로 n문항을 지문들에 고르게 나눠 배정하고 순서를 섞음. [{"p": 지문 번호, "type": 유형}, …]
+    """고른 유형으로 n문항을 지문들에 고르게 나눠 배정하고 순서를 섞음. [{"p": 지문 번호, "type": 유형, "k": 몇 번째}, …]
     - 유형은 고르게 (n을 유형 수로 나눠 돌아가며), 지문도 고르게 (가장 적게 쓴 지문부터)
-    - 같은 지문에 같은 유형은 한 번만, 문장 수가 모자라는 지문에는 그 유형을 안 줌"""
+    - 같은 지문·같은 유형은 다른 조합을 다 쓴 뒤에야 두 번째(k=1)로 (그때는 AI가 다른 문제로 다시 만듦)
+    - 문장 수가 모자라는 지문에는 그 유형을 안 줌"""
     rng = random.Random(seed)
     want = [types[i % len(types)] for i in range(n)]
     rng.shuffle(want)
     used = {i: 0 for i in range(len(passages))}
-    pairs: set[tuple[int, str]] = set()
+    cnt: dict[tuple[int, str], int] = {}
+    ok = {(i, t) for i in used for t in types if feasible(passages[i]["text"], t)}
+    if not ok:
+        return []
     plan = []
     for t in want:
-        cands = [i for i in used if (i, t) not in pairs and feasible(passages[i]["text"], t)]
-        if not cands:  # 이 유형을 줄 지문이 없으면 다른 유형으로
-            alt = [(i, u) for u in types for i in used if (i, u) not in pairs and feasible(passages[i]["text"], u)]
-            if not alt:
-                break
-            low = min(used[i] for i, _ in alt)
-            i, t = rng.choice([a for a in alt if used[a[0]] == low])
-        else:
-            low = min(used[i] for i in cands)
-            i = rng.choice([c for c in cands if used[c] == low])
+        cands = [(i, t) for i in used if (i, t) in ok]
+        if not cands or min(cnt.get(c, 0) for c in cands) > min(cnt.get(c, 0) for c in ok):
+            cands = list(ok)  # 이 유형은 다 썼으면 덜 쓴 다른 조합으로
+        low = min((cnt.get(c, 0), used[c[0]]) for c in cands)
+        i, t2 = rng.choice([c for c in cands if (cnt.get(c, 0), used[c[0]]) == low])
+        plan.append({"p": i, "type": t2, "k": cnt.get((i, t2), 0)})
+        cnt[(i, t2)] = cnt.get((i, t2), 0) + 1
         used[i] += 1
-        pairs.add((i, t))
-        plan.append({"p": i, "type": t})
     rng.shuffle(plan)
     return plan
 

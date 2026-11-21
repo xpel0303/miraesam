@@ -27,9 +27,10 @@ def _types_for(vs: VariantSet, pi: int) -> list[str]:
     return vs.options.get("types", spec.DEFAULT_TYPES)
 
 
-def _one_passage(key, model, vs: VariantSet, pi: int) -> tuple[list[dict], list[str]]:
+def _one_round(key, model, vs: VariantSet, pi: int, types: list[str], k: int) -> tuple[list[dict], list[str]]:
+    """같은 유형이 한 번씩만 든 묶음 하나를 만듦. k: 같은 지문·유형의 몇 번째 문제인지 (두 번째부터는 앞과 다른 문제로)."""
     p = vs.passages[pi]
-    text, level, types = p["text"], vs.options.get("level", ""), _types_for(vs, pi)
+    text, level = p["text"], vs.options.get("level", "")
     seed = secrets.randbits(31)
     got: dict[str, dict] = {}
     warns: list[str] = []
@@ -46,7 +47,7 @@ def _one_passage(key, model, vs: VariantSet, pi: int) -> tuple[list[dict], list[
             warns.append(f"지문 {pi + 1} {spec.TYPES[t]}: 문장이 {spec.MIN_SENTENCES[t]}개 이상이어야 만들 수 있어요.")
 
     todo = [t for t in types if t in spec.AI_TYPES]
-    notes = None
+    notes = [f"같은 지문으로 이미 낸 문제와 겹치지 않게, 다른 부분·다른 보기·다른 정답 위치로 새로 만드세요 ({k + 1}번째)."] if k else None
     for _ in range(2):
         if not todo:
             break
@@ -66,8 +67,26 @@ def _one_passage(key, model, vs: VariantSet, pi: int) -> tuple[list[dict], list[
     out = []
     for t in types:  # 선생님이 고른 유형 순서대로
         if t in got:
-            got[t]["p"] = pi
+            got[t]["p"], got[t]["k"] = pi, k
             out.append(got[t])
+    return out, warns
+
+
+def _one_passage(key, model, vs: VariantSet, pi: int) -> tuple[list[dict], list[str]]:
+    types = _types_for(vs, pi)
+    rounds: list[list[str]] = []  # 같은 유형이 여러 번이면 묶음을 나눠 차례로 (AI 답은 유형 이름이 열쇠라 한 번에 하나씩)
+    for t in types:
+        for r in rounds:
+            if t not in r:
+                r.append(t)
+                break
+        else:
+            rounds.append([t])
+    out, warns = [], []
+    for k, r in enumerate(rounds):
+        qs, w = _one_round(key, model, vs, pi, r, k)
+        out += qs
+        warns += w
     return out, warns
 
 
@@ -124,8 +143,8 @@ def build(ctx: JobContext) -> dict:
         if not questions:
             raise llm.LLMError("문항을 하나도 만들지 못했습니다. " + " ".join(warns[:2]))
         if vs.options.get("mode") == "mix":  # 섞기: 배정표 순서(랜덤)대로 문항 순서를 바꿈
-            pos = {(x["p"], x["type"]): k for k, x in enumerate(vs.options.get("plan") or [])}
-            questions.sort(key=lambda q: pos.get((q["p"], q["type"]), 999))
+            pos = {(x["p"], x["type"], x.get("k", 0)): k for k, x in enumerate(vs.options.get("plan") or [])}
+            questions.sort(key=lambda q: pos.get((q["p"], q["type"], q.get("k", 0)), 9999))
             with session_scope() as db:
                 db.get(VariantSet, set_id).questions = list(questions)
     except llm.LLMError as e:

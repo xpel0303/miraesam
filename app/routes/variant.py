@@ -89,8 +89,6 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         cap = spec.mix_capacity(passages, types)
         if cap == 0:
             errors.append("지문이 짧아서 고른 유형으로 만들 수 있는 문항이 없어요.")
-        elif mix_n > cap:
-            errors.append(f"지문 {len(passages)}개와 고른 유형으로는 {cap}문항까지 만들 수 있어요 (같은 지문에 같은 유형은 한 번만).")
     if any(t in spec.AI_TYPES for t in types) and not teacher.gemini_key_enc:
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 넣거나, 순서 배열·문장 삽입만 골라 주세요.")
     if errors:

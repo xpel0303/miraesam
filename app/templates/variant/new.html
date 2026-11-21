@@ -14,7 +14,7 @@
     <div class="field"><label>만드는 방식</label>
       <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="mode" value="each" {% if form.mode != "mix" %}checked{% endif %}> <b>지문마다 고른 유형 전부</b> <span class="muted small">— 지문 수 × 유형 수만큼, 지문 순서대로</span></label>
       <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="mode" value="mix" {% if form.mode == "mix" %}checked{% endif %}> <b>고른 유형으로 섞어서 랜덤 출제</b> <span class="muted small">— 지문과 유형을 고르게 섞어 모의고사처럼</span></label>
-      <div class="row" id="mix-n" style="max-width:420px;margin-top:6px"><div class="field"><label for="mix_n">문항 수 <span class="hint">비우면 지문 수만큼 (최대 {{ spec.MAX_MIX }})</span></label>
+      <div class="row" id="mix-n" style="max-width:420px;margin-top:6px"><div class="field"><label for="mix_n">문항 수 <span class="hint">비우면 지문 수만큼 (최대 {{ spec.MAX_MIX }}) · 지문×유형보다 많으면 같은 지문·유형으로 다른 문제를 또 만들어요</span></label>
         <input type="text" id="mix_n" name="mix_n" inputmode="numeric" value="{{ form.mix_n or '' }}" placeholder="예: 20"></div></div>
     </div>
     <div class="field"><label>유형</label>
