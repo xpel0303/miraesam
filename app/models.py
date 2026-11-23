@@ -475,6 +475,7 @@ class HomeworkResult(Base):
     done: Mapped[bool] = mapped_column(Boolean, default=False)  # 통과(또는 체크) 여부
     late: Mapped[bool] = mapped_column(Boolean, default=False)
     detail: Mapped[list] = mapped_column(JSON, default=list)  # 마지막 시도의 틀린 문항
+    stages: Mapped[dict] = mapped_column(JSON, default=dict)  # 단어 숙제: {learn: true, recall: true, spell: true, game: 최고 기록(초)}
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 

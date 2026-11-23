@@ -1,7 +1,8 @@
 """숙제 규칙 (AI 없음).
 
 할 일(task) 종류
-  vocab  단어 퀴즈      {list_id, mode, count, pass}           — 단어장 퀴즈를 그대로 씀
+  vocab  단어 퀴즈      {list_id, mode, count, pass, stages}   — 단어장 퀴즈를 그대로 씀
+                         stages: 클래스카드처럼 암기·리콜·스펠·매칭 게임·테스트 (없으면 테스트만)
   ox     OX 퀴즈        {source, items[{q, a, why, p}], passages[{title, text}], pass}  — 내용이해 워크북 OX를 복사
   omr    답 입력        {source, items[{n, a}], pass}           — 종이로 푼 변형문제·어법 문제(또는 직접 넣은 정답)의 답만 입력
   leveltest 레벨테스트 {test_id}                                — 레벨테스트를 풀고 제출하면 완료 (점수 = 최고 점수)
@@ -41,14 +42,46 @@ def _pct(v, default: int) -> int:
 
 # ---------------- 할 일 만들기 (원본 자료 → 숙제용 복사본) ----------------
 
-def task_vocab(wl, mode: str, count, pass_) -> dict:
+STAGES = {"learn": "암기", "recall": "리콜", "spell": "스펠", "game": "매칭 게임", "test": "테스트"}
+STAGE_SETS = {
+    "all": ("암기·리콜·스펠·게임 + 테스트", ["learn", "recall", "spell", "game", "test"]),
+    "test": ("테스트만", ["test"]),
+    "study": ("암기·리콜·스펠·게임 (테스트 없이)", ["learn", "recall", "spell", "game"]),
+}
+NEED = ("learn", "recall", "spell")  # 테스트가 없을 때 완료 조건 (게임은 보너스)
+
+
+def stages_of(task: dict) -> list[str]:
+    return task.get("stages") or ["test"]
+
+
+def has_study(task: dict) -> bool:
+    return task.get("kind") == "vocab" and stages_of(task) != ["test"]
+
+
+def stage_done(task: dict, r) -> dict:
+    """단계별 완료 여부 {learn: bool, …, test: bool}"""
+    st = (r.stages or {}) if r is not None else {}
+    out = {k: bool(st.get(k)) for k in stages_of(task) if k != "test"}
+    if "test" in stages_of(task):
+        out["test"] = bool(r is not None and r.attempts and r.best >= (task.get("pass") or 0))
+    return out
+
+
+def study_complete(task: dict, r) -> bool:
+    """테스트 없는 단어 숙제: 암기·리콜·스펠을 다 하면 완료."""
+    d = stage_done(task, r)
+    return all(d.get(k) for k in NEED if k in d)
+
+
+def task_vocab(wl, mode: str, count, pass_, stages: str = "test") -> dict:
     n = len([w for w in wl.words if w.get("word") and w.get("meaning")])
     try:
         count = min(n, max(1, int(count or 20)))
     except ValueError:
         count = min(n, 20)
     return {"kind": "vocab", "title": f"단어 퀴즈 · {wl.title}", "list_id": wl.id, "mode": mode if mode in QUIZ_MODES else "mc_en",
-            "count": count, "pass": _pct(pass_, 80)}
+            "count": count, "pass": _pct(pass_, 80), "stages": STAGE_SETS.get(stages, STAGE_SETS["test"])[1]}
 
 
 def task_ox(wb, level: str, pass_) -> dict:
@@ -183,13 +216,17 @@ def answer_label(a) -> str:
 
 def status(task: dict, r) -> str:
     """화면 표시용: todo | retry | done"""
-    if r is None or not r.attempts:
+    if r is None or not (r.attempts or r.done or (task.get("kind") == "vocab" and (r.stages or {}))):
         return "todo"
     return "done" if r.done else "retry"
 
 
 def summary_text(task: dict) -> str:
     k = task["kind"]
+    if k == "vocab" and has_study(task):
+        names = "·".join(STAGES[x] for x in stages_of(task) if x != "test")
+        tail = f" → 테스트 {task['count']}문제" + (f" {task['pass']}점 이상" if task["pass"] else "") if "test" in stages_of(task) else ""
+        return names + tail
     if k == "vocab":
         return f"{QUIZ_MODES.get(task['mode'], '')} {task['count']}문제" + (f" · {task['pass']}점 이상 통과" if task["pass"] else "")
     if k == "ox":

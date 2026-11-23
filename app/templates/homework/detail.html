@@ -27,8 +27,9 @@
         {% for st, r in row.cells %}
           <td><form method="post" action="/homework/{{ h.id }}/check/{{ row.s.id }}/{{ loop.index0 }}" style="display:inline">
             <button class="hw-cell {{ st }}" type="submit" title="눌러서 선생님이 완료/미완료로 바꾸기">
-              {% if st == "done" %}✓{% if r.total %} {{ r.best }}{% endif %}{% elif st == "retry" %}{{ r.best }}점 · 다시{% else %}—{% endif %}{% if r and r.late %}<small> 늦음</small>{% endif %}
-            </button></form>{% if r and r.attempts > 1 %}<span class="small muted"> {{ r.attempts }}회</span>{% endif %}</td>
+              {% if st == "done" %}✓{% if r.total %} {{ r.best }}{% endif %}{% elif st == "retry" %}{% if r.attempts %}{{ r.best }}점 · 다시{% else %}하는 중{% endif %}{% else %}—{% endif %}{% if r and r.late %}<small> 늦음</small>{% endif %}
+            </button></form>{% set tk = h.tasks[loop.index0] %}{% if tk.kind == "vocab" and tk.stages and tk.stages != ["test"] and r and r.stages %}
+            <div class="small muted" title="단계 진행">{% for k in tk.stages if k != "test" %}{% if k == "game" %}{% if r.stages.game %}🎮{{ r.stages.game }}초{% endif %}{% elif r.stages.get(k) %}{{ {"learn": "암기", "recall": "리콜", "spell": "스펠"}[k] }}✓ {% endif %}{% endfor %}</div>{% endif %}{% if r and r.attempts > 1 %}<span class="small muted"> {{ r.attempts }}회</span>{% endif %}</td>
         {% endfor %}
         <td>{{ row.done }} / {{ h.tasks|length }}</td></tr>
     {% endfor %}</tbody>

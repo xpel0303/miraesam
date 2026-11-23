@@ -92,7 +92,7 @@ def _build_tasks(db: Session, aid: int, f) -> tuple[list[dict], list[str]]:
                 errors.append(f"할 일 {n}: 자료를 찾을 수 없어요.")
                 continue
             if kind == "vocab":
-                t = spec.task_vocab(obj, g(modes, "mc_en"), g(counts, "20"), g(passes, "80"))
+                t = spec.task_vocab(obj, g(modes, "mc_en"), g(counts, "20"), g(passes, "80"), g(f.getlist("t_stages"), "all"))
                 if not t["count"]:
                     errors.append(f"할 일 {n}: 뜻이 채워진 단어가 없어요.")
                     continue
@@ -143,7 +143,7 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     return render(request, "homework/new.html", {"teacher": teacher, "form": {"reveal": True}, "classes": _classes(db, teacher),
-                                                 "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "ox_levels": spec.OX_LEVELS,
+                                                 "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "stage_sets": spec.STAGE_SETS, "ox_levels": spec.OX_LEVELS,
                                                  "max": spec.MAX_TASKS, "active": "homework"})
 
 
@@ -160,7 +160,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     if errors:
         form = {"title": title, "due": f.get("due"), "memo": f.get("memo"), "reveal": f.get("reveal") == "1", "class_ids": {int(x) for x in class_ids}}
         return render(request, "homework/new.html", {"teacher": teacher, "form": form, "errors": errors, "classes": _classes(db, teacher),
-                                                     "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "ox_levels": spec.OX_LEVELS,
+                                                     "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "stage_sets": spec.STAGE_SETS, "ox_levels": spec.OX_LEVELS,
                                                      "max": spec.MAX_TASKS, "active": "homework"}, 400)
     h = Homework(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, due=_date(f.get("due")),
                  memo=str(f.get("memo", "")).strip()[:1000], tasks=tasks, options={"reveal": f.get("reveal") == "1"})

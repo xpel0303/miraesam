@@ -1,0 +1,34 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ t.title }} · {{ APP_NAME }}{% endblock %}
+{% block body %}
+<p class="small muted" style="margin:0"><a href="/s/{{ code }}/hw/{{ h.id }}">← {{ h.title }}</a></p>
+<h1 style="font-size:1.3rem;margin:4px 0 2px">{{ wl.title }}</h1>
+<p class="small muted" style="margin:0 0 14px">하고 싶은 단계부터 골라서 해요.{% if "test" in order %} 테스트에서 {{ t.pass }}점을 넘으면 숙제 완료!{% else %} 암기·리콜·스펠을 다 하면 숙제 완료!{% endif %}</p>
+
+<div class="vstage-grid">
+  {% set icons = {"learn": "🃏", "recall": "🧠", "spell": "✍️", "game": "🎮", "test": "📝"} %}
+  {% set notes = {"learn": "카드를 넘기며 뜻 외우기", "recall": "단어 보고 뜻 고르기", "spell": "뜻 보고 철자 쓰기", "game": "단어-뜻 짝 맞추기, 기록 도전", "test": "목표 점수까지 도전"} %}
+  {% for k in order %}
+    <a class="vstage {{ 'on' if done.get(k) else '' }}" href="/s/{{ code }}/hw/{{ h.id }}/{{ i }}?stage={{ k }}">
+      <span class="vi">{{ icons[k] }}</span>
+      <b>{{ stages[k] }}</b>
+      <small>{{ notes[k] }}</small>
+      <em>{% if k == "game" %}{% if r and r.stages and r.stages.game %}최고 {{ r.stages.game }}초{% else %}기록 없음{% endif %}
+          {% elif k == "test" %}{% if r and r.attempts %}최고 {{ r.best }}점{% if done.test %} ✓{% endif %}{% else %}아직{% endif %}
+          {% else %}{{ "✓ 완료" if done.get(k) else "아직" }}{% endif %}</em>
+    </a>
+  {% endfor %}
+</div>
+
+{% if rank.game or rank.test %}
+<div class="student-card" style="margin-top:16px">
+  <h2 style="font-size:1.05rem;margin:0 0 8px">🏆 친구들과 대결</h2>
+  <div style="display:flex;gap:18px;flex-wrap:wrap">
+    {% if rank.game %}<div style="flex:1 1 140px"><p class="small muted" style="margin:0 0 4px">매칭 게임 (빠른 순)</p>
+      <ol class="vrank">{% for x in rank.game %}<li class="{{ 'me' if x.me }}"><span>{{ x.rank }}</span> {{ x.name }} <em>{{ x.v }}초</em></li>{% endfor %}</ol></div>{% endif %}
+    {% if rank.test %}<div style="flex:1 1 140px"><p class="small muted" style="margin:0 0 4px">테스트 최고 점수</p>
+      <ol class="vrank">{% for x in rank.test %}<li class="{{ 'me' if x.me }}"><span>{{ x.rank }}</span> {{ x.name }} <em>{{ x.v }}점</em></li>{% endfor %}</ol></div>{% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

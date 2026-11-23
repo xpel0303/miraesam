@@ -627,3 +627,36 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
 .picked-flash { animation: pickflash 1.2s ease; }
 @keyframes pickflash { 0% { box-shadow: 0 0 0 4px #BFD8F6; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .picker-item .pi-head { font-style: normal; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+
+/* 단어 숙제: 클래스카드식 단계 학습 */
+.vstage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.vstage { display: flex; flex-direction: column; gap: 3px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); text-decoration: none; color: var(--ink); }
+.vstage:hover { border-color: var(--brand); }
+.vstage .vi { font-size: 1.6rem; }
+.vstage small { color: var(--ink-3); font-size: 0.75rem; }
+.vstage em { font-style: normal; font-size: 0.8rem; margin-top: 4px; color: var(--ink-3); }
+.vstage.on { border-color: var(--brand); background: var(--brand-soft); }
+.vstage.on em { color: var(--brand); font-weight: 700; }
+.vrank { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+.vrank li { display: flex; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--line-2); }
+.vrank li span { width: 1.4em; color: var(--ink-3); }
+.vrank li em { margin-left: auto; font-style: normal; color: var(--ink-3); }
+.vrank li.me { font-weight: 700; color: var(--brand); }
+.vbar { height: 6px; background: var(--line-2); border-radius: 3px; overflow: hidden; }
+.vbar i { display: block; height: 100%; width: 0; background: var(--brand); transition: width .25s; }
+.vstudy { min-height: 260px; }
+.vcard { border: 1px solid var(--line); border-radius: var(--radius); padding: 30px 16px; text-align: center; cursor: pointer; min-height: 170px; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.vw { font-size: 1.6rem; font-weight: 700; text-align: center; }
+.vm { font-size: 1.1rem; text-align: center; }
+.vspk { border: 0; background: none; cursor: pointer; font-size: 1.1rem; vertical-align: middle; }
+.vbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.vchoices { display: grid; gap: 8px; }
+.vchoice { padding: 13px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-size: 1rem; text-align: left; cursor: pointer; color: var(--ink); }
+.vchoice.good { border-color: #2e8b57; background: #e8f5ee; }
+.vchoice.bad, .vtile.bad { border-color: #c0392b; background: #fbeaea; }
+.vtiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.vtile { min-height: 64px; padding: 6px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-size: 0.85rem; cursor: pointer; color: var(--ink); word-break: keep-all; }
+.vtile.en { font-weight: 700; }
+.vtile.sel { border-color: var(--brand); background: var(--brand-soft); }
+.vtile.gone { visibility: hidden; }
+@media (max-width: 420px) { .vtiles { grid-template-columns: repeat(3, 1fr); } }
