@@ -121,6 +121,7 @@ def detail(lid: int, request: Request, pdf_job: int | None = None, teacher: Teac
         "results": results, "top_miss": top_miss, "modes": spec.QUIZ_MODES, "test_modes": spec.TEST_MODES,
         "sources": spec.sources(wl.words), "layouts": spec.LAYOUTS, "pdf_job": pdf_job, "active": "vocab",
         "blank_count": sum(1 for w in wl.words if spec.blank_needed(w)),
+        "missing": spec.missing_passages(wl.source_text, wl.words) if wl.source_kind == "passage" else [],
     })
 
 
@@ -148,6 +149,24 @@ async def save_words(lid: int, request: Request, teacher: Teacher = Depends(curr
     if f.get("then") == "fill":
         return fill(lid, request, teacher, db)
     flash(request, f"단어 {len(wl.words)}개를 저장했어요.")
+    return _go(f"/vocab/{lid}")
+
+
+@router.post("/{lid}/missing")
+def missing(lid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """단어가 안 뽑힌 지문만 다시 뽑기."""
+    wl = _own(db, lid, teacher)
+    if _busy(db, wl):
+        return _go(f"/vocab/{lid}")
+    if not teacher.gemini_key_enc:
+        flash(request, "Gemini API 키가 없습니다. 설정에서 키를 먼저 넣어 주세요.", "error")
+        return _go(f"/vocab/{lid}")
+    if wl.source_kind != "passage" or not spec.missing_passages(wl.source_text, wl.words):
+        flash(request, "모든 지문에서 단어를 뽑았어요.")
+        return _go(f"/vocab/{lid}")
+    job = enqueue(db, academy_id=wl.academy_id, teacher_id=teacher.id, kind="vocab_build", title=f"빠진 지문 단어 뽑기 · {wl.title}", payload={"list_id": wl.id, "missing": True})
+    wl.last_job_id = job.id
+    db.commit()
     return _go(f"/vocab/{lid}")
 
 

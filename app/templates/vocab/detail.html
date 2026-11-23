@@ -13,6 +13,13 @@
   <div class="flash small">{{ wl.error }}</div>
 {% endif %}
 
+{% if not busy and missing %}
+  <div class="flash error" role="alert">
+    단어가 하나도 안 뽑힌 지문이 {{ missing|length }}개 있어요: {{ missing|join(", ") }}
+    <form method="post" action="/vocab/{{ wl.id }}/missing" style="display:inline;margin-left:8px"><button class="btn small" type="submit">빠진 지문 단어 뽑기</button></form>
+  </div>
+{% endif %}
+
 {% if not busy %}
 <section class="panel" id="pdf">
   <h2>PDF</h2>
