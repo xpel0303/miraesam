@@ -660,3 +660,42 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
 .vtile.sel { border-color: var(--brand); background: var(--brand-soft); }
 .vtile.gone { visibility: hidden; }
 @media (max-width: 420px) { .vtiles { grid-template-columns: repeat(3, 1fr); } }
+
+/* 단어 숙제 — 파스텔 테마 (학생 화면 전용) */
+.vfun { --p1: #ff8fb8; --p2: #b9a6ff; --ink-c: #5b4a6b; color: var(--ink-c); }
+.vfun h1 { color: #4a3a5c; }
+.vfun a { color: #b0568a; }
+.vfun .vstage-grid { gap: 12px; }
+.vfun .vstage { border: 0; border-radius: 22px; padding: 16px; color: #4a3a5c; box-shadow: 0 6px 16px rgba(180, 120, 170, .18); transition: transform .15s; position: relative; }
+.vfun .vstage:hover { transform: translateY(-2px); }
+.vfun .vstage small { color: #8a7a96; }
+.vfun .vstage em { color: #8a7a96; }
+.vfun .vstage.s-learn  { background: linear-gradient(145deg, #ffe3ee, #ffd0e2); }
+.vfun .vstage.s-recall { background: linear-gradient(145deg, #ece5ff, #dcd1ff); }
+.vfun .vstage.s-spell  { background: linear-gradient(145deg, #dff6ee, #c8eedf); }
+.vfun .vstage.s-game   { background: linear-gradient(145deg, #fff3d6, #ffe6b3); }
+.vfun .vstage.s-test   { background: linear-gradient(145deg, #dfeeff, #cde2ff); }
+.vfun .vstage.on em { color: #d6457e; font-weight: 700; }
+.vfun .vstage.on::after { content: "♥"; position: absolute; top: 10px; right: 14px; color: #ff6fa5; font-size: 1.1rem; }
+.vfun .student-card { border: 0; border-radius: 24px; box-shadow: 0 8px 22px rgba(180, 120, 170, .16); background: #fffafd; }
+.vfun .vrank li { border-bottom: 1px dashed #f1d6e5; }
+.vfun .vrank li.me { color: #d6457e; }
+.vfun .vbar { height: 10px; border-radius: 99px; background: #f6e3ee; }
+.vfun .vbar i { background: linear-gradient(90deg, var(--p1), var(--p2)); border-radius: 99px; }
+.vfun .vcard { border: 0; border-radius: 22px; background: linear-gradient(160deg, #fff, #fff0f6); box-shadow: inset 0 0 0 2px #ffd6e7; }
+.vfun.s-recall .vcard, .vfun.s-recall .vw { color: #5a46a8; }
+.vfun .vw { color: #4a3a5c; }
+.vfun .btn { background: linear-gradient(135deg, var(--p1), var(--p2)); border: 0; border-radius: 99px; color: #fff; font-weight: 700; box-shadow: 0 4px 12px rgba(255, 143, 184, .35); }
+.vfun .btn.ghost { background: #fff; color: #b0568a; box-shadow: inset 0 0 0 2px #ffcfe1; }
+.vfun .vchoice { border: 0; border-radius: 16px; background: #f6f1ff; color: #4a3a5c; box-shadow: inset 0 0 0 2px #e6dcff; }
+.vfun .vchoice:hover { background: #efe7ff; }
+.vfun .vchoice.good { background: #dcf7ea; box-shadow: inset 0 0 0 2px #7fd8ad; }
+.vfun .vchoice.bad, .vfun .vtile.bad { background: #ffe1e8; box-shadow: inset 0 0 0 2px #ff9fb5; }
+.vfun input[type=text] { border-radius: 16px; border: 2px solid #ffd0e2; padding: 10px 14px; }
+.vfun input[type=text]:focus { outline: none; border-color: var(--p1); }
+.vfun .vtile { border: 0; border-radius: 16px; background: #fff; color: #5b4a6b; box-shadow: 0 3px 8px rgba(180, 120, 170, .18); }
+.vfun .vtile.en { background: #fff0f6; color: #c2417a; }
+.vfun .vtile.sel { background: #ffd6e7; transform: scale(1.04); }
+.vfun #clock { color: #c2417a; }
+.vfun #end p:first-child { animation: vpop .5s ease; }
+@keyframes vpop { 0% { transform: scale(.3); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }

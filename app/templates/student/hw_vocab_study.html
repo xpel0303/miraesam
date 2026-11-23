@@ -1,6 +1,7 @@
 {% extends "student/_base.html" %}
 {% block title %}{{ stages[stage] }} · {{ wl.title }} · {{ APP_NAME }}{% endblock %}
 {% block body %}
+<div class="vfun s-{{ stage }}">
 <p class="small muted" style="margin:0"><a href="/s/{{ code }}/hw/{{ h.id }}/{{ i }}">← {{ wl.title }}</a></p>
 <h1 style="font-size:1.25rem;margin:4px 0 8px">{{ stages[stage] }}</h1>
 <div class="vbar"><i id="bar"></i></div>
@@ -15,6 +16,7 @@
     <a class="btn ghost" href="?stage={{ stage }}">한 번 더</a>
     <a class="btn" href="/s/{{ code }}/hw/{{ h.id }}/{{ i }}">단계 화면으로</a>
   </p>
+</div>
 </div>
 {% endblock %}
 
