@@ -699,3 +699,20 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
 .vfun #clock { color: #c2417a; }
 .vfun #end p:first-child { animation: vpop .5s ease; }
 @keyframes vpop { 0% { transform: scale(.3); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+/* 파스텔 테마 글씨 진하게 */
+.vfun, .vfun .vw, .vfun .vm, .vfun h1, .vfun .vstage, .vfun .vstage b, .vfun .vchoice, .vfun .vtile { color: #2b1f38; }
+.vfun .vstage b { font-size: 1.05rem; font-weight: 800; }
+.vfun .vstage small, .vfun .vstage em, .vfun .small, .vfun .muted, .vfun #count, .vfun .vrank li em, .vfun .vrank li span { color: #4e4060 !important; }
+.vfun .vstage small { font-size: .8rem; font-weight: 600; }
+.vfun .vstage em { font-weight: 700; }
+.vfun .vstage.on em, .vfun .vrank li.me, .vfun #clock { color: #b01f5c !important; }
+.vfun .vtile.en { color: #a3184f; }
+.vfun .vtile, .vfun .vchoice { font-weight: 600; }
+.vfun .vw { font-weight: 800; }
+.vfun .vm { font-weight: 600; }
+.vfun.s-recall .vw { color: #3d2a8f; }
+.vfun a { color: #9c1d55; font-weight: 600; }
+.vfun .btn.ghost { color: #9c1d55; }
+.vfun .btn { color: #fff; text-shadow: 0 1px 2px rgba(120, 30, 80, .35); }
+.student .vfun ~ *, .student > p.small.muted { color: #4e4060; }
