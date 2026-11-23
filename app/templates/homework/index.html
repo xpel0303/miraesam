@@ -18,4 +18,20 @@
 {% else %}
 <div class="panel empty"><p>아직 낸 숙제가 없어요.</p><a class="btn" href="/homework/new">첫 숙제 내기</a></div>
 {% endif %}
+
+{% if online %}
+<h2 style="margin-top:28px">📱 온라인 시험으로 낸 것</h2>
+<p class="small muted">변형문제·어법 문제 화면에서 '온라인 시험으로 내기'로 바로 낸 것들이에요. 결과는 <a href="/reports">학생·반 리포트</a>에도 있어요.</p>
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>시험</th><th>반</th><th>문항</th><th>제출</th><th>상태</th><th></th></tr></thead>
+  <tbody>{% for o in online %}{% set e = o.e %}
+    <tr><td class="wrap"><a href="/reports/{{ e.id }}?tab=results"><b>{{ e.title }}</b></a></td>
+      <td class="small wrap">{{ e.classes|map(attribute="name")|join(", ") or "반 미지정" }}</td>
+      <td>{{ (e.items or [])|length }}</td>
+      <td>{{ o.n }}명</td>
+      <td class="small">{% if e.options.open %}<span class="tag">제출 받는 중</span>{% else %}<span class="muted">닫힘</span>{% endif %}</td>
+      <td class="small"><a href="/reports/{{ e.id }}?tab=results">결과</a> · <a href="/reports/{{ e.id }}?tab=share">설정</a> <span class="muted">{{ e.created_at|kst("%m/%d") }}</span></td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% endif %}
 {% endblock %}

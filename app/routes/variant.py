@@ -117,7 +117,8 @@ def detail(vid: int, request: Request, teacher: Teacher = Depends(current_teache
         q["view"] = spec.view(q, vs.passages[q["p"]]["text"])
         q["problems"] = spec.validate(q)
         qs.append(q)
-    return render(request, "variant/detail.html", {"teacher": teacher, "vs": vs, "job": job, "busy": _busy(db, vs), "qs": qs,
+    from .reports import online_exams
+    return render(request, "variant/detail.html", {"online": online_exams(db, teacher.academy_id, "variant", vs.id), "teacher": teacher, "vs": vs, "job": job, "busy": _busy(db, vs), "qs": qs,
                                                    "spec": spec, "circled": CIRCLED, "active": "variant"})
 
 

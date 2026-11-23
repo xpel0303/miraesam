@@ -9,6 +9,16 @@
 {% elif gs.status == "failed" and gs.error %}<div class="flash error" role="alert">{{ gs.error }}</div>{% endif %}
 {% if gs.warnings %}<div class="flash small">확인해 볼 점: {{ gs.warnings|join(" / ") }}</div>{% endif %}
 
+{% if online %}
+<section class="panel">
+  <h2>📱 이 자료로 낸 온라인 시험</h2>
+  <ul class="plain">{% for o in online %}<li><a href="/reports/{{ o.e.id }}?tab=results"><b>{{ o.e.title }}</b></a>
+    <span class="small muted">· {{ o.e.created_at|kst("%m/%d") }} · {{ o.e.classes|map(attribute="name")|join(", ") or "반 미지정" }} · 제출 {{ o.n }}명</span>
+    {% if o.e.options.open %}<span class="tag">제출 받는 중</span>{% endif %}
+    <a class="small" href="/reports/{{ o.e.id }}?tab=results">결과 보기</a> · <a class="small" href="/reports/{{ o.e.id }}?tab=share">반·제출 설정</a></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
 <section class="panel">
   <div class="panel-head"><h2>PDF</h2>
     {% if not busy %}<div class="actions">

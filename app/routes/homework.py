@@ -136,7 +136,8 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
             done = len(list(db.execute(select(HomeworkResult.id).where(HomeworkResult.homework_id == h.id, HomeworkResult.done.is_(True),
                                                                        HomeworkResult.student_id.in_([s.id for s in studs]))).scalars()))
             rate[h.id] = (done, total, len(studs))
-    return render(request, "homework/index.html", {"teacher": teacher, "hws": hws, "rate": rate, "today": spec.today(), "active": "homework"})
+    from .reports import online_exams
+    return render(request, "homework/index.html", {"online": online_exams(db, teacher.academy_id), "teacher": teacher, "hws": hws, "rate": rate, "today": spec.today(), "active": "homework"})
 
 
 @router.get("/new")
