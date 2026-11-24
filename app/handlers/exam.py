@@ -90,7 +90,26 @@ def extract(ctx: JobContext) -> dict:
                 with session_scope() as db:
                     imgs = [llm.Image(db.get(StoredFile, page_rows[i]["file_id"]).data, "image/jpeg") for i in idx]
                 prev = spec.last_label(chunks.get(str(start - spec.CHUNK))) if start else ""
-                res = _ask(key, model, imgs, spec.prompt([i + 1 for i in idx], n, prev))
+                try:
+                    res = _ask(key, model, imgs, spec.prompt([i + 1 for i in idx], n, prev))
+                except llm.EmptyAnswer:
+                    # 두 쪽을 같이 보내면 빈 답이 오는 경우가 있어 한 쪽씩 다시. 그래도 안 되는 쪽은 비워 두고 계속.
+                    res = {"header": None, "items": [], "_failed": []}
+                    for pos, (i, img) in enumerate(zip(idx, imgs), 1):
+                        ctx.step(f"{i + 1}쪽만 따로 다시 읽는 중", 30 + int(60 * k / len(starts)))
+                        try:
+                            one = _ask(key, model, [img], spec.prompt([i + 1], n, prev))
+                        except llm.EmptyAnswer:
+                            res["_failed"].append(i + 1)
+                            continue
+                        if res["header"] is None and isinstance(one.get("header"), dict):
+                            res["header"] = one["header"]
+                        for it in one.get("items") or []:
+                            if isinstance(it, dict):
+                                res["items"].append({**it, "page": pos})
+                        prev = spec.last_label({"items": res["items"]}) or prev
+                    if len(res["_failed"]) == len(idx) and len(starts) == 1:
+                        raise
                 res["_pages"] = [i + 1 for i in idx]  # 이미지 순서 → 실제 쪽 번호
                 chunks[str(start)] = res
             _set(pid, chunks=dict(chunks))
@@ -100,7 +119,9 @@ def extract(ctx: JobContext) -> dict:
         qs, meta = spec.merge(chunks)
         if not qs:
             raise llm.LLMError("문항을 하나도 찾지 못했어요. 시험지 이미지가 흐리거나 문항이 없는 쪽만 올렸는지 확인해 주세요.")
-        warns = spec.validate(qs, n) + spec.check_counts(qs, meta)
+        failed = sorted(pg_ for c in chunks.values() for pg_ in (c or {}).get("_failed", []))
+        warns = ([f"{', '.join(map(str, failed))}쪽은 Gemini가 빈 답을 보내 읽지 못했어요. 아래 쪽 이미지에서 체크하고 '다시 읽기'를 눌러 주세요."] if failed else []) \
+            + spec.validate(qs, n) + spec.check_counts(qs, meta)
         with session_scope() as db:
             p = db.get(ExamPaper, pid)
             p.questions = qs
