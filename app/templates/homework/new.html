@@ -73,9 +73,10 @@
       vhid.value = "[]";
       if (srcs.length < 2) { vbox.style.display = "none"; vbox.innerHTML = ""; return; }
       const esc = t => String(t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-      vbox.innerHTML = `<label class="small">지문 고르기 (고른 지문 단어로만)</label><div>
-        <label style="font-weight:600;margin:0 14px 0 0"><input type="checkbox" class="va" checked> 전체</label>` +
-        srcs.map(x => `<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" class="vs" value="${esc(x)}" checked> ${esc(x || "지문 표시 없음")}</label>`).join("") + `</div>`;
+      const cut = (() => { const a = srcs.filter(Boolean); if (a.length < 2) return 0; let k = 0; while (a.every(x => x[k] === a[0][k]) && k < a[0].length) k++; const u = a[0].lastIndexOf("_", k - 1), sp = a[0].lastIndexOf(" ", k - 1); return Math.max(u, sp) + 1; })();
+      vbox.innerHTML = `<label class="small">지문 고르기 <span class="muted">— 체크한 지문 단어로만 숙제가 나가요${cut ? ` (${esc(srcs.find(Boolean).slice(0, cut))}…)` : ""}</span></label><div class="vchips">
+        <label class="vchip all"><input type="checkbox" class="va" checked> 전체</label>` +
+        srcs.map(x => `<label class="vchip"><input type="checkbox" class="vs" value="${esc(x)}" checked> ${esc(x ? x.slice(cut) || x : "지문 표시 없음")}</label>`).join("") + `</div>`;
       vbox.style.display = "";
       const all = vbox.querySelector(".va"), cbs = [...vbox.querySelectorAll(".vs")];
       const sync = () => { const on = cbs.filter(c => c.checked); all.checked = on.length === cbs.length; vhid.value = JSON.stringify(on.length === cbs.length ? [] : on.map(c => c.value)); };

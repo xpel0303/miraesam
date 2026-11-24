@@ -716,3 +716,9 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
 .vfun .btn.ghost { color: #9c1d55; }
 .vfun .btn { color: #fff; text-shadow: 0 1px 2px rgba(120, 30, 80, .35); }
 .student .vfun ~ *, .student > p.small.muted { color: #4e4060; }
+
+/* 지문 고르기 칩 */
+.vchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.vchip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; font-weight: 400; font-size: .85rem; margin: 0; cursor: pointer; background: var(--surface); }
+.vchip:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
+.vchip.all { font-weight: 700; }

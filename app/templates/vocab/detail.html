@@ -113,9 +113,9 @@ document.addEventListener("DOMContentLoaded", () => document.querySelectorAll(".
     </div>
     {% if sources|length > 1 %}
     <div class="field"><label>지문 고르기 <span class="small muted">(고른 지문 단어로만 학습·테스트)</span></label>
-      <div class="vsrc-pick">
-        <label style="font-weight:600;margin:0 14px 0 0"><input type="checkbox" class="vsrc-all" checked> 전체</label>
-        {% for x in sources %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" class="vsrc" value="{{ x }}" checked> {{ x or "지문 표시 없음" }}</label>{% endfor %}
+      <div class="vsrc-pick vchips">
+        <label class="vchip all"><input type="checkbox" class="vsrc-all" checked> 전체</label>
+        {% for x in sources %}<label class="vchip"><input type="checkbox" class="vsrc" value="{{ x }}" checked> {{ (x.split("_")[-1] if "_" in x else x) or "지문 표시 없음" }}</label>{% endfor %}
       </div>
       <input type="hidden" name="t_vsrcs" value="[]">
     </div>
