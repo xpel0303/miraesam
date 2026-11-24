@@ -116,7 +116,22 @@ def detail(lid: int, request: Request, pdf_job: int | None = None, teacher: Teac
         for w in r.wrong or []:
             miss[w["word"]] = miss.get(w["word"], 0) + 1
     top_miss = sorted(miss.items(), key=lambda kv: -kv[1])[:10]
-    return render(request, "vocab/detail.html", {
+    # 반에 열어 둔 경우: 반 학생 전원 현황 (안 푼 학생 포함)
+    board = []
+    if assigned:
+        studs = list(db.execute(select(Student).options(selectinload(Student.class_group)).where(Student.class_id.in_(assigned), Student.active.is_(True))
+                                .order_by(Student.class_id, Student.name)).scalars())
+        allr = list(db.execute(select(QuizResult).where(QuizResult.list_id == wl.id)).scalars())
+        for st in studs:
+            mine = [r for r in allr if r.student_id == st.id]
+            best = max(mine, key=lambda r: r.correct / max(1, r.total), default=None)
+            board.append({"s": st, "n": len(mine), "best": best, "last": max((r.created_at for r in mine), default=None)})
+    from ..homework import spec as hspec
+    from ..models import Homework
+    hws = [h for h in db.execute(select(Homework).options(selectinload(Homework.classes)).where(Homework.academy_id == teacher.academy_id)
+                                 .order_by(Homework.id.desc()).limit(300)).scalars()
+           if any(t.get("kind") == "vocab" and t.get("list_id") == wl.id for t in h.tasks or [])]
+    return render(request, "vocab/detail.html", {"board": board, "hws": hws, "stage_sets": hspec.STAGE_SETS,
         "teacher": teacher, "wl": wl, "job": job, "busy": _busy(db, wl), "classes": classes, "assigned": assigned,
         "results": results, "top_miss": top_miss, "modes": spec.QUIZ_MODES, "test_modes": spec.TEST_MODES,
         "sources": spec.sources(wl.words), "layouts": spec.LAYOUTS, "pdf_job": pdf_job, "active": "vocab",

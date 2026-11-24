@@ -137,7 +137,14 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
                                                                        HomeworkResult.student_id.in_([s.id for s in studs]))).scalars()))
             rate[h.id] = (done, total, len(studs))
     from .reports import online_exams
-    return render(request, "homework/index.html", {"online": online_exams(db, teacher.academy_id), "teacher": teacher, "hws": hws, "rate": rate, "today": spec.today(), "active": "homework"})
+    from ..models import QuizResult
+    from sqlalchemy import func
+    open_lists = [wl for wl in db.execute(select(WordList).options(selectinload(WordList.classes)).where(WordList.academy_id == teacher.academy_id)
+                                          .order_by(WordList.id.desc()).limit(300)).scalars() if wl.classes]
+    tried = dict(db.execute(select(QuizResult.list_id, func.count(func.distinct(QuizResult.student_id)))
+                            .where(QuizResult.list_id.in_([w.id for w in open_lists] or [0])).group_by(QuizResult.list_id)).all())
+    return render(request, "homework/index.html", {"online": online_exams(db, teacher.academy_id),
+                                                   "open_lists": [{"wl": w, "n": tried.get(w.id, 0)} for w in open_lists], "teacher": teacher, "hws": hws, "rate": rate, "today": spec.today(), "active": "homework"})
 
 
 @router.get("/new")

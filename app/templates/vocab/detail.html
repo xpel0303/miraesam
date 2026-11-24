@@ -86,22 +86,64 @@
 </script>
 
 <section class="panel" id="classes">
-  <h2>반에 내주기</h2>
+  <h2>📮 숙제로 내기</h2>
   {% if classes %}
-  <form method="post" action="/vocab/{{ wl.id }}/classes">
-    <div class="actions" style="margin-bottom:10px">
-      {% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}
+  <form method="post" action="/homework">
+    <input type="hidden" name="t_src" value="vocab:{{ wl.id }}"><input type="hidden" name="t_title" value=""><input type="hidden" name="t_text" value="">
+    <div class="field-row">
+      <div class="field" style="flex:2 1 220px"><label>숙제 이름</label><input type="text" name="title" value="{{ wl.title }} 단어" required></div>
+      <div class="field" style="flex:1 1 140px"><label>마감 (선택)</label><input type="date" name="due"></div>
     </div>
-    <button class="btn small" type="submit">저장</button>
-    <span class="small muted">내준 반 학생은 접속 코드로 들어가 단어 카드와 퀴즈를 볼 수 있어요.</span>
+    <div class="field"><label>반</label><div>
+      {% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}"> {{ c.name }}</label>{% endfor %}</div></div>
+    <div class="field-row">
+      <div class="field" style="flex:2 1 220px"><label>학습 단계</label><select name="t_stages">{% for k, v in stage_sets.items() %}<option value="{{ k }}">{{ v[0] }}</option>{% endfor %}</select></div>
+      <div class="field" style="flex:2 1 200px"><label>테스트 방식</label><select name="t_mode">{% for k, v in modes.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <div class="field" style="flex:0 0 90px"><label>문제 수</label><input type="text" name="t_count" value="20" inputmode="numeric"></div>
+      <div class="field" style="flex:0 0 90px"><label>통과 점수</label><input type="text" name="t_pass" value="80" inputmode="numeric"></div>
+    </div>
+    <button class="btn" type="submit">숙제 내기</button>
+    <span class="small muted">낸 숙제는 <a href="/homework">숙제</a> 메뉴에서 학생별 진행(암기·리콜·스펠·게임·테스트)을 볼 수 있어요.</span>
   </form>
   {% else %}
   <p class="small muted" style="margin:0">아직 반이 없어요. <a href="/roster?tab=classes">학생 명단에서 반을 먼저 만들어 주세요.</a></p>
   {% endif %}
+
+  {% if hws %}
+  <h3 style="margin:18px 0 6px;font-size:1rem">이 단어장으로 낸 숙제</h3>
+  <ul class="plain">{% for h in hws %}<li><a href="/homework/{{ h.id }}"><b>{{ h.title }}</b></a>
+    <span class="small muted">· {{ h.classes|map(attribute="name")|join(", ") or "반 미지정" }}{% if h.due %} · 마감 {{ h.due[5:]|replace("-", "/") }}{% endif %}{% if not h.active %} · 닫힘{% endif %}</span>
+    <a class="small" href="/homework/{{ h.id }}">진행 보기 →</a></li>{% endfor %}</ul>
+  {% endif %}
+
+  {% if classes %}
+  <details style="margin-top:14px" {% if assigned %}open{% endif %}>
+    <summary class="small">숙제 말고 자유 학습용으로 열어 두기 {% if assigned %}({{ classes|selectattr("id", "in", assigned)|map(attribute="name")|join(", ") }}){% endif %}</summary>
+    <form method="post" action="/vocab/{{ wl.id }}/classes" style="margin-top:8px">
+      <div class="actions" style="margin-bottom:10px">
+        {% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}
+      </div>
+      <button class="btn small ghost" type="submit">저장</button>
+      <span class="small muted">학생 화면 단어장 목록에 보이고, 아무 때나 퀴즈를 풀 수 있어요 (마감·완료 체크 없음). 결과는 아래 '학생 퀴즈 결과'에서 봐요.</span>
+    </form>
+  </details>
+  {% endif %}
 </section>
 
-<section class="panel">
+<section class="panel" id="results">
   <h2>학생 퀴즈 결과</h2>
+  {% if board %}
+    <p class="small muted" style="margin:0 0 6px">자유 학습으로 열어 둔 반 학생 전체 ({{ board|selectattr("n")|list|length }} / {{ board|length }}명 풀었어요)</p>
+    <div class="table-wrap"><table class="list" style="margin-bottom:14px">
+      <thead><tr><th>학생</th><th>반</th><th>푼 횟수</th><th>최고 점수</th><th>마지막</th></tr></thead>
+      <tbody>{% for b in board %}
+        <tr><td><b>{{ b.s.name }}</b></td><td class="small muted">{{ b.s.class_group.name if b.s.class_group else "" }}</td>
+          <td>{% if b.n %}{{ b.n }}회{% else %}<span class="tag">아직</span>{% endif %}</td>
+          <td>{% if b.best %}{{ b.best.correct }} / {{ b.best.total }}{% else %}—{% endif %}</td>
+          <td class="small muted">{{ b.last|kst if b.last else "" }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+  {% endif %}
   {% if results %}
     {% if top_miss %}<p class="small">많이 틀린 단어: {% for w, n in top_miss %}<b>{{ w }}</b> {{ n }}회{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
     <div class="table-wrap"><table class="list">
