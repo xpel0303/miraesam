@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<title>스탬프 카드</title>
+{% include "pdf/_stamp_head.html" %}
+<style>
+  @page { size: A5; margin: 0; }
+  .card { width: 559px; height: 793px; padding: 28px 36px 30px; background: var(--cream); gap: 11px; overflow: hidden; break-after: page; }
+  .card:last-child { break-after: auto; }
+  .top { justify-content: space-between; align-items: flex-end; gap: 16px; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: var(--navy-2); }
+  .title { font-size: 36px; line-height: 1.1; margin: 4px 0; }
+  .pill { white-space: nowrap; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--accent); }
+  .who { flex: none; width: 170px; gap: 8px; }
+  .who .row { gap: 6px; align-items: flex-end; font-size: 13px; }
+  .who .lab { width: 32px; }
+  .who .line { flex: 1; border-bottom: 1.5px solid var(--navy); height: 18px; font-weight: 700; font-size: 14px; line-height: 16px; padding-left: 2px; }
+  .rules { gap: 8px; }
+  .rule { align-items: center; gap: 8px; padding: 7px 10px; border-radius: 10px; background: var(--soft); }
+  .rule .num { width: 22px; height: 22px; font-size: 12px; font-weight: 700; flex: none; }
+  .rule b { font-size: 13px; display: block; }
+  .rule span { font-size: 12px; color: var(--navy-2); }
+  .board { gap: 6px; padding: 14px 16px; border: 1.5px solid var(--navy); border-radius: 14px; background: #fff; }
+  .board .row { justify-content: space-between; }
+  .cell { width: 33px; height: 33px; border-radius: 50%; border: 1.5px dashed var(--navy-3); background: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #6B7399; }
+  .cell.half { border: 2.5px solid var(--accent); }
+  .cell.full { border: 2px solid var(--navy); background: var(--accent); }
+  .goals { gap: 8px; }
+  .goal { gap: 4px; padding: 11px 12px; border-radius: 12px; background: #fff; }
+  .goal .jua { font-size: 19px; }
+  .goal span { font-size: 12px; line-height: 1.5; }
+  .goal.a { border: 2.5px solid var(--accent); }
+  .goal.b { background: var(--accent); }
+  .goal.c { border: 1.5px solid var(--navy); }
+  .done { justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; }
+  .done .row { flex: none; width: 190px; gap: 10px; }
+  .done i { flex: none; font-style: normal; width: 30px; height: 30px; border-radius: 8px; border: 1.5px solid var(--navy);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; }
+</style>
+</head>
+<body>
+{% for c in cards %}
+<div class="card col">
+  <div class="top row">
+    <div class="col">
+      <div class="eyebrow">{{ s.brand }}</div>
+      <div class="title jua">스탬프 챌린지</div>
+      <div class="row" style="align-items:center;gap:8px">
+        <span class="pill">CARD No. ____</span>
+        <span style="font-size:13px;color:var(--navy-2);white-space:nowrap">100칸을 채우면 리워드!</span>
+      </div>
+    </div>
+    <div class="who col">
+      <div class="row"><span class="lab">이름</span><span class="line">{{ c.name }}</span></div>
+      <div class="row"><span class="lab">반</span><span class="line">{{ c.cls }}</span></div>
+    </div>
+  </div>
+
+  <div class="rules g3">
+    {% for item, rule, _ in s["items"] %}
+    <div class="rule row"><span class="num">{{ loop.index }}</span><div><b>{{ item }}</b><span>{{ rule }}</span></div></div>
+    {% endfor %}
+  </div>
+
+  <div class="board col">
+    {% for r in range(10) %}
+    <div class="row">
+      {% for k in range(1, 11) %}{% set n = r * 10 + k %}
+      <span class="cell{% if n == 50 %} half{% elif n == 100 %} full{% endif %}">{{ n }}</span>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="goals g3">
+    <div class="goal a col"><span class="jua">50칸!</span><span>중간 선물<br>{{ s.mid_gift }} 증정</span></div>
+    <div class="goal b col"><span class="jua">100칸 완성!</span><span>{{ s.value }} 리워드 선택<br>→ 새 카드로 이어서</span></div>
+    <div class="goal c col"><span class="jua">카드 5장!</span><span>명예의 전당{% if s.bonus %}<br>+ {{ s.bonus }}{% endif %}</span></div>
+  </div>
+
+  <div class="done row">
+    <span>내가 완성한 카드</span>
+    <div class="row">{% for n in range(1, 6) %}<i>{{ n }}</i>{% endfor %}</div>
+  </div>
+</div>
+{% endfor %}
+</body>
+</html>

@@ -117,7 +117,7 @@ p { margin: 0 0 0.75rem; }
 
 label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
 .hint { display: block; font-weight: 400; color: var(--ink-3); font-size: 0.8rem; margin-top: 3px; }
-input[type=text], input[type=password], input[type=tel], input[type=search], select, textarea {
+input[type=text], input[type=password], input[type=tel], input[type=search], .field input[type=number], .field input[type=date], select, textarea {
   width: 100%; font: inherit; font-size: 0.95rem; color: var(--ink);
   padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface);
 }
@@ -375,7 +375,7 @@ table.list tr:hover td { background: #FFFCF7; }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 
 /* 입력칸 */
-input[type=text], input[type=password], input[type=tel], input[type=search], select, textarea {
+input[type=text], input[type=password], input[type=tel], input[type=search], .field input[type=number], .field input[type=date], select, textarea {
   border: 2px solid var(--line); border-radius: 12px; background: #fff; }
 input:focus, select:focus, textarea:focus { border-color: var(--sky); box-shadow: 0 0 0 4px var(--brand-soft); }
 input[type=checkbox], input[type=radio] { accent-color: var(--brand); }

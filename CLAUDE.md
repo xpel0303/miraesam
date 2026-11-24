@@ -40,6 +40,7 @@
 - **홈 화면 앱(PWA)**: `routes/pwa.py`(manifest·sw.js), `templates/_pwa_head.html`·`_pwa_install.html`, 아이콘 `static/icons/`. 서비스 워커는 저장 안 함(늘 서버에서) → 배포하면 앱도 바로 바뀜. 학생 화면에서 설치하면 '미래샘 숙제'(그 학생 코드로 시작), 선생님 화면에서 설치하면 '미래샘 교사' — 한 폰에 둘 다 깔 수 있음.
 - **숙제 푸시 알림**: `app/push.py` (pywebpush). VAPID 키는 처음 쓸 때 만들어 DB `app_secrets`에 저장(환경변수 X). 기기는 `push_subs`. 숙제 내면 반 학생에게, 마감 전날 17~22시에 안 한 학생에게 1번(`options.reminded`), 숙제 화면 '안 한 학생에게 알림 보내기'. 학생 홈 '🔔 숙제 알림' 카드. 아이폰은 홈 화면 앱에서만.
 - **숙제 학생 고르기**: 반 안에서 일부만 → `homework.options.students`(비면 반 전체), 판단은 `homework/spec.py` `for_student`. 학생 화면·교사 표·레벨테스트·푸시 모두 이걸로 거름. 고르기 화면 `homework/_pick_students.html`.
+- **스탬프 챌린지** (`/stamp`, `app/stamp.py`, `handlers/stamp.py` `stamp_pdf`): 카드 A5·안내문 A4·포스터 A3 PDF (`templates/pdf/stamp_*.html`, 주아+나눔고딕, px=디자인 시안 그대로). 설정 테이블 없이 마지막 `stamp_pdf` 작업 payload 에서 불러옴. WeasyPrint 세로 flex 가 상자를 늘려서 `.col > * { flex: none }`, grid 대신 flex.
 - **10단계 본문 워크북**: 유형별/지문별 순서 선택, 지문마다 새 쪽.
 - **문법뱅크** (`app/bank`):
   - 분류는 지인에듀(ginedu.com/grammar_bank) 체계: 학년 단계 7개(g1 초등기초 ~ g7 고등) → 중분류 91 → 소분류 707, `bank/taxonomy.txt`.

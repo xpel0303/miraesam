@@ -1,0 +1,22 @@
+{# 스탬프 챌린지 PDF 공통: 주아(제목) + 나눔고딕(본문), 남색 + 강조색 한 가지. 크기는 px(=1/96인치) 그대로 = 디자인 시안 #}
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Jua"; src: url("{{ font_dir }}/jua-korean.woff2") format("woff2"); }
+  @font-face { font-family: "Jua"; src: url("{{ font_dir }}/jua-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
+  {% for w in [400, 700, 800] %}
+  @font-face { font-family: "Nanum Gothic"; font-weight: {{ w }}; src: url("{{ font_dir }}/nanum-gothic-korean-{{ w }}-normal.woff") format("woff"); }
+  @font-face { font-family: "Nanum Gothic"; font-weight: {{ w }}; src: url("{{ font_dir }}/nanum-gothic-latin-{{ w }}-normal.woff") format("woff");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215; }
+  {% endfor %}
+  :root { --navy: #1F2A5A; --navy-2: #4A5380; --navy-3: #8C93B8; --soft: #EEF0F8; --rule: #D9DCEB; --cream: #FFFDF6; --accent: {{ s.accent }}; }
+  * { box-sizing: border-box; }
+  html { font-family: "Nanum Gothic", sans-serif; color: var(--navy); }
+  body { margin: 0; }
+  .jua { font-family: "Jua", "Nanum Gothic", sans-serif; font-weight: 400; }
+  .row { display: flex; }
+  .col { display: flex; flex-direction: column; }
+  .col > * { flex: none; }  /* WeasyPrint: 세로 flex 안 상자가 늘어나지 않게 */
+  .g3 { display: flex; align-items: stretch; }
+  .g3 > * { flex: 1 1 0; min-width: 0; }
+  .num { border-radius: 50%; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; }
+</style>
