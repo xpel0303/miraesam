@@ -6,6 +6,7 @@
 <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
 <link rel="stylesheet" href="/static/app.css">
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+{% include "_pwa_head.html" %}
 {% set academy = teacher.academy if teacher is defined and teacher else None %}
 {% if academy and academy.brand_color and academy.brand_color|lower not in ("#3a3a3a", "#f2846b", "#1b2a5c", "") %}<style>:root { --brand: {{ academy.brand_color }}; --brand-soft: color-mix(in srgb, {{ academy.brand_color }} 18%, #fff); }</style>{% endif %}
 </head>
@@ -54,5 +55,6 @@
 </div>
 <script src="/static/app.js?v=gb2"></script>
 <script src="/static/passage-picker.js?v=all1"></script>
+{% include "_pwa_install.html" %}
 </body>
 </html>

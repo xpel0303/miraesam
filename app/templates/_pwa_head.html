@@ -1,0 +1,8 @@
+{# 홈 화면 앱(PWA): 앱 정보·아이콘. 학생 화면이면 그 학생 코드로 시작 #}
+<link rel="manifest" href="/manifest.webmanifest{% if pwa_code %}?s={{ pwa_code }}{% endif %}">
+<meta name="theme-color" content="#1B2A5C">
+<link rel="apple-touch-icon" href="/static/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="미래샘">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">

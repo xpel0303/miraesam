@@ -724,3 +724,15 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
 .vchip.all { font-weight: 700; }
 /* 단어 숙제 화면 제목: 주아체에서 '기'가 '가'처럼 보여서 또렷한 글꼴로 */
 .vfun h1, .vfun h2, .vfun .vstage b { font-family: "NanumSquareRound", sans-serif; font-weight: 800; }
+
+/* 앱 설치 안내 */
+.pwa-bar { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 60; display: flex; align-items: center; gap: 10px; max-width: 520px; margin: 0 auto;
+  padding: 10px 12px; background: #fff; border-radius: 18px; box-shadow: 0 8px 28px rgba(27, 42, 92, .22); }
+.pwa-bar img { border-radius: 10px; }
+.pwa-txt { flex: 1; display: flex; flex-direction: column; line-height: 1.25; }
+.pwa-txt span { font-size: .8rem; color: var(--ink-3); }
+.pwa-x { border: 0; background: none; font-size: 1rem; color: var(--ink-3); cursor: pointer; padding: 4px; }
+.pwa-ios { position: fixed; left: 12px; right: 12px; bottom: 80px; z-index: 61; max-width: 520px; margin: 0 auto; padding: 14px 16px; background: #fff;
+  border-radius: 18px; box-shadow: 0 8px 28px rgba(27, 42, 92, .25); }
+.pwa-ios ol { margin: 6px 0 8px; padding-left: 20px; line-height: 1.7; }
+.pwa-ios p { margin: 0; }

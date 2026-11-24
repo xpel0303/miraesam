@@ -1,0 +1,32 @@
+{# 앱 설치 안내 띠: 안드로이드·크롬은 버튼 한 번, 아이폰은 '공유 → 홈 화면에 추가' 안내. 앱으로 열었으면 안 보임 #}
+<div id="pwa-bar" class="pwa-bar" hidden>
+  <img src="/static/icons/icon-192.png" alt="" width="36" height="36">
+  <div class="pwa-txt"><b>미래샘 앱으로 설치하기</b><span id="pwa-sub">홈 화면에 아이콘이 생겨요</span></div>
+  <button type="button" class="btn small" id="pwa-go">설치</button>
+  <button type="button" class="pwa-x" id="pwa-x" aria-label="닫기">✕</button>
+</div>
+<div id="pwa-ios" class="pwa-ios" hidden>
+  <p><b>아이폰에서 앱으로 설치하기</b></p>
+  <ol><li>사파리 아래쪽 <b>공유 버튼</b>(□↑)을 눌러요</li><li><b>'홈 화면에 추가'</b>를 눌러요</li><li>오른쪽 위 <b>'추가'</b>를 누르면 끝!</li></ol>
+  <p class="small muted">카카오톡 안에서 열었다면 오른쪽 아래 ⋯ → '다른 브라우저로 열기(사파리)' 먼저 해 주세요.</p>
+  <button type="button" class="btn small" id="pwa-ios-ok">알겠어요</button>
+</div>
+<script>
+(() => {
+  try { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {}); } catch (e) {}
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (standalone) return;
+  const KEY = "pwa-bar-closed";
+  try { if (Date.now() - (+localStorage.getItem(KEY) || 0) < 7 * 864e5) return; } catch (e) {}
+  const bar = document.getElementById("pwa-bar"), ios = document.getElementById("pwa-ios"), go = document.getElementById("pwa-go");
+  const close = () => { bar.hidden = true; ios.hidden = true; try { localStorage.setItem(KEY, Date.now()); } catch (e) {} };
+  document.getElementById("pwa-x").onclick = close;
+  document.getElementById("pwa-ios-ok").onclick = close;
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isIOS) { bar.hidden = false; go.textContent = "방법 보기"; go.onclick = () => { ios.hidden = false; }; return; }
+  let ev = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); ev = e; bar.hidden = false; });
+  go.onclick = async () => { if (!ev) return; ev.prompt(); const r = await ev.userChoice.catch(() => null); ev = null; if (r && r.outcome === "accepted") close(); };
+  window.addEventListener("appinstalled", close);
+})();
+</script>
