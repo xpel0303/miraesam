@@ -1,0 +1,9 @@
+{# 동형 모의고사 공통 쪽 설정: 학교 시험지처럼 아래 가운데 쪽 번호(n/전체), 오른쪽 아래 학원 이름 #}
+  @page { size: A4; margin: 11mm 10mm 15mm 10mm;
+    @top-left { content: none; }
+    @bottom-center { content: counter(page) " / " counter(pages); font-family: "Nanum Gothic"; font-size: 8pt; color: #222;
+      border: 0.6pt solid #222; padding: 1pt 6pt; height: 12pt; margin-top: 4mm; }
+    @bottom-right { content: "미래샘 영어연구소"; font-family: "Nanum Gothic"; font-weight: 700; font-size: 8pt; color: #222; margin-top: 4mm; }
+  }
+  .pdf-header { display: none; }
+  html { color: #111; }
