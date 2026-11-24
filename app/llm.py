@@ -92,6 +92,7 @@ def generate(
 
     url = API.format(model=model or DEFAULT_GEMINI_MODEL)
     last_error = "알 수 없는 오류"
+    last_empty = False
     for attempt in range(retries):
         try:
             resp = httpx.post(url, json=payload, headers={"x-goog-api-key": api_key}, timeout=timeout)
@@ -104,7 +105,7 @@ def generate(
             try:
                 text = _extract_text(resp.json())
             except EmptyAnswer as e:  # 빈 답은 한두 번 더 (온도를 조금 올려서)
-                last_error = str(e)
+                last_error, last_empty = str(e), True
                 gen_cfg["temperature"] = min(1.0, gen_cfg["temperature"] + 0.3)
                 time.sleep(1)
                 continue
@@ -135,7 +136,7 @@ def generate(
             continue
         raise LLMError(f"Gemini 호출 실패 ({resp.status_code}): {detail[:200]}")
 
-    raise LLMError(last_error)
+    raise (EmptyAnswer if last_empty else LLMError)(last_error)
 
 
 # ---------------------------------------------------------------- 그림 만들기 (Gemini 이미지 모델, 'Nano Banana')
