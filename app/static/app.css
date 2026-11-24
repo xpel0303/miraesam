@@ -741,3 +741,4 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
 .push-card { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
 .push-card .push-ic { font-size: 1.6rem; }
 .push-card.on { background: #f0f7f2; }
+.push-card.need { border: 2px solid #f0a020; background: #fff8e8; }

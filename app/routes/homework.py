@@ -268,8 +268,10 @@ def detail(hid: int, request: Request, class_id: str = "", teacher: Teacher = De
     due = f" (마감 {h.due[5:].replace('-', '/')})" if h.due else ""
     notice = "\n".join([f"[{academy.name}] 숙제 안내", f"■ {h.title}{due}"] + [f" - {t['title']}" for t in h.tasks]
                        + ([h.memo] if h.memo else []) + [f"각자 접속 코드로 들어와서 풀어요: {base}/s"])
+    from ..models import PushSub
+    alert_on = set(db.execute(select(PushSub.student_id).where(PushSub.student_id.in_([r["s"].id for r in rows] or [0]))).scalars())
     return render(request, "homework/detail.html", {
-        "teacher": teacher, "h": h, "rows": rows, "per_task": per_task, "todo_people": todo_people, "notice": notice,
+        "alert_on": alert_on, "teacher": teacher, "h": h, "rows": rows, "per_task": per_task, "todo_people": todo_people, "notice": notice,
         "kinds": spec.KINDS, "summary": spec.summary_text, "classes": _classes(db, teacher), "assigned": {c.id for c in h.classes}, "roster": roster(db, teacher.academy_id), "picked": (h.options or {}).get("students") or [],
         "class_id": cid, "late": spec.is_late(h.due), "active": "homework",
     })

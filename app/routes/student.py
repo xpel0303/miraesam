@@ -536,7 +536,4 @@ async def push_sub(code: str, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(404)
     from .. import push
     body = await request.json()
-    if body.get("off"):
-        push.drop_sub(str(body.get("endpoint") or ""))
-        return {"ok": True}
     return {"ok": push.save_sub(s.academy_id, s.id, body.get("sub") or {})}

@@ -23,7 +23,7 @@
   <div class="table-wrap"><table class="list">
     <thead><tr><th>학생</th><th>반</th>{% for t in h.tasks %}<th title="{{ t.title }}">{{ loop.index }}. {{ kinds[t.kind] }}</th>{% endfor %}<th>완료</th></tr></thead>
     <tbody>{% for row in rows %}
-      <tr><td><b>{{ row.s.name }}</b></td><td class="small muted">{{ row.s.class_group.name if row.s.class_group else "" }}</td>
+      <tr><td><b>{{ row.s.name }}</b>{% if row.s.id not in alert_on %} <span title="이 학생은 숙제 알림을 아직 안 켰어요" class="small">🔕</span>{% endif %}</td><td class="small muted">{{ row.s.class_group.name if row.s.class_group else "" }}</td>
         {% for st, r in row.cells %}
           <td><form method="post" action="/homework/{{ h.id }}/check/{{ row.s.id }}/{{ loop.index0 }}" style="display:inline">
             <button class="hw-cell {{ st }}" type="submit" title="눌러서 선생님이 완료/미완료로 바꾸기">
@@ -42,7 +42,7 @@
   <div class="panel-head"><h2>🔔 앱 알림</h2>
     <form method="post" action="/homework/{{ h.id }}/remind"><button class="btn small" type="submit">안 한 학생에게 알림 보내기</button></form></div>
   <p class="small muted" style="margin:0">숙제를 내면 알림을 켠 학생 폰에 '새 숙제' 알림이 가고, 마감 전날 저녁에는 아직 안 한 학생에게 자동으로 한 번 더 가요.
-    알림은 학생 화면의 '🔔 숙제 알림 받기'를 켠 학생에게만 가요 (아이폰은 홈 화면에 앱을 설치해야 켤 수 있어요).</p>
+    알림은 학생 화면의 '🔔 숙제 알림 받기'를 켠 학생에게만 가요 (아이폰은 홈 화면에 앱을 설치해야 켤 수 있어요). 아래 표에서 이름 옆에 🔕 가 있는 학생은 아직 안 켠 학생이에요.</p>
 </section>
 
 <section class="panel">
