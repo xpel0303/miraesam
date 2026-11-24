@@ -27,7 +27,7 @@
         <span class="tn">{{ loop.index }}</span>
         <div class="field" style="flex:2 1 260px"><select name="t_src" aria-label="할 일 종류">
           <option value="">— 고르기 —</option>
-          {% if src.vocab %}<optgroup label="단어 퀴즈">{% for x in src.vocab %}<option value="vocab:{{ x.id }}">{{ x.title }} ({{ x.words|length }}단어)</option>{% endfor %}</optgroup>{% endif %}
+          {% if src.vocab %}<optgroup label="단어 퀴즈">{% for x in src.vocab %}<option value="vocab:{{ x.id }}" data-srcs="{{ x.srcs|tojson|forceescape }}">{{ x.title }} ({{ x.words|length }}단어)</option>{% endfor %}</optgroup>{% endif %}
           {% if src.workbook %}<optgroup label="OX 퀴즈 (내용이해 워크북)">{% for x in src.workbook %}<option value="workbook:{{ x.id }}">{{ x.title }}</option>{% endfor %}</optgroup>{% endif %}
           {% if src.variant %}<optgroup label="답 입력 (변형문제 시험지)">{% for x in src.variant %}<option value="variant:{{ x.id }}">{{ x.title }}</option>{% endfor %}</optgroup>{% endif %}
           {% if src.grammar %}<optgroup label="답 입력 (어법 문제 시험지)">{% for x in src.grammar %}<option value="grammar:{{ x.id }}">{{ x.title }}</option>{% endfor %}</optgroup>{% endif %}
@@ -35,6 +35,8 @@
           <optgroup label="기타"><option value="key">답 입력 (정답 직접 넣기 — 교재·프린트)</option><option value="check">할 일 체크 (본문 암기 등)</option></optgroup>
         </select></div>
         <div class="field opt" data-for="vocab workbook" style="flex:1 1 150px"><select name="t_mode" aria-label="방식"></select></div>
+        <input type="hidden" name="t_vsrcs" value="[]">
+        <div class="field opt vsrc-row" data-for="vocab" style="flex:1 1 100%;display:none"></div>
         <div class="field opt" data-for="vocab" style="flex:1 1 200px"><select name="t_stages" aria-label="학습 단계" title="클래스카드처럼 단계별로 외우게 하기">{% for k, v in stage_sets.items() %}<option value="{{ k }}">{{ v[0] }}</option>{% endfor %}</select></div>
         <div class="field opt" data-for="vocab" style="flex:0 0 90px"><input type="text" name="t_count" value="20" inputmode="numeric" aria-label="문제 수" title="문제 수"></div>
         <div class="field opt" data-for="key" style="flex:1 1 160px"><input type="text" name="t_title" placeholder="이름 (예: 수능특강 3강)" aria-label="이름"></div>
@@ -63,6 +65,22 @@
       text.placeholder = kind === "key" ? "정답 한 줄 (예: 35214 23415, 복수 정답 2/4)" : "예: 교과서 3과 본문 외우기";
       text.style.fontFamily = kind === "key" ? "ui-monospace,monospace" : "";
       if (kind === "vocab" && !pass.value) pass.placeholder = "통과 80%"; else pass.placeholder = "통과 점수%";
+      // 단어장에 지문이 여러 개면 지문 고르기
+      const vbox = row.querySelector(".vsrc-row"), vhid = row.querySelector("[name=t_vsrcs]");
+      const opt = src.selectedOptions[0];
+      let srcs = [];
+      try { srcs = kind === "vocab" ? JSON.parse(opt.dataset.srcs || "[]") : []; } catch (e) {}
+      vhid.value = "[]";
+      if (srcs.length < 2) { vbox.style.display = "none"; vbox.innerHTML = ""; return; }
+      const esc = t => String(t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+      vbox.innerHTML = `<label class="small">지문 고르기 (고른 지문 단어로만)</label><div>
+        <label style="font-weight:600;margin:0 14px 0 0"><input type="checkbox" class="va" checked> 전체</label>` +
+        srcs.map(x => `<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" class="vs" value="${esc(x)}" checked> ${esc(x || "지문 표시 없음")}</label>`).join("") + `</div>`;
+      vbox.style.display = "";
+      const all = vbox.querySelector(".va"), cbs = [...vbox.querySelectorAll(".vs")];
+      const sync = () => { const on = cbs.filter(c => c.checked); all.checked = on.length === cbs.length; vhid.value = JSON.stringify(on.length === cbs.length ? [] : on.map(c => c.value)); };
+      all.onchange = () => { cbs.forEach(c => c.checked = all.checked); sync(); };
+      cbs.forEach(c => c.onchange = sync);
     }
     src.addEventListener("change", upd); upd();
   }

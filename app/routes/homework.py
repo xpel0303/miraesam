@@ -40,7 +40,11 @@ def _sources(db: Session, aid: int) -> dict:
     gss = [g for g in q(GrammarSet, GrammarSet.status == "done") if spec.grammar_key(g)]
     lts = [t for t in db.execute(select(LevelTest).where(LevelTest.academy_id == aid).order_by(LevelTest.sort, LevelTest.id)).scalars()
            if (t.spec or {}).get("sections")]
-    return {"vocab": q(WordList, WordList.status == "done"), "workbook": wbs, "variant": vss, "grammar": gss, "leveltest": lts}
+    from ..vocab.spec import sources
+    vls = q(WordList, WordList.status == "done")
+    for w in vls:
+        w.srcs = sources(w.words)
+    return {"vocab": vls, "workbook": wbs, "variant": vss, "grammar": gss, "leveltest": lts}
 
 
 def _set_classes(db: Session, h: Homework, teacher: Teacher, raw: list) -> int:
@@ -50,6 +54,15 @@ def _set_classes(db: Session, h: Homework, teacher: Teacher, raw: list) -> int:
     for cid in valid:
         db.add(HomeworkClass(homework_id=h.id, class_id=cid))
     return len(valid)
+
+
+def _json_list(v: str) -> list[str]:
+    import json
+    try:
+        x = json.loads(v or "[]")
+    except ValueError:
+        return []
+    return [str(i) for i in x] if isinstance(x, list) else []
 
 
 def _date(v) -> str:
@@ -92,7 +105,7 @@ def _build_tasks(db: Session, aid: int, f) -> tuple[list[dict], list[str]]:
                 errors.append(f"할 일 {n}: 자료를 찾을 수 없어요.")
                 continue
             if kind == "vocab":
-                t = spec.task_vocab(obj, g(modes, "mc_en"), g(counts, "20"), g(passes, "80"), g(f.getlist("t_stages"), "all"))
+                t = spec.task_vocab(obj, g(modes, "mc_en"), g(counts, "20"), g(passes, "80"), g(f.getlist("t_stages"), "all"), _json_list(g(f.getlist("t_vsrcs"))))
                 if not t["count"]:
                     errors.append(f"할 일 {n}: 뜻이 채워진 단어가 없어요.")
                     continue

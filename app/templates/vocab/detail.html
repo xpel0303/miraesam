@@ -85,6 +85,15 @@
 })();
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", () => document.querySelectorAll(".vsrc-pick").forEach(box => {
+  const all = box.querySelector(".vsrc-all"), cbs = [...box.querySelectorAll(".vsrc")], hid = box.parentElement.querySelector("[name=t_vsrcs]");
+  const sync = () => { const on = cbs.filter(c => c.checked); all.checked = on.length === cbs.length; hid.value = JSON.stringify(on.length === cbs.length ? [] : on.map(c => c.value)); };
+  all.addEventListener("change", () => { cbs.forEach(c => c.checked = all.checked); sync(); });
+  cbs.forEach(c => c.addEventListener("change", sync));
+  box.closest("form").addEventListener("submit", e => { if (!cbs.some(c => c.checked)) { e.preventDefault(); alert("지문을 하나 이상 골라 주세요."); } });
+}));
+</script>
 <section class="panel" id="classes">
   <h2>📮 숙제로 내기</h2>
   {% if classes %}
@@ -102,6 +111,15 @@
       <div class="field" style="flex:0 0 90px"><label>문제 수</label><input type="text" name="t_count" value="20" inputmode="numeric"></div>
       <div class="field" style="flex:0 0 90px"><label>통과 점수</label><input type="text" name="t_pass" value="80" inputmode="numeric"></div>
     </div>
+    {% if sources|length > 1 %}
+    <div class="field"><label>지문 고르기 <span class="small muted">(고른 지문 단어로만 학습·테스트)</span></label>
+      <div class="vsrc-pick">
+        <label style="font-weight:600;margin:0 14px 0 0"><input type="checkbox" class="vsrc-all" checked> 전체</label>
+        {% for x in sources %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" class="vsrc" value="{{ x }}" checked> {{ x or "지문 표시 없음" }}</label>{% endfor %}
+      </div>
+      <input type="hidden" name="t_vsrcs" value="[]">
+    </div>
+    {% endif %}
     <button class="btn" type="submit">숙제 내기</button>
     <span class="small muted">낸 숙제는 <a href="/homework">숙제</a> 메뉴에서 학생별 진행(암기·리콜·스펠·게임·테스트)을 볼 수 있어요.</span>
   </form>

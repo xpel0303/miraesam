@@ -74,14 +74,27 @@ def study_complete(task: dict, r) -> bool:
     return all(d.get(k) for k in NEED if k in d)
 
 
-def task_vocab(wl, mode: str, count, pass_, stages: str = "test") -> dict:
-    n = len([w for w in wl.words if w.get("word") and w.get("meaning")])
+def task_words(wl, task: dict) -> list[dict]:
+    """숙제에 쓸 단어 (지문을 골랐으면 그 지문 단어만). 퀴즈 문제 번호(idx)가 이 목록 기준이라 출제·채점 모두 이걸 씀."""
+    srcs = task.get("srcs")
+    return [w for w in wl.words if (w.get("src") or "") in srcs] if srcs else wl.words
+
+
+def task_vocab(wl, mode: str, count, pass_, stages: str = "test", srcs: list[str] | None = None) -> dict:
+    from ..vocab.spec import sources
+    allsrc = sources(wl.words)
+    srcs = [x for x in allsrc if x in set(srcs or [])]
+    if len(srcs) == len(allsrc):
+        srcs = []  # 전부 고르면 제한 없음
+    t = {"srcs": srcs}
+    n = len([w for w in task_words(wl, t) if w.get("word") and w.get("meaning")])
     try:
         count = min(n, max(1, int(count or 20)))
     except ValueError:
         count = min(n, 20)
-    return {"kind": "vocab", "title": f"단어 퀴즈 · {wl.title}", "list_id": wl.id, "mode": mode if mode in QUIZ_MODES else "mc_en",
-            "count": count, "pass": _pct(pass_, 80), "stages": STAGE_SETS.get(stages, STAGE_SETS["test"])[1]}
+    part = f" ({', '.join(x or '지문 표시 없음' for x in srcs[:4])}{' 외' if len(srcs) > 4 else ''})" if srcs else ""
+    return {"kind": "vocab", "title": f"단어 퀴즈 · {wl.title}{part}", "list_id": wl.id, "mode": mode if mode in QUIZ_MODES else "mc_en",
+            "count": count, "pass": _pct(pass_, 80), "stages": STAGE_SETS.get(stages, STAGE_SETS["test"])[1], "srcs": srcs}
 
 
 def task_ox(wb, level: str, pass_) -> dict:

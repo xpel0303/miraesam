@@ -390,7 +390,7 @@ def hw_task(code: str, hid: int, i: int, request: Request, db: Session = Depends
         if hspec.has_study(t) and stage != "test":
             r = _hw_results(db, s, h).get(i)
             if stage in hspec.STAGES and stage in hspec.stages_of(t):
-                cards = [{"w": w["word"], "m": w["meaning"], "e": w.get("example", "")} for w in wl.words if w.get("word") and w.get("meaning")][:400]
+                cards = [{"w": w["word"], "m": w["meaning"], "e": w.get("example", "")} for w in hspec.task_words(wl, t) if w.get("word") and w.get("meaning")][:400]
                 return render(request, "student/hw_vocab_study.html", _ctx(db, s, h=h, i=i, t=t, wl=wl, stage=stage, stages=hspec.STAGES, cards=cards,
                                                                            best=((r.stages or {}).get("game") if r else None)))
             return render(request, "student/hw_vocab.html", _ctx(db, s, h=h, i=i, t=t, wl=wl, r=r, stages=hspec.STAGES, order=hspec.stages_of(t),
@@ -398,7 +398,7 @@ def hw_task(code: str, hid: int, i: int, request: Request, db: Session = Depends
         if "test" not in hspec.stages_of(t):
             return RedirectResponse(f"/s/{s.access_code}/hw/{h.id}/{i}", status_code=303)
         seed = secrets.randbits(31)
-        qs = spec.build_quiz(wl.words, t["mode"], t["count"], seed)
+        qs = spec.build_quiz(hspec.task_words(wl, t), t["mode"], t["count"], seed)
         public = [{"prompt": q["prompt"], "choices": q.get("choices")} for q in qs]
         return render(request, "student/quiz.html", _ctx(db, s, wl=wl, mode=t["mode"], modes=spec.QUIZ_MODES, qs=public, seed=seed, count=t["count"],
                                                          hw=h, action=f"/s/{s.access_code}/hw/{h.id}/{i}"))
@@ -495,15 +495,16 @@ async def hw_submit(code: str, hid: int, i: int, request: Request, db: Session =
         except (TypeError, ValueError):
             raise HTTPException(400)
         mode = t["mode"]
-        qs = spec.build_quiz(wl.words, mode, count, seed)
+        words = hspec.task_words(wl, t)
+        qs = spec.build_quiz(words, mode, count, seed)
         wrong, correct, rows = [], 0, []
         for k, q in enumerate(qs):
             given = str(f.get(f"a{k}", "")).strip()
-            ok = spec.grade(wl.words, mode, q["idx"], given)
+            ok = spec.grade(words, mode, q["idx"], given)
             correct += ok
             rows.append({"prompt": q["prompt"], "answer": q["answer"], "given": given, "ok": ok})
             if not ok:
-                wrong.append({"word": wl.words[q["idx"]]["word"], "answer": q["answer"], "given": given})
+                wrong.append({"word": words[q["idx"]]["word"], "answer": q["answer"], "given": given})
         qr = QuizResult(academy_id=s.academy_id, student_id=s.id, list_id=wl.id, mode=mode, total=len(qs), correct=correct, wrong=wrong)
         db.add(qr)
         r = _record(db, s, h, i, correct, len(qs), [{"n": w["word"]} for w in wrong])
