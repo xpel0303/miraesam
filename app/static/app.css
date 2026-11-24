@@ -722,3 +722,5 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
 .vchip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; font-weight: 400; font-size: .85rem; margin: 0; cursor: pointer; background: var(--surface); }
 .vchip:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
 .vchip.all { font-weight: 700; }
+/* 단어 숙제 화면 제목: 주아체에서 '기'가 '가'처럼 보여서 또렷한 글꼴로 */
+.vfun h1, .vfun h2, .vfun .vstage b { font-family: "NanumSquareRound", sans-serif; font-weight: 800; }
