@@ -3,7 +3,7 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import delete, select
+from sqlalchemy import func, delete, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
@@ -188,8 +188,28 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     db.flush()
     _set_classes(db, h, teacher, class_ids)
     db.commit()
+    from .. import push
+    push.in_background(push.homework_new, h.id)  # 알림 켠 학생 폰에 '새 숙제'
     flash(request, "숙제를 냈어요. 아래 '카톡 문구'를 복사해 단톡방에 올리면 학생이 링크로 바로 들어와요.")
     return _go(f"/homework/{h.id}")
+
+
+@router.post("/{hid}/remind")
+def remind(hid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """아직 다 안 한 학생 폰에 알림."""
+    h = _own(db, hid, teacher)
+    from .. import push
+    from ..models import PushSub
+    ids = push.not_done_ids(db, h)
+    on = db.execute(select(func.count(func.distinct(PushSub.student_id))).where(PushSub.student_id.in_(ids or [0]))).scalar() or 0
+    if not ids:
+        flash(request, "모두 다 했어요. 알림 보낼 학생이 없어요.")
+    elif not on:
+        flash(request, f"안 한 학생 {len(ids)}명 중 알림을 켠 학생이 없어요. 학생 화면의 '🔔 숙제 알림 받기'를 켜 달라고 해 주세요.", "error")
+    else:
+        push.in_background(push.homework_remind, h.id)
+        flash(request, f"안 한 학생 {len(ids)}명 중 알림을 켠 {on}명에게 알림을 보냈어요.")
+    return _go(f"/homework/{hid}")
 
 
 @router.get("/{hid}")

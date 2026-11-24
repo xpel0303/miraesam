@@ -4,6 +4,48 @@
 <div class="s-hello">{{ art.mascot(64, "wave") }}<div><h1 style="margin:0">{{ student.name }}, 안녕!</h1>
 <p class="muted" style="margin:0">{{ [student.school.name if student.school else None, student.grade, student.class_group.name if student.class_group else None]|select|join(" / ") }}</p></div></div>
 
+<div class="student-card push-card" id="push-card" hidden>
+  <span class="push-ic">🔔</span>
+  <div style="flex:1"><b>숙제 알림</b><br><span class="small muted" id="push-msg">새 숙제와 마감 전날을 폰으로 알려 줘요</span></div>
+  <button type="button" class="btn small" id="push-btn">알림 받기</button>
+</div>
+<script>
+(() => {
+  const card = document.getElementById("push-card"), msg = document.getElementById("push-msg"), btn = document.getElementById("push-btn");
+  const SAVE = "/s/{{ code }}/push";
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const show = (text, label, on) => { card.hidden = false; msg.textContent = text; btn.hidden = !label; if (label) btn.textContent = label; card.classList.toggle("on", !!on); };
+  const b64 = s => { const p = "=".repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(r, c => c.charCodeAt(0)); };
+  const post = body => fetch(SAVE, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  if (!supported) { if (ios && !standalone) show("아이폰은 먼저 아래 '앱으로 설치하기'로 홈 화면에 앱을 깔고, 앱에서 켜 주세요.", ""); return; }
+  let reg = null, sub = null;
+  const refresh = async () => {
+    reg = await navigator.serviceWorker.register("/sw.js"); await navigator.serviceWorker.ready;
+    sub = await reg.pushManager.getSubscription();
+    if (Notification.permission === "denied") return show("알림이 막혀 있어요. 폰 설정 → 알림에서 미래샘을 허용해 주세요.", "");
+    if (sub) { post({sub: sub.toJSON()}); return show("알림을 받고 있어요 ✓", "끄기", true); }
+    show("새 숙제와 마감 전날을 폰으로 알려 줘요", "알림 받기");
+  };
+  btn.onclick = async () => {
+    btn.disabled = true;
+    try {
+      if (sub) { await post({off: true, endpoint: sub.endpoint}); await sub.unsubscribe(); }
+      else {
+        if (await Notification.requestPermission() !== "granted") return refresh();
+        const {key} = await fetch("/push/key").then(r => r.json());
+        const s = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: b64(key)});
+        await post({sub: s.toJSON()});
+      }
+    } catch (e) { show("알림을 켜지 못했어요. 잠시 뒤 다시 눌러 주세요.", "다시 시도"); }
+    finally { btn.disabled = false; }
+    refresh();
+  };
+  refresh().catch(() => {});
+})();
+</script>
+
 {% if hws %}
 <div class="student-card" style="margin-top:20px">
   <h2>숙제</h2>

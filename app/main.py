@@ -20,7 +20,10 @@ async def lifespan(app: FastAPI):
     from .leveltest.pack import seed_builtin_background
     seed_builtin_background()  # 사이트에 들어 있는 레벨테스트 시험지를 학원마다 넣기
     start_workers()
+    from . import push
+    push.start()  # 마감 전날 숙제 알림
     yield
+    push.stop()
     stop_workers()
 
 

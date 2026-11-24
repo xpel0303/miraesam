@@ -525,3 +525,17 @@ async def hw_submit(code: str, hid: int, i: int, request: Request, db: Session =
                 w["a_label"], w["g_label"] = hspec.answer_label(w["a"]), hspec.answer_label(w["given"]) if w["given"] else "안 씀"
     return render(request, "student/hw_result.html", _ctx(db, s, h=h, i=i, t=t, r=r, correct=correct, total=total, wrong=wrong,
                                                           reveal=reveal, pct=round(100 * correct / total) if total else 0))
+
+
+@router.post("/{code}/push")
+async def push_sub(code: str, request: Request, db: Session = Depends(get_db)):
+    """학생 기기를 숙제 알림에 등록 / 해제."""
+    s = _student(db, code)
+    if s is None:
+        raise HTTPException(404)
+    from .. import push
+    body = await request.json()
+    if body.get("off"):
+        push.drop_sub(str(body.get("endpoint") or ""))
+        return {"ok": True}
+    return {"ok": push.save_sub(s.academy_id, s.id, body.get("sub") or {})}

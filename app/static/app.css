@@ -736,3 +736,8 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
   border-radius: 18px; box-shadow: 0 8px 28px rgba(27, 42, 92, .25); }
 .pwa-ios ol { margin: 6px 0 8px; padding-left: 20px; line-height: 1.7; }
 .pwa-ios p { margin: 0; }
+
+/* 숙제 알림 카드 */
+.push-card { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.push-card .push-ic { font-size: 1.6rem; }
+.push-card.on { background: #f0f7f2; }

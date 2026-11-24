@@ -18,6 +18,22 @@ const OFFLINE = '<!doctype html><meta charset="utf-8"><meta name="viewport" cont
   + '<button onclick="location.reload()" style="padding:10px 20px;border-radius:99px;border:0;background:#1B2A5C;color:#fff;font-size:1rem">다시 시도</button></body>';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = {title: '미래샘', body: e.data ? e.data.text() : ''}; }
+  e.waitUntil(self.registration.showNotification(d.title || '미래샘', {
+    body: d.body || '', tag: d.tag || undefined, renotify: !!d.tag, data: {url: d.url || '/'},
+    icon: '/static/icons/icon-192.png', badge: '/static/icons/icon-192.png', lang: 'ko'
+  }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin).href;
+  e.waitUntil(self.clients.matchAll({type: 'window', includeUncontrolled: true}).then(list => {
+    for (const c of list) { if ('focus' in c) { c.navigate(url).catch(() => {}); return c.focus(); } }
+    return self.clients.openWindow(url);
+  }));
+});
 self.addEventListener('fetch', e => {
   if (e.request.mode !== 'navigate') return;
   e.respondWith(fetch(e.request).catch(() => new Response(OFFLINE, {headers: {'Content-Type': 'text/html; charset=utf-8'}})));
@@ -50,3 +66,9 @@ def manifest(s: str = ""):
         ],
     }
     return Response(json.dumps(m, ensure_ascii=False), media_type="application/manifest+json", headers={"Cache-Control": "no-cache"})
+
+
+@router.get("/push/key", include_in_schema=False)
+def push_key():
+    from .. import push
+    return {"key": push.keys()["public"]}

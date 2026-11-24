@@ -741,3 +741,26 @@ class GrammarBook(Base):
     name: Mapped[str] = mapped_column(String(80), default="")  # 능률(민병천)
     lessons: Mapped[list] = mapped_column(JSON, default=list)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class AppSecret(Base):
+    """서버가 스스로 만들어 두는 값 (푸시 알림용 VAPID 키 등). 환경변수 대신 DB에."""
+
+    __tablename__ = "app_secrets"
+
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)
+
+
+class PushSub(Base):
+    """푸시 알림 받는 기기 하나 (학생 폰의 홈 화면 앱/브라우저)."""
+
+    __tablename__ = "push_subs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    student_id: Mapped[int | None] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=True, index=True)
+    endpoint: Mapped[str] = mapped_column(Text, unique=True)
+    p256dh: Mapped[str] = mapped_column(String(200))
+    auth: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
