@@ -1,0 +1,44 @@
+{# 반 안에서 학생 고르기. 고른 반의 학생이 체크칸으로 나오고, 처음엔 모두 체크(반 전체). 일부만 남기면 그 학생들만 숙제를 받음. #}
+<div class="stu-pick" data-roster='{{ roster|tojson|forceescape }}' data-picked='{{ (picked or [])|tojson }}'>
+  <input type="hidden" name="pick_students" value="0">
+  <details>
+    <summary class="small"><b>학생 고르기</b> <span class="muted stu-sum">— 반 전체</span></summary>
+    <div class="stu-box small muted" style="margin-top:8px">반을 먼저 골라 주세요.</div>
+  </details>
+</div>
+<script>
+(() => {
+  const root = document.currentScript.previousElementSibling, form = root.closest("form");
+  const roster = JSON.parse(root.dataset.roster || "{}"), picked = new Set(JSON.parse(root.dataset.picked || "[]"));
+  const box = root.querySelector(".stu-box"), sum = root.querySelector(".stu-sum"), flag = root.querySelector("[name=pick_students]");
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  const classes = () => [...form.querySelectorAll("input[name=class_id]")];
+  const keep = new Map();  // 다시 그려도 체크 상태 유지
+  const sync = () => {
+    const cbs = [...box.querySelectorAll("input[name=student_id]")], on = cbs.filter(c => c.checked);
+    cbs.forEach(c => keep.set(c.value, c.checked));
+    flag.value = cbs.length && on.length < cbs.length ? "1" : "0";
+    sum.textContent = !cbs.length ? "— 반 전체" : on.length === cbs.length ? `— 반 전체 (${cbs.length}명)` : `— ${on.length}명만 (전체 ${cbs.length}명)`;
+    box.querySelectorAll(".stu-cls").forEach(g => { const a = [...g.querySelectorAll("input[name=student_id]")]; g.querySelector(".stu-all").checked = a.every(c => c.checked); });
+  };
+  const draw = () => {
+    const chosen = classes().filter(c => c.checked);
+    if (!chosen.length) { box.innerHTML = "반을 먼저 골라 주세요."; return sync(); }
+    box.innerHTML = chosen.map(c => {
+      const list = roster[c.value] || [], name = c.closest("label").textContent.trim();
+      if (!list.length) return `<div class="stu-cls"><b>${esc(name)}</b> <span class="muted">학생 없음</span><input type="checkbox" class="stu-all" hidden></div>`;
+      return `<div class="stu-cls"><label class="vchip all"><input type="checkbox" class="stu-all"> ${esc(name)} 전체</label><div class="vchips">` +
+        list.map(s => { const k = String(s.id), on = keep.has(k) ? keep.get(k) : (picked.size ? picked.has(s.id) : true);
+          return `<label class="vchip"><input type="checkbox" name="student_id" value="${k}" ${on ? "checked" : ""}> ${esc(s.name)}</label>`; }).join("") + `</div></div>`;
+    }).join("");
+    box.classList.remove("muted");
+    box.querySelectorAll(".stu-cls").forEach(g => g.querySelector(".stu-all").onchange = e => { g.querySelectorAll("input[name=student_id]").forEach(c => c.checked = e.target.checked); sync(); });
+    box.querySelectorAll("input[name=student_id]").forEach(c => c.onchange = sync);
+    sync();
+  };
+  classes().forEach(c => c.addEventListener("change", draw));
+  form.addEventListener("submit", e => { if (flag.value === "1" && !box.querySelector("input[name=student_id]:checked")) { e.preventDefault(); alert("학생을 한 명 이상 골라 주세요."); } });
+  draw();
+  if (picked.size) root.querySelector("details").open = true;
+})();
+</script>

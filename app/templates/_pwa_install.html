@@ -1,7 +1,7 @@
 {# 앱 설치 안내 띠: 안드로이드·크롬은 버튼 한 번, 아이폰은 '공유 → 홈 화면에 추가' 안내. 앱으로 열었으면 안 보임 #}
 <div id="pwa-bar" class="pwa-bar" hidden>
   <img src="/static/icons/icon-192.png" alt="" width="36" height="36">
-  <div class="pwa-txt"><b>미래샘 앱으로 설치하기</b><span id="pwa-sub">홈 화면에 아이콘이 생겨요</span></div>
+  <div class="pwa-txt"><b>{{ "미래샘 숙제 앱" if pwa_code else "미래샘 선생님 앱" }} 설치하기</b><span id="pwa-sub">홈 화면에 아이콘이 생겨요</span></div>
   <button type="button" class="btn small" id="pwa-go">설치</button>
   <button type="button" class="pwa-x" id="pwa-x" aria-label="닫기">✕</button>
 </div>

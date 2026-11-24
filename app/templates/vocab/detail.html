@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => document.querySelectorAll(".
       <div class="field" style="flex:1 1 140px"><label>마감 (선택)</label><input type="date" name="due"></div>
     </div>
     <div class="field"><label>반</label><div>
-      {% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}"> {{ c.name }}</label>{% endfor %}</div></div>
+      {% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}"> {{ c.name }}</label>{% endfor %}</div>{% set picked = [] %}{% include "homework/_pick_students.html" %}</div>
     <div class="field-row">
       <div class="field" style="flex:2 1 220px"><label>학습 단계</label><select name="t_stages">{% for k, v in stage_sets.items() %}<option value="{{ k }}">{{ v[0] }}</option>{% endfor %}</select></div>
       <div class="field" style="flex:2 1 200px"><label>테스트 방식</label><select name="t_mode">{% for k, v in modes.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>

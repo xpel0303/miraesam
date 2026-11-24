@@ -265,3 +265,9 @@ def remind_text(academy_name: str, hw, student_name: str, link: str, todo_titles
     lines.append(f"여기서 바로 풀 수 있어요: {link}")
     return "\n".join(lines)
 
+
+
+def for_student(h, sid: int) -> bool:
+    """반 안에서 학생을 골라 낸 숙제면 그 학생만 (options.students 가 비어 있으면 반 전체)."""
+    ids = (h.options or {}).get("students") or []
+    return not ids or sid in ids

@@ -66,8 +66,9 @@ def _exam_for(db: Session, s: Student, eid: int) -> Exam:
 def _hws_for(db: Session, s: Student) -> list[Homework]:
     if not s.class_id:
         return []
-    return list(db.execute(select(Homework).join(HomeworkClass, HomeworkClass.homework_id == Homework.id)
-                           .where(HomeworkClass.class_id == s.class_id, Homework.active.is_(True)).order_by(Homework.id.desc()).limit(30)).scalars())
+    hws = db.execute(select(Homework).join(HomeworkClass, HomeworkClass.homework_id == Homework.id)
+                     .where(HomeworkClass.class_id == s.class_id, Homework.active.is_(True)).order_by(Homework.id.desc()).limit(60)).scalars()
+    return [h for h in hws if hspec.for_student(h, s.id)][:30]
 
 
 def _hw_for(db: Session, s: Student, hid: int) -> Homework:

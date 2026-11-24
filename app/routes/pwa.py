@@ -50,8 +50,8 @@ def sw():
 def manifest(s: str = ""):
     code = s if re.fullmatch(r"[A-Za-z0-9_-]{1,40}", s or "") else ""
     m = {
-        "name": "미래샘 숙제" if code else "미래샘 영어연구소",
-        "short_name": "미래샘",
+        "name": "미래샘 숙제" if code else "미래샘 영어연구소 (선생님)",
+        "short_name": "미래샘 숙제" if code else "미래샘 교사",
         "id": f"/s/{code}" if code else "/",
         "start_url": f"/s/{code}" if code else "/",
         "scope": "/",

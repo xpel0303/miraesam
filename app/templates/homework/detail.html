@@ -71,7 +71,8 @@
       <div class="field"><label>마감일</label><input type="text" name="due" value="{{ h.due }}" inputmode="numeric" placeholder="2026-10-28"></div>
     </div>
     <div class="field"><label>안내 문구</label><input type="text" name="memo" value="{{ h.memo }}"></div>
-    <div class="field"><label>반</label><div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}</div></div>
+    <div class="field"><label>반</label><div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}</div>
+      {% include "homework/_pick_students.html" %}</div>
     <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" {% if h.options.reveal %}checked{% endif %}> 제출하면 틀린 문제의 정답·해설 보여 주기</label>
     <label style="font-weight:400"><input type="checkbox" name="active" value="1" {% if h.active %}checked{% endif %}> 학생 화면에 보이기 (끄면 숙제 닫기)</label>
     <button class="btn small" type="submit" style="margin-top:8px">저장</button>

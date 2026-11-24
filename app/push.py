@@ -123,7 +123,8 @@ def _hw_students(db, h: Homework) -> list[Student]:
     cids = [c for (c,) in db.execute(select(HomeworkClass.class_id).where(HomeworkClass.homework_id == h.id))]
     if not cids:
         return []
-    return list(db.execute(select(Student).where(Student.class_id.in_(cids), Student.active.is_(True))).scalars())
+    from .homework.spec import for_student
+    return [s for s in db.execute(select(Student).where(Student.class_id.in_(cids), Student.active.is_(True))).scalars() if for_student(h, s.id)]
 
 
 def not_done_ids(db, h: Homework) -> list[int]:

@@ -131,7 +131,8 @@ def detail(lid: int, request: Request, pdf_job: int | None = None, teacher: Teac
     hws = [h for h in db.execute(select(Homework).options(selectinload(Homework.classes)).where(Homework.academy_id == teacher.academy_id)
                                  .order_by(Homework.id.desc()).limit(300)).scalars()
            if any(t.get("kind") == "vocab" and t.get("list_id") == wl.id for t in h.tasks or [])]
-    return render(request, "vocab/detail.html", {"board": board, "hws": hws, "stage_sets": hspec.STAGE_SETS,
+    from .homework import roster
+    return render(request, "vocab/detail.html", {"roster": roster(db, teacher.academy_id), "board": board, "hws": hws, "stage_sets": hspec.STAGE_SETS,
         "teacher": teacher, "wl": wl, "job": job, "busy": _busy(db, wl), "classes": classes, "assigned": assigned,
         "results": results, "top_miss": top_miss, "modes": spec.QUIZ_MODES, "test_modes": spec.TEST_MODES,
         "sources": spec.sources(wl.words), "layouts": spec.LAYOUTS, "pdf_job": pdf_job, "active": "vocab",
