@@ -18,8 +18,8 @@
 <body>
 <div class="pw">
   <header class="ph">
-    <img src="/static/icons/icon-180.png" alt="">
-    <div><small>{{ APP_NAME }} {{ APP_SUB }}{% if student.class_group %} · {{ student.class_group.name }}{% endif %}</small><b>{{ student.name }} 학습관리</b></div>
+    <div style="flex:1;min-width:0"><small>{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}{% if student.class_group %} · {{ student.class_group.name }}{% endif %}</small><b>{{ student.name }} 학습관리</b></div>
+    <img class="ph-logo" src="{{ academy.logo if academy and academy.logo else '/static/logo-word.png' }}" alt="{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}">
   </header>
 
   {% if teacher_view %}<div class="preview-bar">선생님 미리보기예요. 이 화면을 봐도 학부모님 쪽 '새 기록' 표시는 그대로 남아요.</div>{% endif %}
@@ -117,7 +117,7 @@
     {% endfor %}
   </section>
 
-  <p class="foot">{{ APP_NAME }} {{ APP_SUB }} · 이 링크는 {{ student.name }} 학부모님 전용이에요.</p>
+  <p class="foot">{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }} · 이 링크는 {{ student.name }} 학부모님 전용이에요.</p>
 </div>
 
 <script>

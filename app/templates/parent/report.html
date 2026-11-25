@@ -12,7 +12,10 @@
 {% include "parent/_style.html" %}
 <style>
 .hero { background: linear-gradient(130deg, var(--pb), color-mix(in srgb, var(--pb) 70%, #6C8CD5)); color: #fff; border-radius: 22px; padding: 18px; margin-bottom: 14px; }
-.hero small { opacity: .85; }
+.hero { position: relative; }
+.hero small { opacity: .85; display: block; padding-right: 120px; }
+.hero-logo { position: absolute; top: 14px; right: 14px; background: #fff; border-radius: 12px; padding: 5px 9px; line-height: 0; }
+.hero-logo img { height: 28px; max-width: 110px; object-fit: contain; }
 .hero h1 { font-size: 1.25rem; margin: 4px 0 2px; color: #fff; }
 .grade { display: inline-block; background: #fff; color: var(--pb); font-weight: 800; border-radius: 999px; padding: 2px 12px; font-size: .85rem; margin-right: 6px; }
 .hero p { margin: 10px 0 0; font-size: .98rem; line-height: 1.5; }
@@ -55,7 +58,8 @@
   {% if token %}<p class="small noprint" style="margin:0 0 10px"><a href="/p/{{ token }}">← {{ student.name }} 학습관리</a></p>{% endif %}
 
   <header class="hero">
-    <small>{{ APP_NAME }} {{ APP_SUB }}{% if r.class_group %} · {{ r.class_group.name }}{% endif %} · {{ r.start.month }}/{{ r.start.day }}~{{ r.end.month }}/{{ r.end.day }}</small>
+    <span class="hero-logo"><img src="{{ academy.logo if academy and academy.logo else '/static/logo-word.png' }}" alt="{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}"></span>
+    <small>{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}{% if r.class_group %} · {{ r.class_group.name }}{% endif %} · {{ r.start.month }}/{{ r.start.day }}~{{ r.end.month }}/{{ r.end.day }}</small>
     <h1>{{ student.name }} · {{ r.title }}</h1>
     {% if r.grade or r.summary %}<p>{% if r.grade %}<span class="grade">{{ r.grade }}</span>{% endif %}{{ r.summary }}</p>{% endif %}
   </header>
@@ -143,7 +147,7 @@
   {% endif %}
   {% if not d.lessons and not (r.strength or r.goal or r.message) %}<p class="muted small">이 기간 기록이 아직 없어요.</p>{% endif %}
 
-  <p class="foot">{{ APP_NAME }} {{ APP_SUB }}</p>
+  <p class="foot">{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}</p>
 </div>
 </body>
 </html>

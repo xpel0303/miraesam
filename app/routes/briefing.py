@@ -254,7 +254,8 @@ async def pptx(bid: int, db: Session = Depends(get_db), teacher: Teacher = Depen
     b = _own(db, bid, teacher)
     if not b.slides:
         raise HTTPException(400, "아직 슬라이드가 없어요.")
-    data = await asyncio.to_thread(build, b.title, b.slides, teacher.academy.name if teacher.academy else "")
+    ac = teacher.academy
+    data = await asyncio.to_thread(build, b.title, b.slides, ac.name if ac else "", ac.logo if ac else None)
     return Response(data, media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
                     headers={"Content-Disposition": _fname(b, "pptx")})
 

@@ -17,7 +17,9 @@
 .sl * { box-sizing:border-box; }
 .sl .jua, .sl h1, .sl h2, .sl h3 { font-family:"SJua", "Jua", sans-serif; font-weight:400; letter-spacing:0; }
 /* 머리 */
-.sl .hd { position:absolute; left:72px; right:72px; top:48px; }
+.sl .hd { position:absolute; left:72px; right:320px; top:48px; }
+.sl .lg { position:absolute; top:40px; right:60px; height:60px; max-width:240px; object-fit:contain; object-position:right center; }
+.sl.cover .lg, .sl.closing .lg, .sl.section .lg { top:44px; right:64px; height:72px; max-width:280px; }
 .sl .hd h2 { margin:0; font-size:50px; line-height:1.2; color:var(--navy); display:flex; align-items:center; gap:12px; }
 .sl .hd h2 .sparkle { flex:0 0 auto; }
 .sl .hd p { margin:10px 0 0; font-size:23px; color:var(--ink2); }
@@ -96,8 +98,10 @@
 </style>
 {% endmacro %}
 
+{# 오른쪽 위 로고: 설정에서 올린 학원 로고, 없으면 미래샘 로고 #}
+{% macro brand(academy) %}<img class="lg" src="{{ academy.logo if academy and academy.logo else (static_url|default('/static')) ~ '/logo-word.png' }}" alt="{{ academy.name if academy and academy.logo else '미래샘 영어연구소' }}">{% endmacro %}
 {% macro logo(size) %}<img src="{{ static_url|default('/static') }}/icons/icon-192.png" alt="" style="width:{{ size }}px;height:{{ size }}px;border-radius:{{ (size * 0.28)|round }}px">{% endmacro %}
-{% macro ft(i, n, academy) %}<div class="ft"><span class="brand">{{ logo(28) }}{{ academy.name if academy and academy.name else '미래샘 영어연구소' }}</span><span class="pg">{{ i }} / {{ n }}</span></div>{% endmacro %}
+{% macro ft(i, n, academy) %}<div class="ft"><span class="brand">{% if not (academy and academy.logo) %}{{ logo(28) }}{% endif %}{{ academy.name if academy and academy.name else '미래샘 영어연구소' }}</span><span class="pg">{{ i }} / {{ n }}</span></div>{% endmacro %}
 {% macro hd(s) %}<div class="hd"><h2>{{ s.title }}{{ art.sparkle(30, "#FFD86B") }}</h2>{% if s.sub %}<p>{{ s.sub }}</p>{% endif %}</div>{% endmacro %}
 
 {% macro chart(ch, geom) %}{% set g = geom(ch) %}
@@ -116,9 +120,9 @@
 {% set aname = academy.name if academy and academy.name else '미래샘 영어연구소' %}
 {% if lay in ('cover', 'closing', 'section') %}
 <div class="sl {{ lay }}">
-  {{ art.doodles() }}
+  {{ art.doodles() }}{{ brand(academy) }}
   <div class="hero">
-    {% if lay == 'section' %}<span class="chip">{{ aname }}</span>{% else %}<div class="who">{{ logo(40) }}{{ aname }}</div>{% endif %}
+    {% if lay == 'section' %}<span class="chip">{{ aname }}</span>{% else %}<div class="who">{% if not (academy and academy.logo) %}{{ logo(40) }}{% endif %}{{ aname }}</div>{% endif %}
     <h1>{{ s.title }}</h1>{% if s.sub %}<p class="sub">{{ s.sub }}</p>{% endif %}{% if s.foot and lay != 'section' %}<span class="foot">{{ s.foot }}</span>{% endif %}
   </div>
   <div class="bigm">{{ art.mascot(300, "book" if lay == 'section' else "wave") }}
@@ -127,7 +131,7 @@
   {% if lay == 'section' %}{{ ft(i, n, academy) }}{% endif %}
 </div>
 {% else %}
-<div class="sl {{ lay }}">{{ hd(s) }}
+<div class="sl {{ lay }}">{{ brand(academy) }}{{ hd(s) }}
   <div class="body">
   {% if lay == 'bullets' %}
     <ul class="bl {{ 'sm' if (s.bullets|length) > 4 or (s.bullets|map('length')|max if s.bullets else 0) > 30 else '' }}">{% for b in s.bullets %}<li class="card"><span class="no bg{{ (loop.index0 % 6) + 1 }}">{{ loop.index }}</span>{{ b }}</li>{% endfor %}</ul>

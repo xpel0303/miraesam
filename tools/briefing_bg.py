@@ -14,7 +14,7 @@ if __name__ == "__main__":
     from app.web import templates
 
     tpl = templates.env.from_string('''{% import "briefing/_slides.html" as sl with context %}{{ sl.css(font_dir) }}
-<style>@page{size:1280px 720px;margin:0} body{margin:0} .hero,.ft,.hd,.body{display:none !important}</style>
+<style>@page{size:1280px 720px;margin:0} body{margin:0} .hero,.ft,.hd,.body,.lg{display:none !important}</style>
 {{ sl.slide(s, 1, 1, None, geom) }}''')
     for lay, name in (("cover", "cover"), ("section", "section"), ("closing", "closing"), ("bullets", "plain")):
         html = tpl.render(font_dir=(BASE_DIR / "static" / "fonts").as_uri(), static_url=(BASE_DIR / "static").as_uri(),

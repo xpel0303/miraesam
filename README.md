@@ -35,6 +35,7 @@
 - 원장님 메모·청중·분량(8/12/16장)·날짜·연락처를 넣으면 Gemini가 슬라이드를 구성(작업 대기열 `briefing`). 그래프·표·숫자 칸은 AI가 숫자를 쓰지 않고 데이터 키(`types:p12`, `mcsa:p12`, `stats:p12`, `grammar:p12`, `trend:sa`, `trend:words`, `trend:types`, `stats:academy`, `books`)를 고르면 실제 데이터로 채움(📊 실제 데이터 표시).
 - 슬라이드 모양 9가지(표지·장 나눔·목록·숫자 칸·그래프·둘 비교·표·일정·마무리). 화면에서 슬라이드마다 고치기·모양 바꾸기·순서·복사·지우기·새 슬라이드, 발표 메모.
 - 결과: ▶ 발표하기(사이트 전체 화면, ←/→, F 전체 화면, N 발표 메모, 휴대폰 밀기), PowerPoint(.pptx, 글·차트·노트 모두 고칠 수 있음), PDF(16:9, WeasyPrint). 미래샘 로고만.
+- 로고: 설정에서 학원 로고를 올리면 모든 슬라이드 오른쪽 위에 그 로고(PowerPoint는 SVG·WEBP도 PNG로 바꿔 넣음), 없으면 미래샘 로고(`static/logo-word.png`). 학부모 화면·월간 리포트·QR 사진 올리기 화면도 같은 규칙.
 - 모양은 홈페이지와 같은 톤: 제목 주아·본문 나눔스퀘어라운드, 점무늬 하늘색 바탕, 파스텔 카드, 물방울 캐릭터(표지·장 나눔·마무리). PowerPoint 배경은 사이트 슬라이드에서 뜬 그림 `static/briefing/bg-*.jpg`(모양을 바꾸면 `python3 tools/briefing_bg.py`), 글·카드·차트는 도형. PowerPoint 글꼴은 '글꼴 받기'(`/briefing/fonts.zip`, 주아 TTF + 나눔스퀘어라운드 woff2→TTF)로 한 번 설치.
 
 ### 숙제 (AI 없이 동작)

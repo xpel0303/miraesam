@@ -17,7 +17,7 @@ body { background:#F5F8FD; }
 </head>
 <body>
 <div class="w">
-  <img src="/static/icons/icon-180.png" alt="" style="width:56px;border-radius:14px">
+  <img src="{{ academy.logo if academy and academy.logo else '/static/logo-word.png' }}" alt="" style="height:56px;max-width:200px;object-fit:contain">
   <h1 style="font-size:1.3rem;margin:10px 0 4px">수업 사진 올리기</h1>
   <p class="small muted" style="margin:0 0 20px">{{ academy.name if academy else APP_NAME }} · 올린 사진은 컴퓨터 화면의 '학생 정하기 전'에 모여요.</p>
   <label class="big">📷 사진 찍기<input type="file" accept="image/*" capture="environment" hidden data-up></label>
