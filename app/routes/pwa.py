@@ -22,7 +22,7 @@ self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = {title: '미래샘', body: e.data ? e.data.text() : ''}; }
   e.waitUntil(self.registration.showNotification(d.title || '미래샘', {
-    body: d.body || '', tag: d.tag || undefined, renotify: !!d.tag, data: {url: d.url || '/'},
+    body: d.body || '', tag: (d.url || 'mirae') + '#' + Date.now(), data: {url: d.url || '/'},
     icon: '/static/icons/icon-192.png', badge: '/static/icons/icon-192.png', lang: 'ko'
   }));
 });

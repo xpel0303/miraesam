@@ -12,8 +12,8 @@ self.addEventListener("push", (event) => {
     icon: "/static/icons/icon-192.png",
     badge: "/static/icons/icon-192.png",
     data: { url: data.url || "/p/" },
-    tag: data.url || "mirae",
-    renotify: true,
+    // 같은 날 다시 보내도 새 알림으로 뜨게, 알림마다 다른 표시(tag)를 씀
+    tag: (data.url || "mirae") + "#" + Date.now(),
   }));
 });
 
