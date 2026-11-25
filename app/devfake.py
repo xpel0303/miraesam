@@ -159,6 +159,23 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
                 "strategy": ["[가짜] 본문 문장 변형 연습"]}
     if system and "시험지 이미지를 글자 그대로" in system:
         return _exam(prompt)
+    if system and "설명회 슬라이드" in system:
+        keys = re.findall(r"^- ([a-z]+(?::[a-z0-9]+)?): ", prompt, re.M)
+        ch = [k for k in keys if k.startswith(("types", "mcsa", "trend:sa", "trend:words"))]
+        st = [k for k in keys if k.startswith("stats")]
+        tb = [k for k in keys if k.startswith(("grammar", "trend:types", "books"))]
+        n = lambda t: f"[가짜] {t} 발표 메모입니다. 천천히 설명해 주세요."  # noqa: E731
+        sl = [{"layout": "cover", "title": "[가짜] 2026 겨울 설명회", "sub": "우리 아이 영어, 이렇게 준비해요", "foot": "12월 7일(토) 오후 2시", "notes": n("인사")},
+              {"layout": "section", "title": "1. 시험 들여다보기", "sub": "숫자로 보는 출제 경향", "notes": n("장")}]
+        sl += [{"layout": "stats", "title": "[가짜] 한눈에 보기", "data": k, "notes": n("숫자")} for k in st[:1]]
+        sl += [{"layout": "chart", "title": "[가짜] 그래프", "data": k, "bullets": ["[가짜] 서술형이 점점 늘어요", "[가짜] 어법 배점이 커요"], "notes": n("그래프")} for k in ch[:3]]
+        sl += [{"layout": "table", "title": "[가짜] 표", "data": k, "notes": n("표")} for k in tb[:1]]
+        sl += [{"layout": "section", "title": "2. 우리 학원은", "sub": "이렇게 준비합니다", "notes": n("장")},
+               {"layout": "bullets", "title": "[가짜] 수업 방식", "bullets": ["매일 수업 기록을 학부모 앱으로", "학교별 기출 분석으로 맞춤 대비", "단어 숙제 앱으로 매일 복습", "월간 리포트로 한 달 정리"], "notes": n("방식")},
+               {"layout": "two", "title": "[가짜] 비교", "left": {"head": "지금까지", "bullets": ["감으로 공부", "결과만 확인"]}, "right": {"head": "앞으로", "bullets": ["데이터로 공부", "과정을 매일 확인"]}, "notes": n("비교")},
+               {"layout": "timeline", "title": "[가짜] 겨울 일정", "steps": [{"when": "12월 1주", "what": "진단 테스트"}, {"when": "12월 3주", "what": "문법 집중"}, {"when": "1월", "what": "독해·서술형"}, {"when": "2월", "what": "새 학기 예습"}], "notes": n("일정")},
+               {"layout": "closing", "title": "[가짜] 함께 준비해요", "sub": "상담은 언제든지 환영합니다", "foot": "상담 010-0000-0000", "notes": n("마무리")}]
+        return {"title": "[가짜] 2026 겨울 설명회", "slides": sl}
     if system and "교재 목차 사진" in system:
         return {"title": "[가짜] 수능특강 영어", "units": [f"{i}강 [가짜] 단원 {i}" for i in range(1, 13)] + ["Mini Test 1"]}
     if system and "월간 학습 리포트" in system:

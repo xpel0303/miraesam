@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}설명회 자료 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>설명회 자료</h1></div>
+<p class="lead">사이트에 쌓인 기출 분석·경향분석·학원 현황과 원장님 메모로 AI가 설명회 슬라이드를 짜요. 고친 뒤 <b>사이트에서 바로 발표</b>하거나 <b>PowerPoint·PDF</b>로 받으세요. 그래프 숫자는 AI가 쓰지 않고 실제 분석 데이터에서 그대로 넣어요.</p>
+
+{% if items %}
+<div class="table-wrap" style="margin-bottom:20px"><table class="list">
+  <thead><tr><th>설명회</th><th>종류</th><th>슬라이드</th><th>만든 때</th><th></th></tr></thead>
+  <tbody>{% for b in items %}
+    <tr><td class="wrap"><a href="/briefing/{{ b.id }}"><b>{{ b.title }}</b></a>{% if b.status == 'making' %} <span class="tag">만드는 중</span>{% elif b.status == 'failed' %} <span class="tag">실패</span>{% endif %}</td>
+      <td class="small">{{ kinds[b.kind][0] }}</td><td>{{ b.slides|length }}장</td><td class="small muted">{{ b.created_at|kst }}</td>
+      <td class="actions">{% if b.slides %}<a class="btn ghost small" href="/briefing/{{ b.id }}/show" target="_blank" rel="noopener">▶ 발표</a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% endif %}
+
+<section class="panel">
+  <h2>새 설명회 자료 만들기</h2>
+  {% if not has_key %}<p class="flash error">설정 화면에서 Gemini 키를 먼저 넣어 주세요. AI가 슬라이드를 구성해요.</p>{% endif %}
+  <form method="post" action="/briefing" id="new-form">
+    <div class="kind-cards" role="radiogroup" aria-label="설명회 종류">
+      {% for k, v in kinds.items() %}<label class="kind-card"><input type="radio" name="kind" value="{{ k }}" {% if k == kind %}checked{% endif %}><b>{{ v[0] }}</b><span>{{ v[1] }}</span></label>{% endfor %}
+    </div>
+
+    <div data-for="exam">
+      <div class="row">
+        <div class="field"><label for="school">학교</label>
+          <select id="school" name="school_id"><option value="">고르기</option>{% for s in schools %}<option value="{{ s.id }}">{{ s.name }}{% if s.id in trend_sids %} · 경향분석 있음{% endif %}</option>{% endfor %}</select>
+          {% if not schools %}<span class="hint">아직 기출 분석이 없어요. <a href="/exam">기출 분석</a>을 먼저 하면 그래프가 들어가요.</span>{% endif %}</div>
+        <div class="field"><label for="grade">학년</label><select id="grade" name="grade"><option value="">전체</option>{% for g in grades %}<option>{{ g }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="exam_name">대비할 시험</label><input type="text" id="exam_name" name="exam_name" placeholder="예: 2학기 기말고사"></div>
+      </div>
+      <div class="field"><label>넣을 기출 <span class="hint" style="display:inline">고르지 않으면 그 학교 기출을 모두 (최근 6회)</span></label>
+        <div id="papers">{% for p in papers %}<label class="paper" data-school="{{ p.school_id or '' }}" data-grade="{{ p.grade }}"><input type="checkbox" name="paper_ids" value="{{ p.id }}"> {{ p.title }} <span class="muted small">{{ p.grade }}{% if p.year %} · {{ p.year }}{% endif %}{% if p.semester %} {{ p.semester }}학기{% endif %}{% if p.term %} {{ p.term }}차{% endif %}</span></label>{% endfor %}</div>
+        <p class="small muted" id="no-papers" hidden>이 학교는 분석한 기출이 없어요. 경향분석 메모와 원장님 메모로 만들어요.</p>
+      </div>
+    </div>
+
+    <div data-for="season" hidden>
+      <div class="row">
+        <div class="field"><label for="season">설명회 주제</label><input type="text" id="season" name="season" placeholder="예: 2027 겨울방학 특강, 새 학기 반 편성"></div>
+        <div class="field"><label for="period">기간</label><input type="text" id="period" name="period" placeholder="예: 12/22 ~ 2/20 (9주)"></div>
+        <div class="field"><label for="target">대상</label><input type="text" id="target" name="target" placeholder="예: 예비 고1 · 고2"></div>
+      </div>
+      {% if schools %}<div class="field"><label>같이 넣을 학교 출제 경향 <span class="hint" style="display:inline">선택</span></label>
+        <div>{% for s in schools if s.id in trend_sids %}<label class="paper"><input type="checkbox" name="school_ids" value="{{ s.id }}"> {{ s.name }}</label>{% else %}<span class="small muted">경향분석이 있는 학교가 없어요.</span>{% endfor %}</div></div>{% endif %}
+    </div>
+
+    <div class="field"><label for="notes">원장님 메모 <span class="hint" style="display:inline" id="notes-hint">꼭 넣을 내용 — AI가 그대로 반영해요</span></label>
+      <textarea id="notes" name="notes" rows="6"></textarea></div>
+    <div class="row">
+      <div class="field"><label for="title">제목 <span class="hint" style="display:inline">비우면 AI가 지어요</span></label><input type="text" id="title" name="title" maxlength="120"></div>
+      <div class="field"><label for="audience">청중</label><select id="audience" name="audience"><option>학부모님</option><option>학부모님과 학생</option><option>학생</option></select></div>
+      <div class="field"><label for="length">분량</label><select id="length" name="length">{% for k, v in lengths.items() %}<option value="{{ k }}" {% if k == 'normal' %}selected{% endif %}>{{ v[0] }} ({{ v[1] }}장 안팎)</option>{% endfor %}</select></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="when">날짜·장소 <span class="hint" style="display:inline">표지에 들어가요</span></label><input type="text" id="when" name="when" placeholder="예: 12월 7일(토) 오후 2시 · 학원 3층"></div>
+      <div class="field"><label for="contact">상담 연락처 <span class="hint" style="display:inline">마지막 장</span></label><input type="text" id="contact" name="contact" placeholder="예: 상담 010-0000-0000"></div>
+    </div>
+    <button class="btn" type="submit" {% if not has_key %}disabled{% endif %}>✨ AI로 슬라이드 만들기</button>
+    <span class="small muted">30초~1분 걸려요.</span>
+  </form>
+</section>
+<style>
+.kind-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-bottom:18px; }
+.kind-card { margin:0; cursor:pointer; border:2px solid var(--line); border-radius:16px; padding:14px 16px; background:#fff; font-weight:400; }
+.kind-card input { position:absolute; opacity:0; pointer-events:none; }
+.kind-card b { display:block; font-size:1rem; margin-bottom:4px; }
+.kind-card span { font-size:.82rem; color:var(--ink-2); }
+.kind-card:has(input:checked) { border-color:var(--brand); background:var(--brand-soft); }
+.kind-card:has(input:focus-visible) { outline:2px solid var(--brand); }
+.paper { display:inline-flex; align-items:center; gap:6px; font-weight:400; margin:3px 12px 3px 0; }
+</style>
+<script>
+(() => {
+  const HINT = {
+    exam: "예: 이번 기말은 3과~5과 + 모의고사 2회. 서술형 영작 대비로 매주 영작 클리닉. 시험 3주 전부터 주말 직전 보강. 지난 시험 우리 학원 평균 88점.",
+    academy: "예: 원장 경력 15년, 소수 정예 8명 반. 중등은 문법·어휘 기초, 고등은 내신+수능 병행. 매달 레벨테스트. 강점: 학교별 기출 분석, 매일 학부모 알림.",
+    season: "예: 겨울 특강 3개 반 — 예비고1 문법 완성(주3회), 고2 수능 독해(주2회), 서술형 클리닉(토). 1월 둘째 주 레벨테스트. 신청은 12/15까지.",
+  };
+  const form = document.getElementById("new-form"), notes = document.getElementById("notes");
+  function sync() {
+    const k = form.querySelector("input[name=kind]:checked").value;
+    form.querySelectorAll("[data-for]").forEach((d) => { d.hidden = d.dataset.for !== k; d.querySelectorAll("input,select").forEach((x) => (x.disabled = d.hidden)); });
+    notes.placeholder = HINT[k];
+  }
+  form.querySelectorAll("input[name=kind]").forEach((r) => r.addEventListener("change", sync));
+  const school = document.getElementById("school"), grade = document.getElementById("grade");
+  function papers() {
+    let n = 0;
+    document.querySelectorAll("#papers .paper").forEach((p) => {
+      const ok = (!school.value || p.dataset.school === school.value) && (!grade.value || p.dataset.grade === grade.value);
+      p.hidden = !ok; if (!ok) p.querySelector("input").checked = false; else n++;
+    });
+    document.getElementById("no-papers").hidden = !school.value || n > 0;
+  }
+  school.addEventListener("change", papers); grade.addEventListener("change", papers);
+  sync(); papers();
+})();
+</script>
+{% endblock %}

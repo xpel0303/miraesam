@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>{{ b.title }}</title>
+{% import "briefing/_slides.html" as sl with context %}
+{{ sl.css(font_dir) }}
+<style>
+@page { size: 1280px 720px; margin: 0; }
+html, body { margin: 0; padding: 0; }
+.page { width: 1280px; height: 720px; page-break-after: always; overflow: hidden; }
+.page:last-child { page-break-after: auto; }
+</style>
+</head>
+<body>
+{% for s in slides %}<div class="page">{{ sl.slide(s, loop.index, slides|length, academy, geom) }}</div>{% endfor %}
+</body>
+</html>

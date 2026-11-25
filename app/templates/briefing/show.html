@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ b.title }} · 발표</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+{% import "briefing/_slides.html" as sl with context %}
+{{ sl.css(font_dir) }}
+<style>
+html, body { margin:0; height:100%; background:#0B1020; overflow:hidden; font-family:"BNanum", sans-serif; }
+#stage { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+.frame { position:absolute; left:50%; top:50%; width:1280px; height:720px; transform-origin:0 0; display:none; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.frame.on { display:block; }
+#ui { position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; gap:8px; padding:12px; opacity:0; transition:opacity .2s; }
+body:hover #ui, #ui:focus-within { opacity:1; }
+#ui button, #ui a { font:inherit; font-size:14px; padding:8px 14px; border-radius:999px; border:0; background:rgba(255,255,255,.14); color:#fff; cursor:pointer; text-decoration:none; }
+#ui span { color:#cbd3e8; font-size:14px; padding:8px 4px; }
+#notes { position:fixed; left:0; right:0; bottom:56px; max-height:30vh; overflow:auto; background:rgba(15,20,40,.92); color:#fff; padding:16px 24px; font-size:18px; line-height:1.6; display:none; }
+#notes.on { display:block; }
+#notes b { color:#9EC1FF; }
+@media (prefers-reduced-motion: no-preference) { .frame.on { animation:fade .25s ease; } @keyframes fade { from { opacity:.3 } to { opacity:1 } } }
+</style>
+</head>
+<body>
+<div id="stage">
+  {% for s in b.slides %}<div class="frame" data-notes="{{ s.notes }}">{{ sl.slide(s, loop.index, b.slides|length, academy, geom) }}</div>{% endfor %}
+</div>
+<div id="notes" aria-live="polite"></div>
+<div id="ui">
+  <button type="button" id="prev" aria-label="이전">◀</button><span id="pos"></span><button type="button" id="next" aria-label="다음">▶</button>
+  <button type="button" id="fs">전체 화면 (F)</button><button type="button" id="nt">발표 메모 (N)</button>
+  <a href="/briefing/{{ b.id }}">나가기</a>
+</div>
+<script>
+(() => {
+  const frames = [...document.querySelectorAll(".frame")], notes = document.getElementById("notes"), pos = document.getElementById("pos");
+  let i = Math.min(Math.max(0, {{ start|int }}), frames.length - 1);
+  function fit() {
+    const s = Math.min(innerWidth / 1280, innerHeight / 720) * 0.98;
+    frames.forEach((f) => (f.style.transform = `scale(${s}) translate(-50%, -50%)`));
+  }
+  function go(k) {
+    i = Math.min(Math.max(0, k), frames.length - 1);
+    frames.forEach((f, j) => f.classList.toggle("on", j === i));
+    pos.textContent = `${i + 1} / ${frames.length}`;
+    const n = frames[i].dataset.notes; notes.innerHTML = n ? "<b>발표 메모</b><br>" + n.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])) : "<b>발표 메모 없음</b>";
+    history.replaceState(null, "", `?i=${i}`);
+  }
+  const fs = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen().catch(() => {}));
+  addEventListener("resize", fit);
+  addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); go(i + 1); }
+    else if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); go(i - 1); }
+    else if (e.key === "Home") go(0); else if (e.key === "End") go(frames.length - 1);
+    else if (e.key.toLowerCase() === "f") fs(); else if (e.key.toLowerCase() === "n") notes.classList.toggle("on");
+  });
+  document.getElementById("stage").addEventListener("click", (e) => go(i + (e.clientX > innerWidth / 3 ? 1 : -1)));
+  let tx = null;
+  addEventListener("touchstart", (e) => (tx = e.touches[0].clientX), { passive: true });
+  addEventListener("touchend", (e) => { if (tx === null) return; const d = e.changedTouches[0].clientX - tx; if (Math.abs(d) > 40) go(i + (d < 0 ? 1 : -1)); tx = null; });
+  document.getElementById("prev").onclick = (e) => { e.stopPropagation(); go(i - 1); };
+  document.getElementById("next").onclick = (e) => { e.stopPropagation(); go(i + 1); };
+  document.getElementById("fs").onclick = fs;
+  document.getElementById("nt").onclick = () => notes.classList.toggle("on");
+  fit(); go(i);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ b.title }} · 설명회 자료 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% import "briefing/_slides.html" as sl with context %}
+{{ sl.css(font_dir) }}
+<p class="small"><a href="/briefing">← 설명회 자료</a> · {{ kind_name }}</p>
+<form class="actions" method="post" action="/briefing/{{ b.id }}/title" style="margin-bottom:10px">
+  <input type="text" name="title" value="{{ b.title }}" aria-label="설명회 제목" style="font-size:1.3rem;font-weight:800;max-width:560px">
+  <button class="btn ghost small" type="submit">제목 저장</button>
+</form>
+
+{% if busy %}
+<div class="panel"><p style="margin:0 0 8px"><b>AI가 슬라이드를 만들고 있어요.</b> 30초~1분 걸려요. 다 되면 화면이 저절로 바뀌어요.</p>
+  <div class="job" data-job-id="{{ job.id }}" data-reload></div></div>
+<script>document.addEventListener("job:done", (e) => { if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600); });
+  document.addEventListener("DOMContentLoaded", () => { const j = document.querySelector(".job[data-reload]"); if (j) new MutationObserver(() => { if (j.classList.contains("failed")) setTimeout(() => location.reload(), 1500); }).observe(j, { attributes: true }); });</script>
+{% elif b.status == 'failed' and not b.slides %}
+<div class="panel"><p class="flash error">만들지 못했어요: {{ b.error or '' }}</p>
+  <form method="post" action="/briefing/{{ b.id }}/remake"><button class="btn" type="submit">다시 만들기</button></form></div>
+{% endif %}
+
+{% if b.slides and not busy %}
+<div class="actions brief-bar">
+  <a class="btn" href="/briefing/{{ b.id }}/show" target="_blank" rel="noopener">▶ 발표하기</a>
+  <a class="btn ghost" href="/briefing/{{ b.id }}/pptx">PowerPoint 받기</a>
+  <a class="btn ghost" href="/briefing/{{ b.id }}/pdf" id="pdf-btn">PDF 받기</a>
+  <form method="post" action="/briefing/{{ b.id }}/remake" onsubmit="return confirm('AI로 처음부터 다시 만들까요? 지금 고친 내용은 사라져요.')"><button class="btn ghost small" type="submit">AI로 다시 만들기</button></form>
+  <form method="post" action="/briefing/{{ b.id }}/delete" onsubmit="return confirm('이 설명회 자료를 지울까요?')"><button class="btn danger small" type="submit">지우기</button></form>
+</div>
+<p class="small muted">발표 화면: → 다음, ← 이전, F 전체 화면, N 발표 메모. PowerPoint는 글·그래프를 그대로 고칠 수 있고, 발표 메모도 들어 있어요.</p>
+
+<div class="brief-list">
+{% for s in b.slides %}{% set i = loop.index0 %}
+<section class="brief-item" id="s{{ i }}">
+  <div class="thumb-wrap"><a class="thumb" href="/briefing/{{ b.id }}/show?i={{ i }}" target="_blank" rel="noopener" aria-label="{{ i + 1 }}번 슬라이드 발표 화면으로">{{ sl.slide(s, loop.index, b.slides|length, academy, geom) }}</a></div>
+  <div class="brief-side">
+    <div class="actions" style="margin-bottom:6px">
+      <b>{{ i + 1 }}. {{ layouts.get(s.layout, s.layout) }}</b>{% if s.data %} <span class="tag" title="실제 분석 데이터에서 숫자를 가져와요">📊 실제 데이터</span>{% endif %}
+      <span style="flex:1"></span>
+      {% for a, t in (("up", "↑"), ("down", "↓"), ("dup", "복사")) %}<form method="post" action="/briefing/{{ b.id }}/slide/{{ i }}/{{ a }}"><button class="btn ghost small" type="submit" title="{{ {'up': '위로', 'down': '아래로', 'dup': '복사'}[a] }}">{{ t }}</button></form>{% endfor %}
+      <form method="post" action="/briefing/{{ b.id }}/slide/{{ i }}/delete" onsubmit="return confirm('{{ i + 1 }}번 슬라이드를 지울까요?')"><button class="btn danger small" type="submit">지우기</button></form>
+    </div>
+    {% if s.notes %}<p class="small muted notes">🗣️ {{ s.notes }}</p>{% endif %}
+    <details class="edit"><summary>고치기</summary>
+      <form method="post" action="/briefing/{{ b.id }}/slide/{{ i }}" class="slide-form">
+        <div class="row">
+          <div class="field"><label>모양</label><select name="layout">{% for k, v in layouts.items() %}<option value="{{ k }}" {% if k == s.layout %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+          <div class="field" style="grid-column:span 2"><label>제목</label><input type="text" name="title" value="{{ s.title }}" maxlength="80"></div>
+        </div>
+        <div class="field"><label>부제 <span class="hint" style="display:inline">선택</span></label><input type="text" name="sub" value="{{ s.sub }}" maxlength="140"></div>
+        {% if s.layout in ('cover', 'closing') %}<div class="field"><label>아래 한 줄 (날짜·장소, 연락처)</label><input type="text" name="foot" value="{{ s.foot or '' }}" maxlength="120"></div>{% endif %}
+        {% if s.layout in ('bullets', 'chart') %}<div class="field"><label>{{ '목록' if s.layout == 'bullets' else '그래프 옆 해설' }} <span class="hint" style="display:inline">한 줄에 하나</span></label><textarea name="bullets" rows="{{ 5 if s.layout == 'bullets' else 3 }}">{{ s.bullets|join('\n') }}</textarea></div>{% endif %}
+        {% if s.layout == 'stats' %}<div class="field"><label>숫자 칸 <span class="hint" style="display:inline">한 줄에 '숫자 | 이름 | 설명'</span></label><textarea name="items" rows="4">{% for x in s['items'] %}{{ x.value }} | {{ x.label }}{% if x.note %} | {{ x.note }}{% endif %}
+{% endfor %}</textarea></div>{% endif %}
+        {% if s.layout == 'chart' %}
+          <div class="row"><div class="field"><label>그래프</label><select name="chart_type"><option value="bar" {% if s.chart.type == 'bar' %}selected{% endif %}>막대</option><option value="donut" {% if s.chart.type == 'donut' %}selected{% endif %}>도넛</option></select></div>
+            <div class="field"><label>단위</label><input type="text" name="chart_unit" value="{{ s.chart.unit }}" maxlength="6"></div></div>
+          <div class="field"><label>값 <span class="hint" style="display:inline">한 줄에 '이름 | 숫자'{% if s.data %} · 고치면 실제 데이터 연결이 풀려요{% endif %}</span></label><textarea name="chart" rows="5">{% for x in s.chart['items'] %}{{ x.label }} | {{ fnum(x.value) }}
+{% endfor %}</textarea></div>{% endif %}
+        {% if s.layout == 'two' %}<div class="row">
+          <div class="field"><label>왼쪽 제목</label><input type="text" name="left_head" value="{{ s.left.head }}"><textarea name="left" rows="4" style="margin-top:6px">{{ s.left.bullets|join('\n') }}</textarea></div>
+          <div class="field"><label>오른쪽 제목</label><input type="text" name="right_head" value="{{ s.right.head }}"><textarea name="right" rows="4" style="margin-top:6px">{{ s.right.bullets|join('\n') }}</textarea></div></div>{% endif %}
+        {% if s.layout == 'table' %}
+          <div class="field"><label>머리 칸 <span class="hint" style="display:inline">'칸 | 칸 | 칸'</span></label><input type="text" name="head" value="{{ s.head|join(' | ') }}"></div>
+          <div class="field"><label>줄 <span class="hint" style="display:inline">한 줄에 한 행, 칸은 | 로{% if s.data %} · 고치면 실제 데이터 연결이 풀려요{% endif %}</span></label><textarea name="rows" rows="5">{% for r in s.rows %}{{ r|join(' | ') }}
+{% endfor %}</textarea></div>{% endif %}
+        {% if s.layout == 'timeline' %}<div class="field"><label>일정 <span class="hint" style="display:inline">한 줄에 '언제 | 무엇'</span></label><textarea name="steps" rows="5">{% for x in s.steps %}{{ x.when }} | {{ x.what }}
+{% endfor %}</textarea></div>{% endif %}
+        <div class="field"><label>발표 메모 <span class="hint" style="display:inline">발표 화면에서 N, PowerPoint 슬라이드 노트</span></label><textarea name="notes" rows="3">{{ s.notes }}</textarea></div>
+        <button class="btn small" type="submit">저장</button>
+        <span class="small muted">모양을 바꾸면 저장 뒤에 그 모양의 칸이 나와요.</span>
+      </form>
+    </details>
+    <form class="actions" method="post" action="/briefing/{{ b.id }}/slide/{{ i }}/add" style="margin-top:8px">
+      <select name="layout" aria-label="추가할 슬라이드 모양" style="width:auto">{% for k, v in layouts.items() %}<option value="{{ k }}" {% if k == 'bullets' %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+      <button class="btn ghost small" type="submit">＋ 아래에 새 슬라이드</button>
+    </form>
+  </div>
+</section>
+{% endfor %}
+</div>
+{% endif %}
+<style>
+.brief-bar { position:sticky; top:0; z-index:5; background:color-mix(in srgb, var(--bg) 92%, transparent); padding:10px 0; }
+.brief-list { display:flex; flex-direction:column; gap:16px; }
+.brief-item { display:grid; grid-template-columns:450px minmax(0,1fr); gap:20px; background:#fff; border:2px solid var(--line); border-radius:20px; padding:16px; }
+.thumb-wrap { width:448px; height:252px; overflow:hidden; border-radius:12px; border:1px solid var(--line); }
+.thumb { display:block; width:1280px; height:720px; transform:scale(.35); transform-origin:0 0; }
+.notes { margin:0 0 6px; line-height:1.5; }
+.slide-form { padding-top:10px; }
+@media (max-width: 900px) {
+  .brief-item { grid-template-columns:1fr; }
+  .thumb-wrap { width:100%; height:auto; aspect-ratio:16/9; }
+  .thumb { transform:scale(var(--k, .25)); }
+}
+</style>
+<script>
+(() => {
+  // 좁은 화면: 미리보기 크기를 칸에 맞춤
+  const fit = () => document.querySelectorAll(".thumb-wrap").forEach((w) => w.style.setProperty("--k", (w.clientWidth / 1280).toFixed(4)));
+  addEventListener("resize", fit); fit();
+  const pdf = document.getElementById("pdf-btn");
+  if (pdf) pdf.addEventListener("click", () => { pdf.textContent = "PDF 만드는 중… (10~20초)"; setTimeout(() => (pdf.textContent = "PDF 받기"), 15000); });
+})();
+</script>
+{% endblock %}

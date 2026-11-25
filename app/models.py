@@ -973,3 +973,24 @@ class CareReport(Base):
 
     student: Mapped[Student] = relationship()
     class_group: Mapped[ClassGroup | None] = relationship()
+
+
+class Briefing(Base):
+    """설명회 자료 한 벌. kind: exam(학교별 시험대비) / academy(학원 입학·신규) / season(학기·시즌).
+    inputs: 만들 때 고른 것·메모, slides: 슬라이드 목록 (briefing/spec.py), data: 그래프·표 데이터 (키 → 내용)."""
+
+    __tablename__ = "briefings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    kind: Mapped[str] = mapped_column(String(10), default="exam")
+    title: Mapped[str] = mapped_column(String(120), default="설명회")
+    inputs: Mapped[dict] = mapped_column(JSON, default=dict)
+    slides: Mapped[list] = mapped_column(JSON, default=list)
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(10), default="making")  # making | done | failed
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
