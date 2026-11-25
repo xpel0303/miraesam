@@ -479,6 +479,7 @@ class HomeworkResult(Base):
     done: Mapped[bool] = mapped_column(Boolean, default=False)  # 통과(또는 체크) 여부
     late: Mapped[bool] = mapped_column(Boolean, default=False)
     detail: Mapped[list] = mapped_column(JSON, default=list)  # 마지막 시도의 틀린 문항
+    stages: Mapped[dict] = mapped_column(JSON, default=dict)  # 단어 숙제: {learn: true, recall: true, spell: true, game: 최고 기록(초)}
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
@@ -746,6 +747,29 @@ class GrammarBook(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
 
+class AppSecret(Base):
+    """서버가 스스로 만들어 두는 값 (푸시 알림용 VAPID 키 등). 환경변수 대신 DB에."""
+
+    __tablename__ = "app_secrets"
+
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)
+
+
+class PushSub(Base):
+    """푸시 알림 받는 기기 하나 (학생 폰의 홈 화면 앱/브라우저)."""
+
+    __tablename__ = "push_subs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    student_id: Mapped[int | None] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=True, index=True)
+    endpoint: Mapped[str] = mapped_column(Text, unique=True)
+    p256dh: Mapped[str] = mapped_column(String(200))
+    auth: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
 # ── 학습관리: 매일 기록 · 공지 · 학부모 앱 알림 ─────────────────────────────
 
 
@@ -807,10 +831,11 @@ class CareNotice(Base):
     class_group: Mapped[ClassGroup | None] = relationship()
 
 
-class PushSub(Base):
-    """학부모 휴대폰의 알림 구독 (웹 푸시). 학생 한 명에 여러 대(엄마·아빠 폰) 가능."""
+class ParentPushSub(Base):
+    """학부모 휴대폰의 알림 구독 (웹 푸시, /p/ 학부모 앱). 학생 한 명에 여러 대(엄마·아빠 폰) 가능.
+    학생 숙제 알림용 push_subs 와 따로 둠 (숙제 알림이 학부모에게, 수업 기록 알림이 학생에게 가지 않게)."""
 
-    __tablename__ = "push_subs"
+    __tablename__ = "parent_push_subs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
@@ -841,12 +866,3 @@ class PushLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
     student: Mapped[Student | None] = relationship()
-
-
-class AppKV(Base):
-    """서버가 스스로 만들어 두는 값 (웹 푸시 VAPID 키 등)."""
-
-    __tablename__ = "app_kv"
-
-    key: Mapped[str] = mapped_column(String(40), primary_key=True)
-    value: Mapped[str] = mapped_column(Text)

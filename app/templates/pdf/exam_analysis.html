@@ -1,71 +1,168 @@
 {% extends "pdf/_base.html" %}
-{# 기출 분석지: 1쪽 요약(구성·유형별·출제 특징) → 문항별 분석표 #}
-{% macro lab(q) %}{{ q.label }}{% endmacro %}
+{# 기출 분석지 (컬러): 1쪽 대시보드(숫자 타일·도넛·영역 벤다이어그램·지문 벤다이어그램·유형 막대·문항 지도·출제 특징) → 문항별 분석표 #}
 {% macro f(x) %}{{ "-" if x is none else ("%.2f"|format(x)).rstrip("0").rstrip(".") }}{% endmacro %}
+{% macro nums(xs, n=9) %}{% if xs %}{{ xs[:n]|join(", ") }}{% if xs|length > n %} 외 {{ xs|length - n }}{% endif %}{% else %}—{% endif %}{% endmacro %}
 {% block style %}
-  .sub { color: var(--ink-2); font-size: 9pt; margin-bottom: 8pt; }
-  .tiles { display: flex; border: 0.8pt solid var(--line); border-radius: 4pt; margin: 6pt 0 10pt; }
-  .tiles div { flex: 1; padding: 6pt 9pt; border-right: 0.6pt solid var(--line-2); }
-  .tiles div:last-child { border-right: 0; }
-  .tiles span { display: block; font-size: 7.6pt; color: var(--ink-2); }
-  .tiles b { font-size: 14pt; font-weight: 800; }
-  .tiles small { font-size: 7.6pt; font-weight: 400; color: var(--ink-3); }
-  table.ty { table-layout: fixed; width: 100%; }
-  table.ty td, table.ty th { padding: 3pt 5pt; font-size: 8.6pt; }
-  table.ty td.c, table.ty th.c { text-align: center; }
-  .bar { display: inline-block; height: 6pt; background: var(--brand); vertical-align: middle; border-radius: 1pt; }
-  ul.notes { margin: 4pt 0 0; padding-left: 13pt; font-size: 9pt; }
-  ul.notes li { margin: 2.5pt 0; }
+  @page { margin: 12mm 11mm 14mm 11mm; }
+  html { font-size: 8.8pt; color: #111827; }
+  .hero { background: linear-gradient(120deg, #1B2A5C 0%, #3B2F8F 55%, #7C3AED 100%); color: #fff; border-radius: 10pt; padding: 11pt 14pt; display: flex; align-items: center; gap: 12pt; }
+  .hero .tt { flex: 1; }
+  .hero h1 { color: #fff; font-size: 17pt; margin: 0; letter-spacing: -0.2pt; }
+  .hero .sub { color: #E0E7FF; font-size: 8.5pt; margin-top: 3pt; }
+  .hero .badge { background: #FACC15; color: #1B2A5C; border-radius: 50%; width: 58pt; height: 58pt; text-align: center; padding-top: 11pt; font-weight: 800; }
+  .hero .badge b { display: block; font-size: 19pt; line-height: 1; }
+  .hero .badge small { font-size: 7pt; }
+  .kpis { display: flex; gap: 6pt; margin: 9pt 0; }
+  .kpi { flex: 1; border-radius: 8pt; padding: 7pt 8pt; color: #fff; }
+  .kpi span { display: block; font-size: 7.4pt; opacity: .92; font-weight: 700; }
+  .kpi b { font-size: 17pt; font-weight: 800; line-height: 1.15; }
+  .kpi small { font-size: 7.4pt; opacity: .92; }
+  .k1 { background: #2563EB; } .k2 { background: #E11D48; } .k3 { background: #F59E0B; } .k4 { background: #059669; } .k5 { background: #7C3AED; }
+  .row { display: flex; gap: 8pt; margin-bottom: 8pt; }
+  .card { border: 1.2pt solid #E5E7EB; border-radius: 9pt; padding: 7pt 9pt; break-inside: avoid; }
+  .card h3 { margin: 0 0 4pt; font-size: 9.6pt; font-weight: 800; display: flex; align-items: center; gap: 5pt; }
+  .card h3 i { display: inline-block; width: 4pt; height: 11pt; border-radius: 2pt; font-style: normal; }
+  .legend span { display: inline-block; margin-right: 8pt; font-size: 7.6pt; font-weight: 700; }
+  .legend i { display: inline-block; width: 8pt; height: 8pt; border-radius: 2pt; margin-right: 3pt; vertical-align: -1pt; }
+  .bars .b { display: flex; align-items: center; gap: 5pt; margin: 2.2pt 0; font-size: 8pt; }
+  .bars .n { width: 58pt; font-weight: 700; text-align: right; }
+  .bars .t { flex: 1; background: #F3F4F6; border-radius: 3pt; height: 10pt; }
+  .bars .t i { display: block; height: 10pt; border-radius: 3pt; }
+  .bars .v { width: 92pt; font-size: 7.6pt; color: #374151; }
+  .tiles { display: flex; flex-wrap: wrap; gap: 3pt; }
+  .tile { width: 35pt; height: 30pt; border-radius: 5pt; color: #fff; text-align: center; padding-top: 3pt; position: relative; }
+  .tile b { display: block; font-size: 10pt; line-height: 1.1; }
+  .tile small { font-size: 6.4pt; }
+  .tile.top { box-shadow: 0 0 0 1.6pt #FACC15; }
+  .notes { margin: 0; padding: 0; list-style: none; }
+  .notes li { break-inside: avoid; margin: 3pt 0; padding: 4pt 7pt 4pt 22pt; border-radius: 6pt; position: relative; font-size: 8.4pt; }
+  .notes li::before { position: absolute; left: 7pt; top: 3.5pt; font-weight: 800; }
+  .notes li:nth-child(5n+1) { background: #EFF6FF; } .notes li:nth-child(5n+1)::before { content: "①"; color: #2563EB; }
+  .notes li:nth-child(5n+2) { background: #FFF1F2; } .notes li:nth-child(5n+2)::before { content: "②"; color: #E11D48; }
+  .notes li:nth-child(5n+3) { background: #FFFBEB; } .notes li:nth-child(5n+3)::before { content: "③"; color: #D97706; }
+  .notes li:nth-child(5n+4) { background: #ECFDF5; } .notes li:nth-child(5n+4)::before { content: "④"; color: #059669; }
+  .notes li:nth-child(5n+5) { background: #F5F3FF; } .notes li:nth-child(5n+5)::before { content: "⑤"; color: #7C3AED; }
+  .notes li:nth-child(n+6)::before { content: "●"; }
   .newpage { break-before: page; }
-  table.qs { font-size: 8pt; table-layout: fixed; width: 100%; }
-  table.qs td, table.qs th { padding: 3pt 4pt; }
+  h2.sec { font-size: 12pt; margin: 0 0 6pt; padding: 5pt 9pt; color: #fff; background: #1B2A5C; border-radius: 6pt; }
+  table.qs { font-size: 7.9pt; table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0 2pt; }
+  table.qs th { background: #1B2A5C; color: #fff; padding: 4pt; font-weight: 700; }
+  table.qs td { padding: 3.5pt 4pt; background: #F9FAFB; vertical-align: top; }
   table.qs td.c, table.qs th.c { text-align: center; }
-  table.qs tr.sa td { background: #f6f6f4; }
-  table.qs .stem { color: var(--ink-2); font-size: 7.6pt; }
-  table.qs .first { color: var(--ink-3); font-size: 7.2pt; font-style: italic; }
-  .src { font-size: 7.2pt; color: var(--ink-3); }
+  table.qs td.no { color: #fff; font-weight: 800; font-size: 9pt; text-align: center; border-radius: 4pt 0 0 4pt; }
+  table.qs .chip { display: inline-block; padding: 0.5pt 5pt; border-radius: 8pt; color: #fff; font-weight: 700; font-size: 7.3pt; }
+  table.qs .pt { font-weight: 800; font-size: 8.6pt; }
+  table.qs .stem { color: #374151; }
+  table.qs .first { color: #6B7280; font-size: 7.1pt; font-style: italic; margin-top: 1pt; }
+  table.qs .grp { font-size: 7pt; opacity: .9; }
+  .foot { font-size: 7.1pt; color: #6B7280; margin-top: 6pt; }
 {% endblock %}
 {% block body %}
-<h1>{{ p.title }} 기출 분석</h1>
-<div class="sub">{{ [p.school or None, p.date or None]|select|join(" · ") }} · {{ st.n }}문항 · 만점 {{ f(st.total) }}점 · 분석일 {{ today }}</div>
-
-<div class="tiles">
-  <div><span>객관식</span><b>{{ st.mc }}</b><small> 문항 · {{ f(st.mc_points) }}점</small></div>
-  <div><span>서술형</span><b>{{ st.sa }}</b><small> 문항 · {{ f(st.sa_points) }}점</small></div>
-  <div><span>서술형 비중</span><b>{{ st.sa_share }}%</b></div>
-  <div><span>지문</span><b>{{ st.passages }}</b><small> 개</small></div>
-  <div><span>평균 지문 길이</span><b>{{ st.avg_words }}</b><small> 단어</small></div>
+{% set C = v.colors %}
+<div class="hero">
+  <div class="tt">
+    <h1>{{ p.title }} 기출 분석</h1>
+    <div class="sub">{{ [p.school or None, p.date or None]|select|join(" · ") }}{{ " · " if p.school or p.date }}{{ st.n }}문항 · 분석일 {{ today }}</div>
+  </div>
+  <div class="badge"><b>{{ f(st.total) }}</b><small>만점</small></div>
 </div>
 
-<h2>출제 특징</h2>
-<ul class="notes">{% for n in notes %}<li>{{ n }}</li>{% endfor %}</ul>
+<div class="kpis">
+  <div class="kpi k1"><span>객관식</span><b>{{ st.mc }}</b><small> 문항 · {{ f(st.mc_points) }}점</small></div>
+  <div class="kpi k2"><span>서술형</span><b>{{ st.sa }}</b><small> 문항 · {{ f(st.sa_points) }}점</small></div>
+  <div class="kpi k3"><span>서술형 비중</span><b>{{ st.sa_share }}%</b><small> (배점)</small></div>
+  <div class="kpi k4"><span>지문</span><b>{{ st.passages }}</b><small> 개</small></div>
+  <div class="kpi k5"><span>평균 지문 길이</span><b>{{ st.avg_words }}</b><small> 단어 (최장 {{ st.max_words }})</small></div>
+</div>
 
-<h2>유형별 구성</h2>
-{% set peak = st.types|map(attribute="points")|max %}
-<table class="ty">
-  <colgroup><col style="width:20%"><col style="width:10%"><col style="width:9%"><col style="width:30%"><col style="width:31%"></colgroup>
-  <thead><tr><th>유형</th><th class="c">문항 수</th><th class="c">배점</th><th>비중</th><th>문항 번호</th></tr></thead>
-  <tbody>{% for t in st.types %}
-    <tr><td><b>{{ t.type }}</b></td><td class="c">{{ t.count }}</td><td class="c">{{ f(t.points) }}</td>
-      <td><span class="bar" style="width:{{ (100 * t.points / peak) if peak else 0 }}pt"></span> {{ t.share }}%</td>
-      <td>{{ t.labels|join(", ") }}</td></tr>
-  {% endfor %}</tbody>
-</table>
+<div class="row">
+  {# 영역 벤다이어그램 #}
+  <div class="card" style="flex:1.35">
+    <h3><i style="background:{{ C['독해'] }}"></i>영역별 출제 (벤다이어그램)</h3>
+    <svg viewBox="0 0 340 262" width="100%" height="178pt" xmlns="http://www.w3.org/2000/svg" font-family="Nanum Gothic">
+      <circle cx="86" cy="100" r="66" fill="{{ C['독해'] }}" fill-opacity="0.22" stroke="{{ C['독해'] }}" stroke-width="3"/>
+      <circle cx="254" cy="100" r="66" fill="{{ C['언어형식'] }}" fill-opacity="0.25" stroke="{{ C['언어형식'] }}" stroke-width="3"/>
+      <circle cx="170" cy="172" r="68" fill="{{ C['서술형'] }}" fill-opacity="0.2" stroke="{{ C['서술형'] }}" stroke-width="3"/>
+      <text x="92" y="20" text-anchor="middle" font-size="14" font-weight="800" fill="{{ C['독해'] }}">독해 {{ f(v.area_pts['독해']) }}점</text>
+      <text x="248" y="20" text-anchor="middle" font-size="14" font-weight="800" fill="#B45309">어법·어휘 {{ f(v.area_pts['언어형식']) }}점</text>
+      <text x="170" y="259" font-size="14" font-weight="800" fill="{{ C['서술형'] }}" text-anchor="middle">서술형 {{ f(v.area_pts['서술형']) }}점</text>
+      {% for key, x, y in [("독해", 72, 74), ("언어형식", 268, 74), ("독해+서술형", 124, 160), ("언어형식+서술형", 216, 160)] %}
+        <text x="{{ x }}" y="{{ y }}" text-anchor="middle" font-size="24" font-weight="800" fill="#111827">{{ v.cells[key]|length }}</text>
+        <text x="{{ x }}" y="{{ y + 14 }}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#374151">{{ f(v.cell_pts[key]) }}점</text>
+        {% set xs = v.cells[key]|map("replace", "서술형 ", "서")|map("replace", "서답형 ", "서")|list %}
+        {% for line in xs[:12]|batch(4) %}<text x="{{ x }}" y="{{ y + 27 + loop.index0 * 11 }}" text-anchor="middle" font-size="8.5" fill="#4B5563">{{ line|join(" · ") }}</text>{% endfor %}
+      {% endfor %}
+    </svg>
+    <div class="legend small">숫자 = 문항 수 · 겹친 칸 = 서술형으로 낸 독해/어법·어휘 문항</div>
+  </div>
+  <div style="flex:1; display:flex; flex-direction:column; gap:8pt">
+    {# 도넛 #}
+    <div class="card">
+      <h3><i style="background:#E11D48"></i>배점 비율</h3>
+      {% set r = 40 %}{% set circ = 2 * 3.14159 * r %}
+      <div style="display:flex; align-items:center; gap:8pt">
+        <svg viewBox="0 0 110 110" width="74pt" height="74pt">
+          <circle cx="55" cy="55" r="{{ r }}" fill="none" stroke="{{ C['서술형'] }}" stroke-width="20"/>
+          <circle cx="55" cy="55" r="{{ r }}" fill="none" stroke="{{ C['독해'] }}" stroke-width="20" stroke-dasharray="{{ circ * v.mc_share }} {{ circ }}" transform="rotate(-90 55 55)"/>
+          <text x="55" y="52" text-anchor="middle" font-size="15" font-weight="800" fill="#111827" font-family="Nanum Gothic">{{ (100 * v.mc_share)|round|int }}%</text>
+          <text x="55" y="67" text-anchor="middle" font-size="9" fill="#374151" font-family="Nanum Gothic">객관식</text>
+        </svg>
+        <div class="legend"><span><i style="background:{{ C['독해'] }}"></i>객관식 {{ f(st.mc_points) }}점</span><br><span><i style="background:{{ C['서술형'] }}"></i>서술형 {{ f(st.sa_points) }}점</span></div>
+      </div>
+    </div>
+    {# 지문 벤다이어그램 #}
+    <div class="card">
+      <h3><i style="background:#059669"></i>지문 활용</h3>
+      <svg viewBox="0 0 220 118" width="100%" height="80pt" xmlns="http://www.w3.org/2000/svg" font-family="Nanum Gothic">
+        <circle cx="80" cy="58" r="44" fill="{{ C['독해'] }}" fill-opacity="0.25" stroke="{{ C['독해'] }}" stroke-width="2.5"/>
+        <circle cx="140" cy="58" r="44" fill="{{ C['서술형'] }}" fill-opacity="0.22" stroke="{{ C['서술형'] }}" stroke-width="2.5"/>
+        <text x="60" y="65" text-anchor="middle" font-size="20" font-weight="800" fill="#111827">{{ v.pv.mc }}</text>
+        <text x="110" y="65" text-anchor="middle" font-size="20" font-weight="800" fill="#111827">{{ v.pv.both }}</text>
+        <text x="160" y="65" text-anchor="middle" font-size="20" font-weight="800" fill="#111827">{{ v.pv.sa }}</text>
+        <text x="60" y="116" text-anchor="middle" font-size="9" font-weight="700" fill="{{ C['독해'] }}">객관식만</text>
+        <text x="110" y="10" text-anchor="middle" font-size="9" font-weight="700" fill="#6D28D9">객관식+서술형 세트</text>
+        <text x="160" y="116" text-anchor="middle" font-size="9" font-weight="700" fill="{{ C['서술형'] }}">서술형만</text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3><i style="background:#F59E0B"></i>출제 특징</h3>
+  <ul class="notes">{% for n in notes %}<li>{{ n }}</li>{% endfor %}</ul>
+</div>
 
 <div class="newpage"></div>
-<h2 style="margin-top:0">문항별 분석</h2>
+<div class="row">
+  <div class="card" style="flex:1">
+    <h3><i style="background:#2563EB"></i>유형별 배점</h3>
+    <div class="legend" style="margin-bottom:2pt"><span><i style="background:{{ C['독해'] }}"></i>독해</span><span><i style="background:{{ C['언어형식'] }}"></i>어법·어휘</span><span><i style="background:{{ C['서술형'] }}"></i>서술형</span></div>
+    <div class="bars">{% for b in v.bars[:14] %}
+      <div class="b"><span class="n">{{ b.type }}</span><span class="t"><i style="width:{{ b.w }}%;background:{{ b.color }}"></i></span><span class="v"><b>{{ f(b.points) }}점</b> · {{ b.count }}문항 · {{ b.share }}%</span></div>
+    {% endfor %}</div>
+  </div>
+  <div class="card" style="flex:1">
+    <h3><i style="background:#7C3AED"></i>문항 지도 <span class="small" style="font-weight:400;color:#6B7280">(진할수록 배점 높음 · 노란 테두리 = 최고 배점)</span></h3>
+    <div class="tiles">{% for t in v.tiles %}
+      <div class="tile {{ 'top' if t.top }}" style="background:{{ t.color }};opacity:{{ t.op }}"><b>{{ t.label }}</b><small>{{ t.type|replace("서술형", "서")|truncate(6, True, "") }}{% if t.points %} {{ f(t.points) }}{% endif %}</small></div>
+    {% endfor %}</div>
+  </div>
+</div>
+
+<h2 class="sec" style="margin-top:4pt">문항별 분석</h2>
 <table class="qs">
-  <colgroup><col style="width:9%"><col style="width:12%"><col style="width:6%"><col style="width:45%"><col style="width:28%"></colgroup>
+  <colgroup><col style="width:8%"><col style="width:13%"><col style="width:7%"><col style="width:44%"><col style="width:28%"></colgroup>
   <thead><tr><th class="c">번호</th><th>유형</th><th class="c">배점</th><th>발문 · 지문 첫머리</th><th>출제 포인트</th></tr></thead>
-  <tbody>{% for q in qs %}
-    <tr class="{{ q.kind }}">
-      <td class="c"><b>{{ lab(q) }}</b>{% if q.group %}<div class="src">[{{ q.group }}]</div>{% endif %}</td>
-      <td>{{ q.type }}</td><td class="c">{{ f(q.points) }}</td>
+  <tbody>{% for q in qs %}{% set t = v.tiles[loop.index0] %}
+    <tr>
+      <td class="no" style="background:{{ t.color }}">{{ q.label }}{% if q.group %}<div class="grp">[{{ q.group }}]</div>{% endif %}</td>
+      <td><span class="chip" style="background:{{ t.color }}">{{ q.type }}</span></td>
+      <td class="c"><span class="pt">{{ f(q.points) }}</span></td>
       <td><div class="stem">{{ q.stem }}</div>
         {% if q.passage %}<div class="first">{{ (q.passage|replace("[u]", "")|replace("[/u]", "")|replace("\n", " "))[:120] }}…</div>
         {% elif q.shared_with %}<div class="first">지문: {{ q.shared_with }}{{ "번" if q.shared_with.isdigit() else "" }}과 같음</div>{% endif %}</td>
       <td>{{ q.point }}</td></tr>
   {% endfor %}</tbody>
 </table>
-<p class="src" style="margin-top:6pt">지문 첫 문장은 출처(교과서·모의고사·부교재) 확인용입니다. 원문을 등록하면 출처와 변형 정도가 자동으로 채워질 예정입니다.</p>
+<p class="foot">색: <b style="color:{{ C['독해'] }}">파랑 = 독해</b> · <b style="color:#B45309">주황 = 어법·어휘(언어형식)</b> · <b style="color:{{ C['서술형'] }}">빨강 = 서술형</b>. 지문 첫 문장은 출처(교과서·모의고사·부교재) 확인용입니다.</p>
 {% endblock %}

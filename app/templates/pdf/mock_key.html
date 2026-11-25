@@ -1,51 +1,49 @@
 {% extends "pdf/_base.html" %}
-{# 동형 모의고사 정답·해설 #}
+{# 동형 모의고사 정답 및 해설: 시험지와 같은 양식, 2단 #}
 {% block style %}
-  @page { margin: 14mm 12mm 15mm 12mm; }
-  html { font-size: 8.8pt; line-height: 1.5; }
-  .mh { display: table; width: 100%; border: 1.2pt solid var(--ink); margin-bottom: 6pt; }
-  .mh .l, .mh .r { display: table-cell; vertical-align: top; padding: 6pt 9pt; }
-  .mh .l { border-right: 1.2pt solid var(--ink); }
-  .mh h1 { font-size: 13pt; margin: 0 0 2pt; }
-  .mh .s { font-size: 8.5pt; color: var(--ink-2); }
-  .mh .r { width: 34%; }
-  table.meta { font-size: 7.8pt; }
-  table.meta th, table.meta td { padding: 1pt 4pt; text-align: center; border: 0.6pt solid #888; }
-  .range { border: 0.8pt solid var(--ink); padding: 3pt 8pt; font-size: 7.8pt; margin-bottom: 8pt; }
-  .range b { color: var(--brand); margin-right: 4pt; }
-  table.quick td, table.quick th { text-align: center; padding: 2pt; font-size: 8.5pt; }
-  table.ex td, table.ex th { font-size: 8pt; padding: 3pt 4pt; }
-  table.ex td.c { text-align: center; white-space: nowrap; }
-  .wa { border: 0.6pt solid var(--line); padding: 5pt 7pt; margin: 0 0 5pt; break-inside: avoid; }
-  .wa b.h { color: var(--brand); }
-  .muted { color: var(--ink-3); }
+{% include "pdf/_mock_page.html" %}
+  html { font-size: 8.5pt; line-height: 1.5; }
+  h1 { font-size: 12pt; margin: 0 0 2pt; }
+  .sub { font-size: 8pt; color: #444; margin-bottom: 6pt; }
+  .cols { columns: 2; column-gap: 9mm; column-rule: 0.7pt solid #222; }
+  .sec { font-weight: 800; font-size: 9.4pt; margin: 4pt 0 5pt; border-top: 0.7pt solid #222; padding-top: 4pt; break-after: avoid; }
+  .sec:first-child { border-top: 0; padding-top: 0; }
+  .k { margin: 0 0 4pt; padding-left: 16pt; text-indent: -16pt; break-inside: avoid; }
+  .k .a { font-weight: 800; }
+  .k .m { color: #444; }
+  .sa { margin: 0 0 8pt; break-inside: avoid; }
+  .sa .h { font-weight: 800; }
+  .sa .b { margin-left: 10pt; }
+  .sa .b b { font-weight: 700; }
+  table.quick { width: 100%; border-collapse: collapse; margin-bottom: 8pt; }
+  table.quick td, table.quick th { border: 0.6pt solid #888; text-align: center; padding: 1.5pt; font-size: 8pt; }
+  table.quick th { background: #f2f2f2; }
 {% endblock %}
 {% block body %}
-{% set key = true %}{% include "pdf/_mock_head.html" %}
-{% set mcs = items|selectattr("kind", "equalto", "mc")|list %}
-<h2>빠른 정답</h2>
-{% for row in mcs|batch(13) %}
-<table class="quick" style="margin-bottom:4pt"><tr>{% for it in row %}<th>{{ it.label }}</th>{% endfor %}</tr>
+{% set mcs = items|selectattr("kind", "equalto", "mc")|list %}{% set sas = items|selectattr("kind", "equalto", "sa")|list %}
+<h1>[정답 및 해설] {{ h.t1 }} 동형 모의시험 {{ h.round }}회</h1>
+<p class="sub">선택형 {{ c.mc }}문항 {{ spec.fmt(c.mc_pts) }}점{% if c.sa %} · 서답형 {{ c.sa }}문항 {{ spec.fmt(c.sa_pts) }}점{% endif %} · 총 {{ spec.fmt(c.total) }}점{% if m.options.range %} · 범위: {{ m.options.range }}{% endif %}</p>
+{% for row in mcs|batch(15) %}
+<table class="quick"><tr>{% for it in row %}<th>{{ it.label }}</th>{% endfor %}</tr>
   <tr>{% for it in row %}<td>{{ spec.CIRCLED[it.answer - 1] if it.answer else "?" }}</td>{% endfor %}</tr></table>
 {% endfor %}
-<h2>선택형 해설</h2>
-<table class="ex">
-  <tr><th style="width:5%">No</th><th style="width:5%">정답</th><th style="width:8%">배점</th><th style="width:11%">유형</th><th style="width:19%">출처</th><th>해설 · 출제 포인트</th></tr>
+<div class="cols">
+{% if mcs %}
+  <p class="sec">I. 선택형 ({{ mcs[0].label }}~{{ mcs[-1].label }}번)</p>
   {% for it in mcs %}
-  <tr><td class="c">{{ it.label }}</td><td class="c">{{ spec.CIRCLED[it.answer - 1] if it.answer else "?" }}</td>
-    <td class="c">{{ spec.fmt(it.points) }}{% if levels[it.label] %} ({{ levels[it.label] }}){% endif %}</td><td>{{ it.type }}</td>
-    <td>{{ it.src }}{% if it.change and it.passage %}<br><span class="muted">{{ it.change }}</span>{% endif %}</td>
-    <td>{{ it.explain }}{% if it.point %}<br><span class="muted">포인트: {{ it.point }}</span>{% endif %}</td></tr>
+  <p class="k">{{ it.label }}. <span class="a">{{ spec.CIRCLED[it.answer - 1] if it.answer else "?" }}</span>
+    {% if it.explain %}({{ it.explain }}){% endif %}{% if it.point %} <span class="m">· {{ it.point }}</span>{% endif %}
+    <span class="m">[{{ spec.fmt(it.points) }}점{% if levels[it.label] %}·{{ levels[it.label] }}{% endif %}{% if it.type %}·{{ it.type }}{% endif %}]</span></p>
   {% endfor %}
-</table>
-{% set sas = items|selectattr("kind", "equalto", "sa")|list %}
-{% if sas %}
-<h2>서답형 정답과 채점 기준</h2>
-{% for it in sas %}
-<div class="wa"><b class="h">{{ it.label }}</b> ({{ spec.fmt(it.points) }}점 · {{ it.type }}) <span class="muted">{{ it.src }}</span><br>
-  <b>정답</b> {{ it.answer_text }}<br>
-  {% if it.grading %}<b>채점</b> {{ it.grading }}<br>{% endif %}
-  {% if it.explain %}<b>해설</b> {{ it.explain }}{% endif %}</div>
-{% endfor %}
 {% endif %}
+{% if sas %}
+  <p class="sec">{{ "II" if mcs else "I" }}. 서답형 (서답형 1~{{ sas|length }})</p>
+  {% for it in sas %}
+  <div class="sa"><p class="h">[{{ sa_names[it.label] }}] {{ it.type }} ({{ spec.fmt(it.points) }}점)</p>
+    <div class="b"><b>{{ spec.rich(it.answer_text) }}</b>
+      {% if it.grading %}<br><span class="m">채점: {{ it.grading }}</span>{% endif %}
+      {% if it.explain %}<br><i>(해설: {{ it.explain }})</i>{% endif %}</div></div>
+  {% endfor %}
+{% endif %}
+</div>
 {% endblock %}

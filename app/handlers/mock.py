@@ -5,6 +5,10 @@ mock_build  : 지문 배정 → 묶음마다 문항 만들기(끝난 묶음은 �
 mock_unit   : 한 묶음(지문 하나를 같이 쓰는 문항들)만 다시 만들기 → PDF
 mock_render : 고친 내용으로 PDF만 다시
 """
+import re
+from datetime import datetime
+
+from sqlalchemy import func, select
 import copy
 
 from .. import llm
@@ -170,6 +174,21 @@ def _generate(ctx: JobContext, mid: int, only: int | None = None):
     _save(mid, items=items, warnings=warns, status="done", error=None)
 
 
+def _paper_head(m, school: str) -> dict:
+    """학교 시험지 머리: 학년도·학기·차수·학년은 본뜬 기출에서, 'N회'는 같은 기출로 만든 동형 순서."""
+    from ..models import ExamPaper
+    with session_scope() as db:
+        tp = db.get(ExamPaper, m.template_id) if m.template_id else None
+        year, sem, term, grade = (tp.year, tp.semester, tp.term, tp.grade) if tp else (None, None, None, (m.options or {}).get("grade", ""))
+        subject = (m.options or {}).get("subject") or ((tp.meta or {}).get("subject") if tp else "") or "영어"
+        rnd = db.execute(select(func.count(MockSet.id)).where(MockSet.template_id == m.template_id, MockSet.id <= m.id)).scalar() if m.template_id else 1
+    g = re.sub(r"\D", "", grade or "")
+    year = year or datetime.now().year
+    t1 = " ".join(x for x in [school, f"{g}학년" if g else grade, f"{sem}학기" if sem else "", f"{term}차고사" if term else ""] if x) or m.title
+    return {"year": year, "sem": sem or " ", "term": term or " ", "g": g, "subject": subject, "subject_short": "영어",
+            "t1": t1, "round": rnd or 1, "pages": None, "sheets": None}
+
+
 def render_mock(ctx: JobContext, mid: int) -> dict:
     m = _load(mid)
     if not m.items:
@@ -181,9 +200,20 @@ def render_mock(ctx: JobContext, mid: int) -> dict:
         sname = school.name if school else ""
     ctx.step("시험지 PDF 만드는 중", 90)
     pts = [it["points"] for it in m.items if it["points"] is not None]
-    ctx_ = {"academy": academy, "m": m, "items": m.items, "c": spec.counts(m.items), "school": sname, "spec": spec,
+    h = _paper_head(m, sname)
+    sas = [it["label"] for it in m.items if it["kind"] == "sa"]
+    sa_names = {lab: (f"서답형 {k}" if re.fullmatch(r"\d+", lab) or not re.search(r"\d", lab) else re.sub(r"^(서술형|서답형|주관식|논술형)?\s*", "서답형 ", lab).strip())
+                for k, lab in enumerate(sas, 1)}
+    ctx_ = {"academy": academy, "m": m, "items": m.items, "c": spec.counts(m.items), "school": sname, "spec": spec, "h": h, "sa_names": sa_names,
             "levels": {it["label"]: spec.level(it["points"], pts) for it in m.items}, "doc_title": m.title}
     exam = render_pdf("pdf/mock_exam.html", ctx_)
+    try:  # 표지의 '전체 ( )장 ( )면'을 채우려고 쪽 수를 세어 한 번 더
+        import pypdfium2 as pdfium
+        n = len(pdfium.PdfDocument(exam))
+        h.update(pages=n, sheets=(n + 1) // 2)
+        exam = render_pdf("pdf/mock_exam.html", ctx_)
+    except Exception:  # noqa: BLE001 — 쪽 수는 빈칸으로
+        pass
     ctx.step("정답·해설 PDF 만드는 중", 95)
     key_pdf = render_pdf("pdf/mock_key.html", ctx_)
     fid = ctx.save_file(f"{m.title}_시험지.pdf", "application/pdf", exam)

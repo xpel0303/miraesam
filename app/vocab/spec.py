@@ -20,6 +20,39 @@ def split_passages(text: str) -> list[dict]:
         if body.strip():
             out.append({"title": title.strip(), "text": body.strip()})
     return out
+def passage_names(ps: list[dict]) -> list[str]:
+    """지문마다 단어에 붙일 이름 (제목, 없으면 '지문 n'). 같은 제목이 또 나오면 뒤에 (2), (3)…"""
+    out: list[str] = []
+    for n, p in enumerate(ps, 1):
+        base = (p.get("title") or "").strip() or f"지문 {n}"
+        name, k = base, 2
+        while name in out:
+            name, k = f"{base} ({k})", k + 1
+        out.append(name)
+    return out
+
+
+def missing_passages(text: str, words: list[dict]) -> list[str]:
+    """단어가 하나도 안 뽑힌 지문 이름."""
+    have = {w.get("src") or "" for w in words if w.get("word")}
+    return [n for n in passage_names(split_passages(text)) if n not in have]
+
+
+def per_passage_count(words: list[dict]) -> int:
+    """이미 뽑힌 지문들의 지문당 단어 수 (가장 많은 것)."""
+    c: dict[str, int] = {}
+    for w in words:
+        if w.get("word") and w.get("src"):
+            c[w["src"]] = c.get(w["src"], 0) + 1
+    return max(c.values(), default=0)
+
+
+def order_by_passage(words: list[dict], names: list[str]) -> list[dict]:
+    """단어를 지문 순서대로 (지문 안 순서는 그대로)."""
+    rank = {n: i for i, n in enumerate(names)}
+    return sorted(words, key=lambda w: rank.get(w.get("src") or "", len(names)))
+
+
 CHUNK = 25  # AI에 한 번에 채워 달라고 하는 단어 수 (많으면 답이 잘려서 나눔)
 FIELDS = ("word", "pos", "meaning", "syn", "ant", "example", "example_ko", "src")  # src: 어느 지문에서 뽑았는지
 

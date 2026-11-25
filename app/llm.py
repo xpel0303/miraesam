@@ -22,6 +22,10 @@ class LLMError(Exception):
     """선생님에게 그대로 보여줄 수 있는 한국어 오류."""
 
 
+class EmptyAnswer(LLMError):
+    """답이 비어서 온 경우 (일시적이거나, 원문을 그대로 옮기는 것을 Gemini가 막은 경우). 다시 시도할 만함."""
+
+
 @dataclass
 class Image:
     data: bytes
@@ -44,7 +48,9 @@ def _extract_text(body: dict) -> str:
     if finish == "SAFETY":
         raise LLMError("Gemini 안전 필터에 걸려 답변을 받지 못했습니다.")
     if not text.strip():
-        raise LLMError("Gemini가 빈 답변을 보냈습니다. 다시 시도해 주세요.")
+        if finish == "RECITATION":
+            raise EmptyAnswer("Gemini가 원문(지문)을 그대로 옮기는 것을 막아서 빈 답이 왔어요 (RECITATION).")
+        raise EmptyAnswer(f"Gemini가 빈 답변을 보냈습니다{f' ({finish})' if finish and finish != 'STOP' else ''}. 다시 시도해 주세요.")
     return text
 
 
@@ -86,6 +92,7 @@ def generate(
 
     url = API.format(model=model or DEFAULT_GEMINI_MODEL)
     last_error = "알 수 없는 오류"
+    last_empty = False
     for attempt in range(retries):
         try:
             resp = httpx.post(url, json=payload, headers={"x-goog-api-key": api_key}, timeout=timeout)
@@ -95,7 +102,13 @@ def generate(
             continue
 
         if resp.status_code == 200:
-            text = _extract_text(resp.json())
+            try:
+                text = _extract_text(resp.json())
+            except EmptyAnswer as e:  # 빈 답은 한두 번 더 (온도를 조금 올려서)
+                last_error, last_empty = str(e), True
+                gen_cfg["temperature"] = min(1.0, gen_cfg["temperature"] + 0.3)
+                time.sleep(1)
+                continue
             if not json_mode:
                 return text
             try:
@@ -123,7 +136,7 @@ def generate(
             continue
         raise LLMError(f"Gemini 호출 실패 ({resp.status_code}): {detail[:200]}")
 
-    raise LLMError(last_error)
+    raise (EmptyAnswer if last_empty else LLMError)(last_error)
 
 
 # ---------------------------------------------------------------- 그림 만들기 (Gemini 이미지 모델, 'Nano Banana')

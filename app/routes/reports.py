@@ -117,6 +117,18 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     return _go(f"/reports/{e.id}?tab=items")
 
 
+def online_exams(db: Session, academy_id: int, src: str = "", obj_id: int = 0) -> list[dict]:
+    """'온라인 시험으로 내기'로 낸 시험 목록 (+ 제출 수). src·obj_id를 주면 그 자료로 낸 것만."""
+    exams = list(db.execute(select(Exam).options(selectinload(Exam.classes)).where(Exam.academy_id == academy_id)
+                            .order_by(Exam.id.desc()).limit(300)).scalars())
+    exams = [e for e in exams if (e.options or {}).get("online") and (not src or (e.options or {}).get(f"{src}_id") == obj_id)]
+    subs: dict[int, int] = {}
+    if exams:
+        for eid, in db.execute(select(ExamResponse.exam_id).where(ExamResponse.exam_id.in_([e.id for e in exams]), ExamResponse.by == "student")):
+            subs[eid] = subs.get(eid, 0) + 1
+    return [{"e": e, "n": subs.get(e.id, 0)} for e in exams]
+
+
 ONLINE_SOURCES = {"variant": (VariantSet, obuild.from_variant, "변형문제"), "grammar": (GrammarSet, obuild.from_grammar, "어법 문제")}
 
 

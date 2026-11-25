@@ -395,7 +395,8 @@ def _assigned_tests(db: Session, s: Student) -> set[int]:
         return set()
     hws = db.execute(select(Homework).join(HomeworkClass, HomeworkClass.homework_id == Homework.id)
                      .where(HomeworkClass.class_id == s.class_id, Homework.active.is_(True))).scalars()
-    return {t.get("test_id") for h in hws for t in (h.tasks or []) if t.get("kind") == "leveltest"}
+    from ..homework.spec import for_student
+    return {t.get("test_id") for h in hws if for_student(h, s.id) for t in (h.tasks or []) if t.get("kind") == "leveltest"}
 
 
 @router.post("/s/{code}/lt/{tid}")
@@ -476,7 +477,10 @@ def _mark_homework(db: Session, r: LevelResult):
         return
     hws = db.execute(select(Homework).join(HomeworkClass, HomeworkClass.homework_id == Homework.id)
                      .where(HomeworkClass.class_id == s.class_id, Homework.active.is_(True))).scalars()
+    from ..homework.spec import for_student
     for h in hws:
+        if not for_student(h, s.id):
+            continue
         for i, t in enumerate(h.tasks or []):
             if t.get("kind") != "leveltest" or t.get("test_id") != r.test_id:
                 continue

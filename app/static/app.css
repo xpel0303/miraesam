@@ -627,3 +627,118 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
 .picked-flash { animation: pickflash 1.2s ease; }
 @keyframes pickflash { 0% { box-shadow: 0 0 0 4px #BFD8F6; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .picker-item .pi-head { font-style: normal; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+
+/* 단어 숙제: 클래스카드식 단계 학습 */
+.vstage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.vstage { display: flex; flex-direction: column; gap: 3px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); text-decoration: none; color: var(--ink); }
+.vstage:hover { border-color: var(--brand); }
+.vstage .vi { font-size: 1.6rem; }
+.vstage small { color: var(--ink-3); font-size: 0.75rem; }
+.vstage em { font-style: normal; font-size: 0.8rem; margin-top: 4px; color: var(--ink-3); }
+.vstage.on { border-color: var(--brand); background: var(--brand-soft); }
+.vstage.on em { color: var(--brand); font-weight: 700; }
+.vrank { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+.vrank li { display: flex; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--line-2); }
+.vrank li span { width: 1.4em; color: var(--ink-3); }
+.vrank li em { margin-left: auto; font-style: normal; color: var(--ink-3); }
+.vrank li.me { font-weight: 700; color: var(--brand); }
+.vbar { height: 6px; background: var(--line-2); border-radius: 3px; overflow: hidden; }
+.vbar i { display: block; height: 100%; width: 0; background: var(--brand); transition: width .25s; }
+.vstudy { min-height: 260px; }
+.vcard { border: 1px solid var(--line); border-radius: var(--radius); padding: 30px 16px; text-align: center; cursor: pointer; min-height: 170px; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.vw { font-size: 1.6rem; font-weight: 700; text-align: center; }
+.vm { font-size: 1.1rem; text-align: center; }
+.vspk { border: 0; background: none; cursor: pointer; font-size: 1.1rem; vertical-align: middle; }
+.vbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.vchoices { display: grid; gap: 8px; }
+.vchoice { padding: 13px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-size: 1rem; text-align: left; cursor: pointer; color: var(--ink); }
+.vchoice.good { border-color: #2e8b57; background: #e8f5ee; }
+.vchoice.bad, .vtile.bad { border-color: #c0392b; background: #fbeaea; }
+.vtiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.vtile { min-height: 64px; padding: 6px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); font-size: 0.85rem; cursor: pointer; color: var(--ink); word-break: keep-all; }
+.vtile.en { font-weight: 700; }
+.vtile.sel { border-color: var(--brand); background: var(--brand-soft); }
+.vtile.gone { visibility: hidden; }
+@media (max-width: 420px) { .vtiles { grid-template-columns: repeat(3, 1fr); } }
+
+/* 단어 숙제 — 파스텔 테마 (학생 화면 전용) */
+.vfun { --p1: #ff8fb8; --p2: #b9a6ff; --ink-c: #5b4a6b; color: var(--ink-c); }
+.vfun h1 { color: #4a3a5c; }
+.vfun a { color: #b0568a; }
+.vfun .vstage-grid { gap: 12px; }
+.vfun .vstage { border: 0; border-radius: 22px; padding: 16px; color: #4a3a5c; box-shadow: 0 6px 16px rgba(180, 120, 170, .18); transition: transform .15s; position: relative; }
+.vfun .vstage:hover { transform: translateY(-2px); }
+.vfun .vstage small { color: #8a7a96; }
+.vfun .vstage em { color: #8a7a96; }
+.vfun .vstage.s-learn  { background: linear-gradient(145deg, #ffe3ee, #ffd0e2); }
+.vfun .vstage.s-recall { background: linear-gradient(145deg, #ece5ff, #dcd1ff); }
+.vfun .vstage.s-spell  { background: linear-gradient(145deg, #dff6ee, #c8eedf); }
+.vfun .vstage.s-game   { background: linear-gradient(145deg, #fff3d6, #ffe6b3); }
+.vfun .vstage.s-test   { background: linear-gradient(145deg, #dfeeff, #cde2ff); }
+.vfun .vstage.on em { color: #d6457e; font-weight: 700; }
+.vfun .vstage.on::after { content: "♥"; position: absolute; top: 10px; right: 14px; color: #ff6fa5; font-size: 1.1rem; }
+.vfun .student-card { border: 0; border-radius: 24px; box-shadow: 0 8px 22px rgba(180, 120, 170, .16); background: #fffafd; }
+.vfun .vrank li { border-bottom: 1px dashed #f1d6e5; }
+.vfun .vrank li.me { color: #d6457e; }
+.vfun .vbar { height: 10px; border-radius: 99px; background: #f6e3ee; }
+.vfun .vbar i { background: linear-gradient(90deg, var(--p1), var(--p2)); border-radius: 99px; }
+.vfun .vcard { border: 0; border-radius: 22px; background: linear-gradient(160deg, #fff, #fff0f6); box-shadow: inset 0 0 0 2px #ffd6e7; }
+.vfun.s-recall .vcard, .vfun.s-recall .vw { color: #5a46a8; }
+.vfun .vw { color: #4a3a5c; }
+.vfun .btn { background: linear-gradient(135deg, var(--p1), var(--p2)); border: 0; border-radius: 99px; color: #fff; font-weight: 700; box-shadow: 0 4px 12px rgba(255, 143, 184, .35); }
+.vfun .btn.ghost { background: #fff; color: #b0568a; box-shadow: inset 0 0 0 2px #ffcfe1; }
+.vfun .vchoice { border: 0; border-radius: 16px; background: #f6f1ff; color: #4a3a5c; box-shadow: inset 0 0 0 2px #e6dcff; }
+.vfun .vchoice:hover { background: #efe7ff; }
+.vfun .vchoice.good { background: #dcf7ea; box-shadow: inset 0 0 0 2px #7fd8ad; }
+.vfun .vchoice.bad, .vfun .vtile.bad { background: #ffe1e8; box-shadow: inset 0 0 0 2px #ff9fb5; }
+.vfun input[type=text] { border-radius: 16px; border: 2px solid #ffd0e2; padding: 10px 14px; }
+.vfun input[type=text]:focus { outline: none; border-color: var(--p1); }
+.vfun .vtile { border: 0; border-radius: 16px; background: #fff; color: #5b4a6b; box-shadow: 0 3px 8px rgba(180, 120, 170, .18); }
+.vfun .vtile.en { background: #fff0f6; color: #c2417a; }
+.vfun .vtile.sel { background: #ffd6e7; transform: scale(1.04); }
+.vfun #clock { color: #c2417a; }
+.vfun #end p:first-child { animation: vpop .5s ease; }
+@keyframes vpop { 0% { transform: scale(.3); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+/* 파스텔 테마 글씨 진하게 */
+.vfun, .vfun .vw, .vfun .vm, .vfun h1, .vfun .vstage, .vfun .vstage b, .vfun .vchoice, .vfun .vtile { color: #2b1f38; }
+.vfun .vstage b { font-size: 1.05rem; font-weight: 800; }
+.vfun .vstage small, .vfun .vstage em, .vfun .small, .vfun .muted, .vfun #count, .vfun .vrank li em, .vfun .vrank li span { color: #4e4060 !important; }
+.vfun .vstage small { font-size: .8rem; font-weight: 600; }
+.vfun .vstage em { font-weight: 700; }
+.vfun .vstage.on em, .vfun .vrank li.me, .vfun #clock { color: #b01f5c !important; }
+.vfun .vtile.en { color: #a3184f; }
+.vfun .vtile, .vfun .vchoice { font-weight: 600; }
+.vfun .vw { font-weight: 800; }
+.vfun .vm { font-weight: 600; }
+.vfun.s-recall .vw { color: #3d2a8f; }
+.vfun a { color: #9c1d55; font-weight: 600; }
+.vfun .btn.ghost { color: #9c1d55; }
+.vfun .btn { color: #fff; text-shadow: 0 1px 2px rgba(120, 30, 80, .35); }
+.student .vfun ~ *, .student > p.small.muted { color: #4e4060; }
+
+/* 지문 고르기 칩 */
+.vchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.vchip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 99px; font-weight: 400; font-size: .85rem; margin: 0; cursor: pointer; background: var(--surface); }
+.vchip:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
+.vchip.all { font-weight: 700; }
+/* 단어 숙제 화면 제목: 주아체에서 '기'가 '가'처럼 보여서 또렷한 글꼴로 */
+.vfun h1, .vfun h2, .vfun .vstage b { font-family: "NanumSquareRound", sans-serif; font-weight: 800; }
+
+/* 앱 설치 안내 */
+.pwa-bar { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 60; display: flex; align-items: center; gap: 10px; max-width: 520px; margin: 0 auto;
+  padding: 10px 12px; background: #fff; border-radius: 18px; box-shadow: 0 8px 28px rgba(27, 42, 92, .22); }
+.pwa-bar img { border-radius: 10px; }
+.pwa-txt { flex: 1; display: flex; flex-direction: column; line-height: 1.25; }
+.pwa-txt span { font-size: .8rem; color: var(--ink-3); }
+.pwa-x { border: 0; background: none; font-size: 1rem; color: var(--ink-3); cursor: pointer; padding: 4px; }
+.pwa-ios { position: fixed; left: 12px; right: 12px; bottom: 80px; z-index: 61; max-width: 520px; margin: 0 auto; padding: 14px 16px; background: #fff;
+  border-radius: 18px; box-shadow: 0 8px 28px rgba(27, 42, 92, .25); }
+.pwa-ios ol { margin: 6px 0 8px; padding-left: 20px; line-height: 1.7; }
+.pwa-ios p { margin: 0; }
+
+/* 숙제 알림 카드 */
+.push-card { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.push-card .push-ic { font-size: 1.6rem; }
+.push-card.on { background: #f0f7f2; }
+.push-card.need { border: 2px solid #f0a020; background: #fff8e8; }

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from .. import care, push
 from ..db import get_db
-from ..models import CareClassDay, CareNotice, CareRecord, ClassGroup, PushLog, PushSub, Student, Teacher, now
+from ..models import CareClassDay, CareNotice, CareRecord, ClassGroup, PushLog, ParentPushSub, Student, Teacher, now
 from ..web import current_teacher, flash, render
 
 router = APIRouter(prefix="/care")
@@ -46,7 +46,7 @@ def _student(db: Session, sid: int, aid: int) -> Student:
 def _sub_counts(db: Session, ids: list[int]) -> dict[int, int]:
     if not ids:
         return {}
-    return dict(db.execute(select(PushSub.student_id, func.count()).where(PushSub.student_id.in_(ids)).group_by(PushSub.student_id)).all())
+    return dict(db.execute(select(ParentPushSub.student_id, func.count()).where(ParentPushSub.student_id.in_(ids)).group_by(ParentPushSub.student_id)).all())
 
 
 def _parent_url(request: Request, token: str) -> str:
@@ -178,7 +178,7 @@ def parent_reset(sid: int, request: Request, db: Session = Depends(get_db), teac
     """링크가 엉뚱한 사람에게 갔을 때: 새 링크로 바꾸고 기존 알림 연결을 끊음."""
     s = _student(db, sid, teacher.academy_id)
     s.parent_token = None
-    db.execute(delete(PushSub).where(PushSub.student_id == s.id))
+    db.execute(delete(ParentPushSub).where(ParentPushSub.student_id == s.id))
     db.commit()
     care.ensure_token(db, s)
     flash(request, f"{s.name} 학부모 링크를 새로 만들었어요. 예전 링크는 이제 열리지 않아요. 새 링크를 다시 보내 주세요.")

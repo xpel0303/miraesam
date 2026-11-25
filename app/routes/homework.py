@@ -3,7 +3,7 @@ import re
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import delete, select
+from sqlalchemy import func, delete, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
@@ -40,7 +40,11 @@ def _sources(db: Session, aid: int) -> dict:
     gss = [g for g in q(GrammarSet, GrammarSet.status == "done") if spec.grammar_key(g)]
     lts = [t for t in db.execute(select(LevelTest).where(LevelTest.academy_id == aid).order_by(LevelTest.sort, LevelTest.id)).scalars()
            if (t.spec or {}).get("sections")]
-    return {"vocab": q(WordList, WordList.status == "done"), "workbook": wbs, "variant": vss, "grammar": gss, "leveltest": lts}
+    from ..vocab.spec import sources
+    vls = q(WordList, WordList.status == "done")
+    for w in vls:
+        w.srcs = sources(w.words)
+    return {"vocab": vls, "workbook": wbs, "variant": vss, "grammar": gss, "leveltest": lts}
 
 
 def _set_classes(db: Session, h: Homework, teacher: Teacher, raw: list) -> int:
@@ -50,6 +54,36 @@ def _set_classes(db: Session, h: Homework, teacher: Teacher, raw: list) -> int:
     for cid in valid:
         db.add(HomeworkClass(homework_id=h.id, class_id=cid))
     return len(valid)
+
+
+def roster(db: Session, academy_id: int) -> dict:
+    """반별 학생 {반 id: [{id, name}]} — 숙제 낼 때 반 안에서 학생 고르기용."""
+    out: dict = {}
+    for st in db.execute(select(Student).where(Student.academy_id == academy_id, Student.active.is_(True), Student.class_id.isnot(None))
+                         .order_by(Student.name)).scalars():
+        out.setdefault(str(st.class_id), []).append({"id": st.id, "name": st.name})
+    return out
+
+
+def _set_students(db: Session, h: Homework, f) -> None:
+    """'학생 고르기'에서 일부만 골랐으면 options.students, 반 전체면 비움."""
+    opts = {k: v for k, v in (h.options or {}).items() if k != "students"}
+    if f.get("pick_students") == "1":
+        cids = [c for (c,) in db.execute(select(HomeworkClass.class_id).where(HomeworkClass.homework_id == h.id))]
+        everyone = set(db.execute(select(Student.id).where(Student.class_id.in_(cids or [0]), Student.active.is_(True))).scalars())
+        chosen = {int(x) for x in f.getlist("student_id") if str(x).isdigit()} & everyone
+        if chosen and chosen != everyone:
+            opts["students"] = sorted(chosen)
+    h.options = opts
+
+
+def _json_list(v: str) -> list[str]:
+    import json
+    try:
+        x = json.loads(v or "[]")
+    except ValueError:
+        return []
+    return [str(i) for i in x] if isinstance(x, list) else []
 
 
 def _date(v) -> str:
@@ -92,7 +126,7 @@ def _build_tasks(db: Session, aid: int, f) -> tuple[list[dict], list[str]]:
                 errors.append(f"할 일 {n}: 자료를 찾을 수 없어요.")
                 continue
             if kind == "vocab":
-                t = spec.task_vocab(obj, g(modes, "mc_en"), g(counts, "20"), g(passes, "80"))
+                t = spec.task_vocab(obj, g(modes, "mc_en"), g(counts, "20"), g(passes, "80"), g(f.getlist("t_stages"), "all"), _json_list(g(f.getlist("t_vsrcs"))))
                 if not t["count"]:
                     errors.append(f"할 일 {n}: 뜻이 채워진 단어가 없어요.")
                     continue
@@ -119,8 +153,9 @@ def _students(db: Session, h: Homework, class_id: int | None = None) -> list[Stu
         cids = [c for c in cids if c == class_id]
     if not cids:
         return []
-    return list(db.execute(select(Student).options(selectinload(Student.class_group))
-                           .where(Student.class_id.in_(cids), Student.active.is_(True)).order_by(Student.name)).scalars())
+    return [s for s in db.execute(select(Student).options(selectinload(Student.class_group))
+                                  .where(Student.class_id.in_(cids), Student.active.is_(True)).order_by(Student.name)).scalars()
+            if spec.for_student(h, s.id)]
 
 
 @router.get("")
@@ -136,13 +171,21 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
             done = len(list(db.execute(select(HomeworkResult.id).where(HomeworkResult.homework_id == h.id, HomeworkResult.done.is_(True),
                                                                        HomeworkResult.student_id.in_([s.id for s in studs]))).scalars()))
             rate[h.id] = (done, total, len(studs))
-    return render(request, "homework/index.html", {"teacher": teacher, "hws": hws, "rate": rate, "today": spec.today(), "active": "homework"})
+    from .reports import online_exams
+    from ..models import QuizResult
+    from sqlalchemy import func
+    open_lists = [wl for wl in db.execute(select(WordList).options(selectinload(WordList.classes)).where(WordList.academy_id == teacher.academy_id)
+                                          .order_by(WordList.id.desc()).limit(300)).scalars() if wl.classes]
+    tried = dict(db.execute(select(QuizResult.list_id, func.count(func.distinct(QuizResult.student_id)))
+                            .where(QuizResult.list_id.in_([w.id for w in open_lists] or [0])).group_by(QuizResult.list_id)).all())
+    return render(request, "homework/index.html", {"online": online_exams(db, teacher.academy_id),
+                                                   "open_lists": [{"wl": w, "n": tried.get(w.id, 0)} for w in open_lists], "teacher": teacher, "hws": hws, "rate": rate, "today": spec.today(), "active": "homework"})
 
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
-    return render(request, "homework/new.html", {"teacher": teacher, "form": {"reveal": True}, "classes": _classes(db, teacher),
-                                                 "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "ox_levels": spec.OX_LEVELS,
+    return render(request, "homework/new.html", {"teacher": teacher, "form": {"reveal": True}, "classes": _classes(db, teacher), "roster": roster(db, teacher.academy_id),
+                                                 "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "stage_sets": spec.STAGE_SETS, "ox_levels": spec.OX_LEVELS,
                                                  "max": spec.MAX_TASKS, "active": "homework"})
 
 
@@ -158,17 +201,39 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         errors.append("숙제를 낼 반을 골라 주세요.")
     if errors:
         form = {"title": title, "due": f.get("due"), "memo": f.get("memo"), "reveal": f.get("reveal") == "1", "class_ids": {int(x) for x in class_ids}}
-        return render(request, "homework/new.html", {"teacher": teacher, "form": form, "errors": errors, "classes": _classes(db, teacher),
-                                                     "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "ox_levels": spec.OX_LEVELS,
+        return render(request, "homework/new.html", {"teacher": teacher, "form": form, "errors": errors, "classes": _classes(db, teacher), "roster": roster(db, teacher.academy_id),
+                                                     "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "stage_sets": spec.STAGE_SETS, "ox_levels": spec.OX_LEVELS,
                                                      "max": spec.MAX_TASKS, "active": "homework"}, 400)
     h = Homework(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, due=_date(f.get("due")),
                  memo=str(f.get("memo", "")).strip()[:1000], tasks=tasks, options={"reveal": f.get("reveal") == "1"})
     db.add(h)
     db.flush()
     _set_classes(db, h, teacher, class_ids)
+    db.flush()
+    _set_students(db, h, f)
     db.commit()
+    from .. import push
+    push.in_background(push.homework_new, h.id)  # 알림 켠 학생 폰에 '새 숙제'
     flash(request, "숙제를 냈어요. 아래 '카톡 문구'를 복사해 단톡방에 올리면 학생이 링크로 바로 들어와요.")
     return _go(f"/homework/{h.id}")
+
+
+@router.post("/{hid}/remind")
+def remind(hid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """아직 다 안 한 학생 폰에 알림."""
+    h = _own(db, hid, teacher)
+    from .. import push
+    from ..models import PushSub
+    ids = push.not_done_ids(db, h)
+    on = db.execute(select(func.count(func.distinct(PushSub.student_id))).where(PushSub.student_id.in_(ids or [0]))).scalar() or 0
+    if not ids:
+        flash(request, "모두 다 했어요. 알림 보낼 학생이 없어요.")
+    elif not on:
+        flash(request, f"안 한 학생 {len(ids)}명 중 알림을 켠 학생이 없어요. 학생 화면의 '🔔 숙제 알림 받기'를 켜 달라고 해 주세요.", "error")
+    else:
+        push.in_background(push.homework_remind, h.id)
+        flash(request, f"안 한 학생 {len(ids)}명 중 알림을 켠 {on}명에게 알림을 보냈어요.")
+    return _go(f"/homework/{hid}")
 
 
 @router.get("/{hid}")
@@ -203,9 +268,11 @@ def detail(hid: int, request: Request, class_id: str = "", teacher: Teacher = De
     due = f" (마감 {h.due[5:].replace('-', '/')})" if h.due else ""
     notice = "\n".join([f"[{academy.name}] 숙제 안내", f"■ {h.title}{due}"] + [f" - {t['title']}" for t in h.tasks]
                        + ([h.memo] if h.memo else []) + [f"각자 접속 코드로 들어와서 풀어요: {base}/s"])
+    from ..models import PushSub
+    alert_on = set(db.execute(select(PushSub.student_id).where(PushSub.student_id.in_([r["s"].id for r in rows] or [0]))).scalars())
     return render(request, "homework/detail.html", {
-        "teacher": teacher, "h": h, "rows": rows, "per_task": per_task, "todo_people": todo_people, "notice": notice,
-        "kinds": spec.KINDS, "summary": spec.summary_text, "classes": _classes(db, teacher), "assigned": {c.id for c in h.classes},
+        "alert_on": alert_on, "teacher": teacher, "h": h, "rows": rows, "per_task": per_task, "todo_people": todo_people, "notice": notice,
+        "kinds": spec.KINDS, "summary": spec.summary_text, "classes": _classes(db, teacher), "assigned": {c.id for c in h.classes}, "roster": roster(db, teacher.academy_id), "picked": (h.options or {}).get("students") or [],
         "class_id": cid, "late": spec.is_late(h.due), "active": "homework",
     })
 
@@ -220,6 +287,8 @@ async def edit(hid: int, request: Request, teacher: Teacher = Depends(current_te
     h.active = f.get("active") == "1"
     h.options = {**(h.options or {}), "reveal": f.get("reveal") == "1"}
     _set_classes(db, h, teacher, f.getlist("class_id"))
+    db.flush()
+    _set_students(db, h, f)
     db.commit()
     flash(request, "저장했어요." + ("" if h.active else " 닫은 숙제는 학생 화면에 보이지 않아요."))
     return _go(f"/homework/{hid}")

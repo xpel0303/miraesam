@@ -116,11 +116,28 @@ def detail(lid: int, request: Request, pdf_job: int | None = None, teacher: Teac
         for w in r.wrong or []:
             miss[w["word"]] = miss.get(w["word"], 0) + 1
     top_miss = sorted(miss.items(), key=lambda kv: -kv[1])[:10]
-    return render(request, "vocab/detail.html", {
+    # 반에 열어 둔 경우: 반 학생 전원 현황 (안 푼 학생 포함)
+    board = []
+    if assigned:
+        studs = list(db.execute(select(Student).options(selectinload(Student.class_group)).where(Student.class_id.in_(assigned), Student.active.is_(True))
+                                .order_by(Student.class_id, Student.name)).scalars())
+        allr = list(db.execute(select(QuizResult).where(QuizResult.list_id == wl.id)).scalars())
+        for st in studs:
+            mine = [r for r in allr if r.student_id == st.id]
+            best = max(mine, key=lambda r: r.correct / max(1, r.total), default=None)
+            board.append({"s": st, "n": len(mine), "best": best, "last": max((r.created_at for r in mine), default=None)})
+    from ..homework import spec as hspec
+    from ..models import Homework
+    hws = [h for h in db.execute(select(Homework).options(selectinload(Homework.classes)).where(Homework.academy_id == teacher.academy_id)
+                                 .order_by(Homework.id.desc()).limit(300)).scalars()
+           if any(t.get("kind") == "vocab" and t.get("list_id") == wl.id for t in h.tasks or [])]
+    from .homework import roster
+    return render(request, "vocab/detail.html", {"roster": roster(db, teacher.academy_id), "board": board, "hws": hws, "stage_sets": hspec.STAGE_SETS,
         "teacher": teacher, "wl": wl, "job": job, "busy": _busy(db, wl), "classes": classes, "assigned": assigned,
         "results": results, "top_miss": top_miss, "modes": spec.QUIZ_MODES, "test_modes": spec.TEST_MODES,
         "sources": spec.sources(wl.words), "layouts": spec.LAYOUTS, "pdf_job": pdf_job, "active": "vocab",
         "blank_count": sum(1 for w in wl.words if spec.blank_needed(w)),
+        "missing": spec.missing_passages(wl.source_text, wl.words) if wl.source_kind == "passage" else [],
     })
 
 
@@ -148,6 +165,24 @@ async def save_words(lid: int, request: Request, teacher: Teacher = Depends(curr
     if f.get("then") == "fill":
         return fill(lid, request, teacher, db)
     flash(request, f"단어 {len(wl.words)}개를 저장했어요.")
+    return _go(f"/vocab/{lid}")
+
+
+@router.post("/{lid}/missing")
+def missing(lid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """단어가 안 뽑힌 지문만 다시 뽑기."""
+    wl = _own(db, lid, teacher)
+    if _busy(db, wl):
+        return _go(f"/vocab/{lid}")
+    if not teacher.gemini_key_enc:
+        flash(request, "Gemini API 키가 없습니다. 설정에서 키를 먼저 넣어 주세요.", "error")
+        return _go(f"/vocab/{lid}")
+    if wl.source_kind != "passage" or not spec.missing_passages(wl.source_text, wl.words):
+        flash(request, "모든 지문에서 단어를 뽑았어요.")
+        return _go(f"/vocab/{lid}")
+    job = enqueue(db, academy_id=wl.academy_id, teacher_id=teacher.id, kind="vocab_build", title=f"빠진 지문 단어 뽑기 · {wl.title}", payload={"list_id": wl.id, "missing": True})
+    wl.last_job_id = job.id
+    db.commit()
     return _go(f"/vocab/{lid}")
 
 

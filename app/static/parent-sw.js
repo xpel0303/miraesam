@@ -9,8 +9,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "미래샘 영어연구소";
   event.waitUntil(self.registration.showNotification(title, {
     body: data.body || "새 소식이 올라왔어요.",
-    icon: "/static/app-icon-192.png",
-    badge: "/static/app-icon-192.png",
+    icon: "/static/icons/icon-192.png",
+    badge: "/static/icons/icon-192.png",
     data: { url: data.url || "/p/" },
     tag: data.url || "mirae",
     renotify: true,

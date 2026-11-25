@@ -1,0 +1,140 @@
+{% extends "student/_base.html" %}
+{% block title %}{{ stages[stage] }} · {{ wl.title }} · {{ APP_NAME }}{% endblock %}
+{% block body %}
+<div class="vfun s-{{ stage }}">
+<p class="small muted" style="margin:0"><a href="/s/{{ code }}/hw/{{ h.id }}/{{ i }}">← {{ wl.title }}</a></p>
+<h1 style="font-size:1.25rem;margin:4px 0 8px">{{ stages[stage] }}</h1>
+<div class="vbar"><i id="bar"></i></div>
+<p class="small muted" id="count" style="margin:4px 0 12px"></p>
+
+<div id="stage" class="student-card vstudy"></div>
+
+<div id="end" class="student-card" hidden style="text-align:center">
+  <p style="font-size:2rem;margin:0">🎉</p>
+  <p id="end-msg" style="font-weight:700;margin:6px 0 14px"></p>
+  <p style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+    <a class="btn ghost" href="?stage={{ stage }}">한 번 더</a>
+    <a class="btn" href="/s/{{ code }}/hw/{{ h.id }}/{{ i }}">단계 화면으로</a>
+  </p>
+</div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+(() => {
+  const CARDS = {{ cards|tojson }}, STAGE = {{ stage|tojson }}, BEST = {{ best|tojson }};
+  const SAVE = "/s/{{ code }}/hw/{{ h.id }}/{{ i }}/stage", KEY = "vstudy:{{ h.id }}:{{ i }}:" + STAGE;
+  const box = document.getElementById("stage"), bar = document.getElementById("bar"), cnt = document.getElementById("count");
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  const shuffle = a => { a = a.slice(); for (let k = a.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [a[k], a[j]] = [a[j], a[k]]; } return a; };
+  const say = w => { try { const u = new SpeechSynthesisUtterance(w); u.lang = "en-US"; u.rate = 0.9; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} };
+  const norm = s => String(s || "").toLowerCase().replace(/[’']/g, "'").replace(/[~.,!?()]/g, " ").replace(/\s+/g, " ").trim();
+  const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } };
+  const store = v => { try { v ? localStorage.setItem(KEY, JSON.stringify(v)) : localStorage.removeItem(KEY); } catch (e) {} };
+
+  function finish(msg, extra) {
+    store(null);
+    const body = new FormData(); body.append("stage", STAGE);
+    if (extra) for (const k in extra) body.append(k, extra[k]);
+    fetch(SAVE, {method: "POST", body}).catch(() => {});
+    box.hidden = true;
+    document.getElementById("end-msg").textContent = msg;
+    document.getElementById("end").hidden = false;
+  }
+
+  if (!CARDS.length) { box.innerHTML = "<p>뜻이 있는 단어가 없어요. 선생님께 알려 주세요.</p>"; return; }
+
+  // ---------- 암기·리콜·스펠: 대기열에서 하나씩, 모르거나 틀리면 뒤로 ----------
+  if (STAGE !== "game") {
+    const saved = load();
+    let queue = saved && Array.isArray(saved.q) && saved.q.every(n => n < CARDS.length) ? saved.q : shuffle(CARDS.map((_, n) => n));
+    let cleared = saved ? (saved.c || 0) : 0;
+    const total = CARDS.length;
+    const prog = () => { bar.style.width = (100 * cleared / total) + "%"; cnt.textContent = `${cleared} / ${total}개 완료` + (queue.length > total - cleared ? ` · 다시 볼 카드 포함 ${queue.length}장 남음` : ""); store({q: queue, c: cleared}); };
+    const next = ok => {
+      const n = queue.shift();
+      if (ok) cleared++; else queue.splice(Math.min(queue.length, 3 + Math.floor(Math.random() * 3)), 0, n);  // 틀린 카드는 3~5장 뒤에 다시
+      if (!queue.length) return finish(`${total}개 모두 ${ {learn: "외웠어요", recall: "맞혔어요", spell: "썼어요"}[STAGE] }!`);
+      show();
+    };
+    const show = () => {
+      prog();
+      const c = CARDS[queue[0]];
+      if (STAGE === "learn") {
+        box.innerHTML = `<div class="vcard" id="flip"><div class="vw">${esc(c.w)} <button class="vspk" type="button" aria-label="발음 듣기">🔊</button></div>
+          <div class="vm" hidden>${esc(c.m)}${c.e ? `<p class="small muted">${esc(c.e)}</p>` : ""}</div><p class="small muted vhint">눌러서 뜻 보기</p></div>
+          <div class="vbtns"><button class="btn ghost" id="no">😵 몰라요</button><button class="btn" id="yes">😀 알아요</button></div>`;
+        const card = box.querySelector("#flip");
+        card.addEventListener("click", e => { if (e.target.closest(".vspk")) return say(c.w); card.querySelector(".vm").hidden = false; card.querySelector(".vhint").hidden = true; });
+        box.querySelector("#yes").onclick = () => next(true);
+        box.querySelector("#no").onclick = () => next(false);
+        say(c.w);
+      } else if (STAGE === "recall") {
+        const others = shuffle(CARDS.filter(x => x.m !== c.m).map(x => x.m)).filter((m, k, a) => a.indexOf(m) === k).slice(0, 3);
+        const opts = shuffle([c.m, ...others]);
+        box.innerHTML = `<div class="vw" style="margin-bottom:14px">${esc(c.w)} <button class="vspk" type="button" aria-label="발음 듣기">🔊</button></div>
+          <div class="vchoices">${opts.map((m, k) => `<button class="vchoice" data-k="${k}">${esc(m)}</button>`).join("")}</div>`;
+        box.querySelector(".vspk").onclick = () => say(c.w);
+        box.querySelectorAll(".vchoice").forEach(b => b.onclick = () => {
+          const ok = opts[+b.dataset.k] === c.m;
+          box.querySelectorAll(".vchoice").forEach(x => { x.disabled = true; if (opts[+x.dataset.k] === c.m) x.classList.add("good"); });
+          if (!ok) b.classList.add("bad");
+          setTimeout(() => next(ok), ok ? 450 : 1300);
+        });
+      } else {
+        box.innerHTML = `<div class="vm" style="font-size:1.15rem;margin-bottom:6px">${esc(c.m)}</div>
+          <p class="small muted" style="margin:0 0 10px">첫 글자: <b>${esc(c.w[0])}</b> · ${c.w.length}글자</p>
+          <form id="sp" autocomplete="off"><input type="text" id="ans" autocapitalize="off" autocorrect="off" spellcheck="false" style="width:100%;font-size:1.1rem" aria-label="철자">
+          <p class="small" id="fb" style="min-height:1.4em;margin:8px 0"></p><button class="btn" type="submit" style="width:100%">확인</button></form>`;
+        const inp = box.querySelector("#ans"), fb = box.querySelector("#fb");
+        inp.focus();
+        let checked = false;
+        box.querySelector("#sp").onsubmit = e => {
+          e.preventDefault();
+          if (checked) return;
+          checked = true;
+          const ok = norm(inp.value) === norm(c.w);
+          fb.innerHTML = ok ? "⭕ 정답!" : `❌ 정답은 <b>${esc(c.w)}</b>`;
+          say(c.w);
+          setTimeout(() => next(ok), ok ? 500 : 1700);
+        };
+      }
+    };
+    show();
+    return;
+  }
+
+  // ---------- 매칭 게임: 단어 8쌍 짝 맞추기, 틀리면 +1초 ----------
+  const pick = shuffle(CARDS.filter((c, k, a) => a.findIndex(x => x.m === c.m) === k)).slice(0, 8);
+  const tiles = shuffle(pick.flatMap((c, k) => [{k, t: c.w, en: true}, {k, t: c.m}]));
+  let start = 0, penalty = 0, left = pick.length, sel = null, timer;
+  cnt.textContent = BEST ? `내 최고 기록 ${BEST}초` : "단어와 뜻을 짝 지어 눌러요. 틀리면 1초 더해져요.";
+  box.innerHTML = `<p style="text-align:center;font-size:1.5rem;font-weight:700;margin:0 0 10px" id="clock">0.0초</p>
+    <div class="vtiles">${tiles.map((x, n) => `<button class="vtile ${x.en ? "en" : ""}" data-n="${n}">${esc(x.t)}</button>`).join("")}</div>`;
+  const clock = box.querySelector("#clock");
+  const secs = () => (performance.now() - start) / 1000 + penalty;
+  box.querySelectorAll(".vtile").forEach(b => b.onclick = () => {
+    if (!start) { start = performance.now(); timer = setInterval(() => clock.textContent = secs().toFixed(1) + "초", 100); }
+    if (b.classList.contains("gone")) return;
+    if (!sel) { sel = b; b.classList.add("sel"); return; }
+    if (sel === b) { b.classList.remove("sel"); sel = null; return; }
+    const a = tiles[+sel.dataset.n], c = tiles[+b.dataset.n];
+    if (a.k === c.k && a.en !== c.en) {
+      [sel, b].forEach(x => { x.classList.remove("sel"); x.classList.add("gone"); });
+      left--;
+      bar.style.width = (100 * (pick.length - left) / pick.length) + "%";
+      if (!left) {
+        clearInterval(timer);
+        const s = Math.round(secs() * 10) / 10;
+        finish(`${s}초!` + (!BEST || s < BEST ? " 🏅 새 최고 기록" : ` (최고 ${BEST}초)`), {secs: s});
+      }
+    } else {
+      penalty += 1;
+      [sel, b].forEach(x => { x.classList.remove("sel"); x.classList.add("bad"); setTimeout(() => x.classList.remove("bad"), 400); });
+    }
+    sel = null;
+  });
+})();
+</script>
+{% endblock %}

@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, selectinload
 from .. import care, push
 from ..config import APP_NAME, BASE_DIR
 from ..db import get_db
-from ..models import Academy, CareNotice, PushSub, Student, now
+from ..models import Academy, CareNotice, ParentPushSub, Student, now
 from ..web import render
 
 router = APIRouter(prefix="/p")
@@ -46,13 +46,13 @@ def manifest(token: str, db: Session = Depends(get_db)):
         "id": f"/p/{token}",
         "scope": "/p/",
         "display": "standalone",
-        "background_color": "#ffffff",
+        "background_color": "#FFF4E6",
         "theme_color": (academy.brand_color if academy and academy.brand_color else "#1B2A5C"),
         "lang": "ko",
         "icons": [
-            {"src": "/static/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-            {"src": "/static/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-            {"src": "/static/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+            {"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+            {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+            {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
         ],
     }, media_type="application/manifest+json")
 
@@ -114,9 +114,9 @@ async def subscribe(token: str, request: Request, db: Session = Depends(get_db))
         raise HTTPException(400, "알림 정보가 올바르지 않아요.")
     ua = request.headers.get("user-agent", "")
     device = "아이폰" if ("iPhone" in ua or "iPad" in ua) else "안드로이드" if "Android" in ua else "PC"
-    sub = db.execute(select(PushSub).where(PushSub.student_id == s.id, PushSub.endpoint == endpoint)).scalar_one_or_none()
+    sub = db.execute(select(ParentPushSub).where(ParentPushSub.student_id == s.id, ParentPushSub.endpoint == endpoint)).scalar_one_or_none()
     if sub is None:
-        sub = PushSub(academy_id=s.academy_id, student_id=s.id, endpoint=endpoint)
+        sub = ParentPushSub(academy_id=s.academy_id, student_id=s.id, endpoint=endpoint)
         db.add(sub)
     sub.p256dh, sub.auth, sub.device, sub.fails = str(keys["p256dh"])[:200], str(keys["auth"])[:100], device, 0
     db.commit()

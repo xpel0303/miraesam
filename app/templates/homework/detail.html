@@ -23,18 +23,26 @@
   <div class="table-wrap"><table class="list">
     <thead><tr><th>학생</th><th>반</th>{% for t in h.tasks %}<th title="{{ t.title }}">{{ loop.index }}. {{ kinds[t.kind] }}</th>{% endfor %}<th>완료</th></tr></thead>
     <tbody>{% for row in rows %}
-      <tr><td><b>{{ row.s.name }}</b></td><td class="small muted">{{ row.s.class_group.name if row.s.class_group else "" }}</td>
+      <tr><td><b>{{ row.s.name }}</b>{% if row.s.id not in alert_on %} <span title="이 학생은 숙제 알림을 아직 안 켰어요" class="small">🔕</span>{% endif %}</td><td class="small muted">{{ row.s.class_group.name if row.s.class_group else "" }}</td>
         {% for st, r in row.cells %}
           <td><form method="post" action="/homework/{{ h.id }}/check/{{ row.s.id }}/{{ loop.index0 }}" style="display:inline">
             <button class="hw-cell {{ st }}" type="submit" title="눌러서 선생님이 완료/미완료로 바꾸기">
-              {% if st == "done" %}✓{% if r.total %} {{ r.best }}{% endif %}{% elif st == "retry" %}{{ r.best }}점 · 다시{% else %}—{% endif %}{% if r and r.late %}<small> 늦음</small>{% endif %}
-            </button></form>{% if r and r.attempts > 1 %}<span class="small muted"> {{ r.attempts }}회</span>{% endif %}</td>
+              {% if st == "done" %}✓{% if r.total %} {{ r.best }}{% endif %}{% elif st == "retry" %}{% if r.attempts %}{{ r.best }}점 · 다시{% else %}하는 중{% endif %}{% else %}—{% endif %}{% if r and r.late %}<small> 늦음</small>{% endif %}
+            </button></form>{% set tk = h.tasks[loop.index0] %}{% if tk.kind == "vocab" and tk.stages and tk.stages != ["test"] and r and r.stages %}
+            <div class="small muted" title="단계 진행">{% for k in tk.stages if k != "test" %}{% if k == "game" %}{% if r.stages.game %}🎮{{ r.stages.game }}초{% endif %}{% elif r.stages.get(k) %}{{ {"learn": "암기", "recall": "리콜", "spell": "스펠"}[k] }}✓ {% endif %}{% endfor %}</div>{% endif %}{% if r and r.attempts > 1 %}<span class="small muted"> {{ r.attempts }}회</span>{% endif %}</td>
         {% endfor %}
         <td>{{ row.done }} / {{ h.tasks|length }}</td></tr>
     {% endfor %}</tbody>
   </table></div>
   <p class="small muted" style="margin:8px 0 0">칸을 누르면 선생님이 직접 완료·미완료로 바꿀 수 있어요 (종이로 낸 숙제 확인용).</p>
   {% else %}<p class="small muted" style="margin:0">이 반에 학생이 없어요.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2>🔔 앱 알림</h2>
+    <form method="post" action="/homework/{{ h.id }}/remind"><button class="btn small" type="submit">안 한 학생에게 알림 보내기</button></form></div>
+  <p class="small muted" style="margin:0">숙제를 내면 알림을 켠 학생 폰에 '새 숙제' 알림이 가고, 마감 전날 저녁에는 아직 안 한 학생에게 자동으로 한 번 더 가요.
+    알림은 학생 화면의 '🔔 숙제 알림 받기'를 켠 학생에게만 가요 (아이폰은 홈 화면에 앱을 설치해야 켤 수 있어요). 아래 표에서 이름 옆에 🔕 가 있는 학생은 아직 안 켠 학생이에요.</p>
 </section>
 
 <section class="panel">
@@ -63,7 +71,8 @@
       <div class="field"><label>마감일</label><input type="text" name="due" value="{{ h.due }}" inputmode="numeric" placeholder="2026-10-28"></div>
     </div>
     <div class="field"><label>안내 문구</label><input type="text" name="memo" value="{{ h.memo }}"></div>
-    <div class="field"><label>반</label><div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}</div></div>
+    <div class="field"><label>반</label><div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}</div>
+      {% include "homework/_pick_students.html" %}</div>
     <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" {% if h.options.reveal %}checked{% endif %}> 제출하면 틀린 문제의 정답·해설 보여 주기</label>
     <label style="font-weight:400"><input type="checkbox" name="active" value="1" {% if h.active %}checked{% endif %}> 학생 화면에 보이기 (끄면 숙제 닫기)</label>
     <button class="btn small" type="submit" style="margin-top:8px">저장</button>

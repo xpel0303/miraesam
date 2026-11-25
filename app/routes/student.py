@@ -66,8 +66,9 @@ def _exam_for(db: Session, s: Student, eid: int) -> Exam:
 def _hws_for(db: Session, s: Student) -> list[Homework]:
     if not s.class_id:
         return []
-    return list(db.execute(select(Homework).join(HomeworkClass, HomeworkClass.homework_id == Homework.id)
-                           .where(HomeworkClass.class_id == s.class_id, Homework.active.is_(True)).order_by(Homework.id.desc()).limit(30)).scalars())
+    hws = db.execute(select(Homework).join(HomeworkClass, HomeworkClass.homework_id == Homework.id)
+                     .where(HomeworkClass.class_id == s.class_id, Homework.active.is_(True)).order_by(Homework.id.desc()).limit(60)).scalars()
+    return [h for h in hws if hspec.for_student(h, s.id)][:30]
 
 
 def _hw_for(db: Session, s: Student, hid: int) -> Homework:
@@ -386,8 +387,19 @@ def hw_task(code: str, hid: int, i: int, request: Request, db: Session = Depends
         wl = db.get(WordList, t["list_id"])
         if wl is None:
             raise HTTPException(404, "단어장이 지워졌어요. 선생님께 알려 주세요.")
+        stage = request.query_params.get("stage", "")
+        if hspec.has_study(t) and stage != "test":
+            r = _hw_results(db, s, h).get(i)
+            if stage in hspec.STAGES and stage in hspec.stages_of(t):
+                cards = [{"w": w["word"], "m": w["meaning"], "e": w.get("example", "")} for w in hspec.task_words(wl, t) if w.get("word") and w.get("meaning")][:400]
+                return render(request, "student/hw_vocab_study.html", _ctx(db, s, h=h, i=i, t=t, wl=wl, stage=stage, stages=hspec.STAGES, cards=cards,
+                                                                           best=((r.stages or {}).get("game") if r else None)))
+            return render(request, "student/hw_vocab.html", _ctx(db, s, h=h, i=i, t=t, wl=wl, r=r, stages=hspec.STAGES, order=hspec.stages_of(t),
+                                                                 done=hspec.stage_done(t, r), rank=_vocab_rank(db, h, i, s)))
+        if "test" not in hspec.stages_of(t):
+            return RedirectResponse(f"/s/{s.access_code}/hw/{h.id}/{i}", status_code=303)
         seed = secrets.randbits(31)
-        qs = spec.build_quiz(wl.words, t["mode"], t["count"], seed)
+        qs = spec.build_quiz(hspec.task_words(wl, t), t["mode"], t["count"], seed)
         public = [{"prompt": q["prompt"], "choices": q.get("choices")} for q in qs]
         return render(request, "student/quiz.html", _ctx(db, s, wl=wl, mode=t["mode"], modes=spec.QUIZ_MODES, qs=public, seed=seed, count=t["count"],
                                                          hw=h, action=f"/s/{s.access_code}/hw/{h.id}/{i}"))
@@ -406,6 +418,52 @@ def hw_task(code: str, hid: int, i: int, request: Request, db: Session = Depends
         qs = {it["n"]: it["q"] for it in t["items"] if it.get("q")}  # 문제 보여 주기를 켠 숙제만 (정답은 보내지 않음)
         return render(request, "student/hw_omr.html", _ctx(db, s, h=h, i=i, t=t, nums=nums, txt=txt, qs=qs, circ=rspec.CIRCLED))
     return RedirectResponse(f"/s/{s.access_code}/hw/{h.id}", status_code=303)
+
+
+def _vocab_rank(db: Session, h: Homework, i: int, me: Student) -> dict:
+    """같은 숙제를 받은 친구들끼리 순위: 매칭 게임 최고 기록(빠른 순), 테스트 최고 점수."""
+    rows = list(db.execute(select(HomeworkResult, Student.name).join(Student, Student.id == HomeworkResult.student_id)
+                           .where(HomeworkResult.homework_id == h.id, HomeworkResult.task == i)).all())
+    game = sorted([(float((r.stages or {})["game"]), n, r.student_id == me.id) for r, n in rows if (r.stages or {}).get("game")])
+    test = sorted([(-r.best, n, r.student_id == me.id) for r, n in rows if r.attempts], key=lambda x: x[0])
+    return {"game": [{"rank": k + 1, "name": n, "v": v, "me": m} for k, (v, n, m) in enumerate(game)][:10],
+            "test": [{"rank": k + 1, "name": n, "v": -v, "me": m} for k, (v, n, m) in enumerate(test)][:10]}
+
+
+@router.post("/{code}/hw/{hid}/{i}/stage")
+async def hw_stage(code: str, hid: int, i: int, request: Request, db: Session = Depends(get_db)):
+    """단어 숙제 단계 하나를 끝냈을 때 (암기·리콜·스펠은 완료 표시, 게임은 최고 기록)."""
+    s = _student(db, code)
+    if s is None:
+        raise HTTPException(404)
+    h = _hw_for(db, s, hid)
+    if not 0 <= i < len(h.tasks) or h.tasks[i]["kind"] != "vocab":
+        raise HTTPException(404)
+    t = h.tasks[i]
+    f = await request.form()
+    stage = str(f.get("stage", ""))
+    if stage not in hspec.stages_of(t) or stage == "test":
+        raise HTTPException(400)
+    r = _hw_results(db, s, h).get(i)
+    if r is None:
+        r = HomeworkResult(academy_id=h.academy_id, homework_id=h.id, student_id=s.id, task=i, attempts=0, best=0, stages={})
+        db.add(r)
+    st = dict(r.stages or {})
+    if stage == "game":
+        try:
+            secs = round(max(1.0, min(3600.0, float(f.get("secs") or 0))), 1)
+        except ValueError:
+            raise HTTPException(400)
+        if not st.get("game") or secs < float(st["game"]):
+            st["game"] = secs
+    else:
+        st[stage] = True
+    r.stages = st
+    if "test" not in hspec.stages_of(t) and not r.done and hspec.study_complete(t, r):
+        r.done, r.best = True, 100
+        r.late = hspec.is_late(h.due)
+    db.commit()
+    return {"ok": True, "stages": st, "done": r.done}
 
 
 @router.post("/{code}/hw/{hid}/{i}")
@@ -438,20 +496,21 @@ async def hw_submit(code: str, hid: int, i: int, request: Request, db: Session =
         except (TypeError, ValueError):
             raise HTTPException(400)
         mode = t["mode"]
-        qs = spec.build_quiz(wl.words, mode, count, seed)
+        words = hspec.task_words(wl, t)
+        qs = spec.build_quiz(words, mode, count, seed)
         wrong, correct, rows = [], 0, []
         for k, q in enumerate(qs):
             given = str(f.get(f"a{k}", "")).strip()
-            ok = spec.grade(wl.words, mode, q["idx"], given)
+            ok = spec.grade(words, mode, q["idx"], given)
             correct += ok
             rows.append({"prompt": q["prompt"], "answer": q["answer"], "given": given, "ok": ok})
             if not ok:
-                wrong.append({"word": wl.words[q["idx"]]["word"], "answer": q["answer"], "given": given})
+                wrong.append({"word": words[q["idx"]]["word"], "answer": q["answer"], "given": given})
         qr = QuizResult(academy_id=s.academy_id, student_id=s.id, list_id=wl.id, mode=mode, total=len(qs), correct=correct, wrong=wrong)
         db.add(qr)
         r = _record(db, s, h, i, correct, len(qs), [{"n": w["word"]} for w in wrong])
         return render(request, "student/result.html", _ctx(db, s, wl=wl, r=qr, rows=rows, mode=mode, modes=spec.QUIZ_MODES, count=count,
-                                                           hw=h, hw_task=i, hw_done=r.done, hw_pass=t["pass"]))
+                                                           hw=h, hw_task=i, hw_done=r.done, hw_pass=t["pass"], hw_study=hspec.has_study(t)))
     if t["kind"] == "ox":
         correct, wrong = hspec.grade_ox(t, f)
         total = len(t["items"])
@@ -467,3 +526,14 @@ async def hw_submit(code: str, hid: int, i: int, request: Request, db: Session =
                 w["a_label"], w["g_label"] = hspec.answer_label(w["a"]), hspec.answer_label(w["given"]) if w["given"] else "안 씀"
     return render(request, "student/hw_result.html", _ctx(db, s, h=h, i=i, t=t, r=r, correct=correct, total=total, wrong=wrong,
                                                           reveal=reveal, pct=round(100 * correct / total) if total else 0))
+
+
+@router.post("/{code}/push")
+async def push_sub(code: str, request: Request, db: Session = Depends(get_db)):
+    """학생 기기를 숙제 알림에 등록 / 해제."""
+    s = _student(db, code)
+    if s is None:
+        raise HTTPException(404)
+    from .. import push
+    body = await request.json()
+    return {"ok": push.save_sub(s.academy_id, s.id, body.get("sub") or {})}

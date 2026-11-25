@@ -8,7 +8,8 @@
 {% if hw %}<p class="small" style="margin:0">{% if hw_done %}<b>숙제 통과!</b>{% else %}숙제 통과 점수는 {{ hw_pass }}점이에요. 다시 풀어서 넘어 봐요.{% endif %}</p>{% endif %}
 <div class="actions" style="margin:16px 0">
   {% if hw %}
-  <a class="btn {{ 'ghost' if hw_done else '' }}" href="/s/{{ code }}/hw/{{ hw.id }}/{{ hw_task }}">다시 풀기</a>
+  <a class="btn {{ 'ghost' if hw_done else '' }}" href="/s/{{ code }}/hw/{{ hw.id }}/{{ hw_task }}?stage=test">다시 풀기</a>
+  {% if hw_study %}<a class="btn ghost" href="/s/{{ code }}/hw/{{ hw.id }}/{{ hw_task }}">단계 화면으로</a>{% endif %}
   <a class="btn {{ '' if hw_done else 'ghost' }}" href="/s/{{ code }}/hw/{{ hw.id }}">숙제 목록으로</a>
   {% else %}
   <a class="btn" href="/s/{{ code }}/vocab/{{ wl.id }}/quiz?mode={{ mode }}&count={{ count }}">다시 풀기</a>

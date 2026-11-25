@@ -10,7 +10,7 @@ from . import handlers  # noqa: F401  (작업 처리기 등록)
 from .config import BASE_DIR, SECRET_KEY
 from .db import init_db
 from .jobs import start_workers, stop_workers
-from .routes import analysis, bank, auth, care, parent, comprehension, exam, flow, grammar, home, homework, leveltest, library, mock, ocr, paraphrase, reports, roster, sentence, settings, student, summary, textbook, trend, variant, vocab
+from .routes import analysis, bank, auth, care, comprehension, exam, flow, grammar, home, homework, leveltest, library, mock, ocr, paraphrase, parent, pwa, reports, roster, sentence, settings, student, summary, textbook, trend, variant, vocab
 from .web import LoginRequired, render
 
 
@@ -20,7 +20,10 @@ async def lifespan(app: FastAPI):
     from .leveltest.pack import seed_builtin_background
     seed_builtin_background()  # 사이트에 들어 있는 레벨테스트 시험지를 학원마다 넣기
     start_workers()
+    from . import push
+    push.start()  # 마감 전날 숙제 알림
     yield
+    push.stop()
     stop_workers()
 
 
@@ -28,7 +31,7 @@ app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, session_cookie="hw_session", max_age=60 * 60 * 24 * 30, same_site="lax", https_only=False)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-for r in (auth, home, settings, roster, student, care, parent, comprehension, analysis, summary, flow, textbook, vocab, grammar, variant, sentence, paraphrase, reports, homework, exam, trend, mock, leveltest, library, bank, ocr):
+for r in (auth, home, settings, roster, student, care, parent, comprehension, analysis, summary, flow, textbook, vocab, grammar, variant, sentence, paraphrase, reports, homework, exam, trend, mock, leveltest, library, bank, ocr, pwa):
     app.include_router(r.router)
 
 

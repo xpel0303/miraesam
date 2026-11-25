@@ -1,62 +1,100 @@
 {% extends "pdf/_base.html" %}
-{# 동형 모의고사 시험지: 학교 시험지처럼 2단, 번호·배점·발문·묶음 그대로 #}
+{# 동형 모의고사 시험지: 학교 정기고사 시험지 양식 (머리 표 + 큰 제목, 2단, 선택형 → 서답형, 문항마다 배점·출처) #}
 {% block style %}
-  @page { margin: 14mm 12mm 15mm 12mm; }
-  html { font-size: 9.3pt; line-height: 1.55; }
-  .mh { display: table; width: 100%; border: 1.2pt solid var(--ink); margin-bottom: 6pt; }
-  .mh .l, .mh .r { display: table-cell; vertical-align: top; padding: 6pt 9pt; }
-  .mh .l { border-right: 1.2pt solid var(--ink); }
-  .mh h1 { font-size: 14pt; margin: 0 0 2pt; }
-  .mh .s { font-size: 8.5pt; color: var(--ink-2); }
-  .mh .who { margin-top: 8pt; font-size: 8.5pt; }
-  .mh .who span { display: inline-block; width: 30%; border-bottom: 0.6pt solid var(--ink-3); padding-bottom: 1pt; margin-right: 2%; }
-  .mh .r { width: 34%; }
-  table.meta { font-size: 7.8pt; }
-  table.meta th, table.meta td { padding: 1pt 4pt; text-align: center; border: 0.6pt solid #888; }
-  .range { border: 0.8pt solid var(--ink); padding: 3pt 8pt; font-size: 7.8pt; margin-bottom: 8pt; }
-  .range b { color: var(--brand); margin-right: 4pt; }
-  .cols { columns: 2; column-gap: 14pt; column-rule: 0.8pt solid var(--ink); }
-  .q { margin: 0 0 11pt; break-inside: avoid; }
+{% include "pdf/_mock_page.html" %}
+  html { font-size: 8.9pt; line-height: 1.5; }
+  .top { display: table; width: 100%; table-layout: fixed; margin-bottom: 0; }
+  .top > div { display: table-cell; vertical-align: middle; }
+  .top .l { width: 50%; }
+  .top .r { text-align: center; }
+  .top .r .t1 { font-size: 17pt; font-weight: 800; letter-spacing: 0.5pt; line-height: 1.35; }
+  .top .r .t2 { font-size: 16pt; font-weight: 800; letter-spacing: 0.5pt; line-height: 1.35; }
+  table.hd { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  table.hd td { border: 0.7pt solid #222; padding: 2.5pt 4pt; text-align: center; height: 14pt; }
+  table.hd td.big { font-weight: 700; font-size: 8.3pt; }
+  table.hd td.who { text-align: right; padding-right: 8pt; letter-spacing: 0.3pt; }
+  table.hd td.who span { display: inline-block; min-width: 34pt; }
+  .cols { columns: 2; column-gap: 9mm; column-rule: 0.7pt solid #222; column-fill: auto; margin-top: 4pt; }
+  .note { border: 0.7pt solid #222; padding: 4pt 6pt; font-size: 7.8pt; line-height: 1.75; margin-bottom: 12pt; }
+  .sec { font-weight: 800; font-size: 9.6pt; margin: 6pt 0 6pt; break-after: avoid; }
+  .q { margin: 0 0 14pt; break-inside: avoid; }
   .grp { font-weight: 700; margin: 0 0 4pt; }
-  .stem { margin: 0 0 3pt; font-weight: 700; }
-  .stem .pt { font-weight: 400; }
-  .pass { border: 0.7pt solid var(--ink); padding: 5pt 7pt; text-align: justify; margin: 3pt 0; line-height: 1.6; }
-  .box { border: 0.7pt solid var(--ink); padding: 4pt 7pt; margin: 4pt 0; font-size: 8.8pt; }
+  .stem { margin: 0 0 4pt; font-weight: 700; padding-left: 11pt; text-indent: -11pt; }
+  .stem .src { font-weight: 700; }
+  .pass { margin: 3pt 0 6pt 11pt; text-align: justify; line-height: 1.55; }
+  .box { border: 0.6pt solid #222; padding: 3pt 6pt; margin: 4pt 0 4pt 11pt; font-size: 8.5pt; }
   .box .bt { text-align: center; font-weight: 700; margin-bottom: 1pt; }
-  .bl { display: inline-block; width: 64pt; border-bottom: 0.7pt solid var(--ink); }
+  .cond { margin: 4pt 0 4pt 11pt; font-size: 8.5pt; }
+  .cond b { display: block; }
+  .bl { display: inline-block; width: 64pt; border-bottom: 0.7pt solid #222; }
   u { text-underline-offset: 1.5pt; }
-  .ch { margin: 3pt 0 0 2pt; }
-  .ch div { padding-left: 12pt; text-indent: -12pt; margin: 0.5pt 0; }
+  .ch { margin: 3pt 0 0; }
+  .ch div { padding-left: 11pt; text-indent: -11pt; margin: 0.6pt 0; }
   .ch.grid div { display: inline-block; width: 32%; padding-left: 0; text-indent: 0; }
-  .ans { margin-top: 5pt; font-weight: 700; }
-  .line { border-bottom: 0.6pt solid var(--ink-2); height: 15pt; }
-  .end { text-align: center; color: var(--ink-3); font-size: 8pt; margin-top: 6pt; }
+  .sa .body { margin-left: 11pt; }
+  .ans { margin: 6pt 0 0 11pt; font-weight: 700; }
+  .line { margin-left: 11pt; border-bottom: 0.6pt dashed #333; height: 16pt; }
+  .end { text-align: center; color: #555; font-size: 8pt; margin-top: 8pt; }
 {% endblock %}
 {% block body %}
-{% set key = false %}{% include "pdf/_mock_head.html" %}
+{% set mcs = items|selectattr("kind", "equalto", "mc")|list %}{% set sas = items|selectattr("kind", "equalto", "sa")|list %}
+<div class="top">
+  <div class="l">
+    <table class="hd">
+      <tr><td colspan="4" class="big">{{ h.year }}학년도 {{ h.sem }}학기 ( {{ h.subject }} )과목 ( {{ h.term }}차 )시험</td></tr>
+      <tr><td style="width:20%">과목명</td><td style="width:20%">과목코드</td><td style="width:24%">( {{ h.g or "&nbsp;&nbsp;"|safe }} ) 학년</td><td>연월일시</td></tr>
+      <tr><td>{{ h.subject_short }}</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+      <tr><td colspan="4" class="who">제 {{ h.g or "&nbsp;&nbsp;"|safe }}학년 <span></span>반 <span></span>번 &nbsp;이름: <span style="min-width:70pt"></span></td></tr>
+    </table>
+  </div>
+  <div class="r">
+    <div class="t1">{{ h.t1 }}</div>
+    <div class="t2">동형 모의시험 {{ h.round }}회</div>
+  </div>
+</div>
 <div class="cols">
-{% set ns = namespace(unit=None) %}
+  <div class="note">
+    ※ 문제지는 전체 ( {{ h.sheets or "&nbsp;&nbsp;"|safe }} )장 ( {{ h.pages or "&nbsp;&nbsp;"|safe }} )면으로 선택형 ({{ c.mc }}문항 {{ spec.fmt(c.mc_pts) }}점){% if c.sa %}, 서답형 ({{ c.sa }}문항 {{ spec.fmt(c.sa_pts) }}점){% endif %} 입니다.<br>
+    {% if c.sa %}※ 서답형 작성 시 청색 또는 검정색 펜을 사용하세요.<br>{% endif %}
+    ※ 다음은 선택형 문항입니다. 문제를 읽고 알맞은 답을 고르시오.
+    {% if m.options.range %}<br>※ 시험 범위: {{ m.options.range }}{% endif %}
+  </div>
+{% set ns = namespace(unit=None, sec=None) %}
 {% for it in items %}
+  {% if it.kind != ns.sec %}{% set ns.sec = it.kind %}
+    {% if it.kind == "mc" %}<p class="sec">I. 선택형 ({{ mcs[0].label }}~{{ mcs[-1].label }}번 / 총 {{ spec.fmt(c.mc_pts) }}점)</p>
+    {% else %}<p class="sec">{{ "II" if mcs else "I" }}. 서답형 (서답형 1~{{ sas|length }} / 총 {{ spec.fmt(c.sa_pts) }}점)</p>{% endif %}
+  {% endif %}
   {% set unit_items = items|selectattr("unit", "equalto", it.unit)|list %}
   {% set first = ns.unit != it.unit %}{% set ns.unit = it.unit %}
+  {% set src = (" [" ~ it.src ~ "]") if it.src and it.src|length <= 40 else "" %}
   {% if first and unit_items|length > 1 %}
   <div class="q">
-    <p class="grp">[{% for x in unit_items %}{{ x.label }}{% if not loop.last %}, {% endif %}{% endfor %}] 다음 글을 읽고, 물음에 답하시오.</p>
+    <p class="grp">[{{ sa_names.get(unit_items[0].label, unit_items[0].label) }}~{{ sa_names.get(unit_items[-1].label, unit_items[-1].label) }}] 다음 글을 읽고, 물음에 답하시오.{{ src }}</p>
     {% if it.passage %}<div class="pass">{{ spec.rich(it.passage) }}</div>{% endif %}
   </div>
   {% endif %}
+  {% if it.kind == "mc" %}
   <div class="q">
-    <p class="stem">{{ spec.lab(it.label) }} {{ it.stem }} <span class="pt">({{ spec.fmt(it.points) }}점)</span></p>
+    <p class="stem">{{ spec.lab(it.label) }} {{ it.stem }} ({{ spec.fmt(it.points) }}점){% if not (unit_items|length > 1) %}{{ src }}{% endif %}</p>
     {% if it.passage and not (first and unit_items|length > 1) %}<div class="pass">{{ spec.rich(it.passage) }}</div>{% endif %}
     {% if it.box %}<div class="box">{% if "보기" in it.stem %}<div class="bt">&lt;보기&gt;</div>{% elif "주어진 단어" in it.stem %}<div class="bt">주어진 단어</div>{% endif %}{{ spec.rich(it.box) }}</div>{% endif %}
-    {% if it.conditions %}<div class="box"><div class="bt">[조건]</div>{{ spec.rich(it.conditions) }}</div>{% endif %}
-    {% if it.kind == "mc" and it.choices and not (it.choices[0] == "①") %}
+    {% if it.conditions %}<div class="cond"><b>&lt;조건&gt;</b>{{ spec.rich(it.conditions) }}</div>{% endif %}
+    {% if it.choices and not (it.choices[0] == "①") %}
       {% set short = (it.choices|map("length")|max) <= 14 %}
       <div class="ch {{ 'grid' if short }}">{% for ch in it.choices %}<div>{{ spec.CIRCLED[loop.index0] }} {{ spec.rich(ch) }}</div>{% endfor %}</div>
-    {% elif it.kind == "sa" %}
-      <p class="ans">답:</p><div class="line"></div>{% if (it.points or 0) >= 5 %}<div class="line"></div>{% endif %}
     {% endif %}
   </div>
+  {% else %}
+  <div class="q sa">
+    <p class="stem">[{{ sa_names[it.label] }}] 서술형{% if it.type %} - {{ it.type }}{% endif %} ({{ spec.fmt(it.points) }}점){% if not (unit_items|length > 1) %}{{ src }}{% endif %}</p>
+    <div class="body">{{ it.stem }}</div>
+    {% if it.passage and not (first and unit_items|length > 1) %}<div class="pass">{{ spec.rich(it.passage) }}</div>{% endif %}
+    {% if it.box %}<div class="box">{% if "보기" in it.stem %}<div class="bt">&lt;보기&gt;</div>{% elif "주어진 단어" in it.stem %}<div class="bt">주어진 단어</div>{% endif %}{{ spec.rich(it.box) }}</div>{% endif %}
+    {% if it.conditions %}<div class="cond"><b>&lt;조건&gt;</b>{{ spec.rich(it.conditions) }}</div>{% endif %}
+    <p class="ans">정답:</p><div class="line"></div>{% if (it.points or 0) >= 5 %}<div class="line"></div><div class="line"></div>{% endif %}
+  </div>
+  {% endif %}
 {% endfor %}
 <p class="end">― 끝 ―</p>
 </div>

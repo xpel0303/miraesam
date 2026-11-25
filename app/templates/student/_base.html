@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/static/app.css">
 <meta name="robots" content="noindex">
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+{% set pwa_code = code if code is defined else (student.access_code if student is defined and student else "") %}{% include "_pwa_head.html" %}
 {% if academy.brand_color and academy.brand_color|lower not in ("#3a3a3a", "#f2846b", "#1b2a5c") %}<style>:root { --brand: {{ academy.brand_color }}; --brand-soft: color-mix(in srgb, {{ academy.brand_color }} 18%, #fff); }</style>{% endif %}
 </head>
 <body>
@@ -18,5 +19,6 @@
   {% block body %}{% endblock %}
 </div>
 {% block script %}{% endblock %}
+{% include "_pwa_install.html" %}
 </body>
 </html>

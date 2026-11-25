@@ -40,24 +40,28 @@ def build(ctx: JobContext) -> dict:
     _set(list_id, status="making", error=None)
 
     try:
-        if kind == "passage" and not words:
-            count = int(ctx.payload.get("count") or 10)
-            ps = spec.split_passages(text)
-            seen = set()
-            for n, p in enumerate(ps, 1):  # 지문마다 따로 뽑고, 앞 지문에 나온 단어는 빼기
-                ctx.step(f"{p['title'] or f'지문 {n}'}에서 단어 {count}개 고르는 중 ({n}/{len(ps)})", int(10 + 80 * (n - 1) / max(1, len(ps))))
+        ps = spec.split_passages(text) if kind == "passage" else []
+        names = spec.passage_names(ps)
+        have = {w.get("src") or "" for w in words if w.get("word")}
+        # 아직 단어가 없는 지문만 뽑기 — 중간에 오류·재시작으로 다시 돌 때도 앞 지문만 남고 끝나지 않게
+        todo_ps = [(n, p) for n, p in enumerate(ps) if names[n] not in have] if (not words or ctx.payload.get("count") or ctx.payload.get("missing")) else []
+        if todo_ps:
+            count = int(ctx.payload.get("count") or 0) or spec.per_passage_count(words) or 10
+            seen = {w["word"].lower() for w in words if w.get("word")}
+            for i, (n, p) in enumerate(todo_ps, 1):  # 지문마다 따로 뽑고, 앞 지문에 나온 단어는 빼기
+                ctx.step(f"{names[n]}에서 단어 {count}개 고르는 중 ({i}/{len(todo_ps)})", int(10 + 80 * (i - 1) / max(1, len(todo_ps))))
                 got = _ask(key, model, spec.extract_prompt(p["text"], count + 3, level), count + 3)
-                new = [{**w, "src": p["title"] or f"지문 {n}"} for w in got if w["word"].lower() not in seen][:count]
+                new = [{**w, "src": names[n]} for w in got if w["word"].lower() not in seen][:count]
                 seen |= {w["word"].lower() for w in new}
-                words += new
+                words = spec.order_by_passage(words + new, names)
                 _set(list_id, words=[dict(w) for w in words])  # 지문마다 저장
             words = words[: spec.MAX_WORDS]
-        else:
-            todo = [i for i, w in enumerate(words) if spec.blank_needed(w)]
+        todo = [i for i, w in enumerate(words) if spec.blank_needed(w)]
+        if todo:
             chunks = [todo[i:i + spec.CHUNK] for i in range(0, len(todo), spec.CHUNK)]
             for n, chunk in enumerate(chunks, 1):
                 ctx.step(f"빈칸 채우는 중 ({n}/{len(chunks)})", int(10 + 80 * (n - 1) / max(1, len(chunks))))
-                filled = _ask(key, model, spec.fill_prompt([words[i] for i in chunk], " ".join(p["text"] for p in spec.split_passages(text))[:12000] if kind == "passage" else "", level), len(chunk))
+                filled = _ask(key, model, spec.fill_prompt([words[i] for i in chunk], " ".join(p["text"] for p in ps)[:12000] if kind == "passage" else "", level), len(chunk))
                 by_word = {f["word"].lower(): f for f in filled}
                 for pos, i in enumerate(chunk):
                     f = by_word.get(words[i]["word"].lower()) or (filled[pos] if pos < len(filled) else None)

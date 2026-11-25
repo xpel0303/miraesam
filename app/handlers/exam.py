@@ -26,6 +26,29 @@ def _set(pid: int, **fields):
             setattr(p, k, v)
 
 
+SPACE = "⎵"
+CODED = (f"\n\n[중요] 답의 모든 글자 칸에서 띄어쓰기(공백)를 전부 '{SPACE}' 기호로 바꿔 쓰세요. "
+         f"예: \"The{SPACE}boy{SPACE}ran.\" 줄바꿈은 그대로 두세요. 이 규칙 말고는 위 형식과 똑같이 답하세요.")
+
+
+def _decode(x):
+    if isinstance(x, str):
+        return x.replace(SPACE, " ")
+    if isinstance(x, list):
+        return [_decode(v) for v in x]
+    if isinstance(x, dict):
+        return {k: _decode(v) for k, v in x.items()}
+    return x
+
+
+def _ask_page(key, model, img, prompt_text) -> dict:
+    """한 쪽만. 빈 답(RECITATION: 지문을 그대로 옮기는 걸 Gemini가 막음)이면 띄어쓰기를 기호로 바꿔 쓰게 해서 다시."""
+    try:
+        return _ask(key, model, [img], prompt_text)
+    except llm.EmptyAnswer:
+        return _decode(_ask(key, model, [img], prompt_text + CODED))
+
+
 def _ask(key, model, images, prompt_text) -> dict:
     """한 묶음 요청. JSON 모양이 틀리면 한 번 더."""
     last = None
@@ -90,7 +113,26 @@ def extract(ctx: JobContext) -> dict:
                 with session_scope() as db:
                     imgs = [llm.Image(db.get(StoredFile, page_rows[i]["file_id"]).data, "image/jpeg") for i in idx]
                 prev = spec.last_label(chunks.get(str(start - spec.CHUNK))) if start else ""
-                res = _ask(key, model, imgs, spec.prompt([i + 1 for i in idx], n, prev))
+                try:
+                    res = _ask(key, model, imgs, spec.prompt([i + 1 for i in idx], n, prev))
+                except llm.EmptyAnswer:
+                    # 두 쪽을 같이 보내면 빈 답이 오는 경우가 있어 한 쪽씩 다시. 그래도 안 되는 쪽은 비워 두고 계속.
+                    res = {"header": None, "items": [], "_failed": []}
+                    for pos, (i, img) in enumerate(zip(idx, imgs), 1):
+                        ctx.step(f"{i + 1}쪽만 따로 다시 읽는 중", 30 + int(60 * k / len(starts)))
+                        try:
+                            one = _ask_page(key, model, img, spec.prompt([i + 1], n, prev))
+                        except llm.EmptyAnswer:
+                            res["_failed"].append(i + 1)
+                            continue
+                        if res["header"] is None and isinstance(one.get("header"), dict):
+                            res["header"] = one["header"]
+                        for it in one.get("items") or []:
+                            if isinstance(it, dict):
+                                res["items"].append({**it, "page": pos})
+                        prev = spec.last_label({"items": res["items"]}) or prev
+                    if len(res["_failed"]) == len(idx) and len(starts) == 1:
+                        raise
                 res["_pages"] = [i + 1 for i in idx]  # 이미지 순서 → 실제 쪽 번호
                 chunks[str(start)] = res
             _set(pid, chunks=dict(chunks))
@@ -100,7 +142,9 @@ def extract(ctx: JobContext) -> dict:
         qs, meta = spec.merge(chunks)
         if not qs:
             raise llm.LLMError("문항을 하나도 찾지 못했어요. 시험지 이미지가 흐리거나 문항이 없는 쪽만 올렸는지 확인해 주세요.")
-        warns = spec.validate(qs, n) + spec.check_counts(qs, meta)
+        failed = sorted(pg_ for c in chunks.values() for pg_ in (c or {}).get("_failed", []))
+        warns = ([f"{', '.join(map(str, failed))}쪽은 Gemini가 빈 답을 보내 읽지 못했어요. 아래 쪽 이미지에서 체크하고 '다시 읽기'를 눌러 주세요."] if failed else []) \
+            + spec.validate(qs, n) + spec.check_counts(qs, meta)
         with session_scope() as db:
             p = db.get(ExamPaper, pid)
             p.questions = qs
@@ -171,7 +215,7 @@ def make_pdf(ctx: JobContext) -> dict:
         old = p.file_id
     ctx.step("분석지 만드는 중", 50)
     st = spec.stats(qs)
-    pdf = render_pdf("pdf/exam_analysis.html", {"academy": academy, "p": info, "qs": qs, "st": st, "notes": spec.notes(qs, st),
+    pdf = render_pdf("pdf/exam_analysis.html", {"academy": academy, "p": info, "qs": qs, "st": st, "notes": spec.notes(qs, st), "v": spec.visual(qs, st),
                                                 "doc_title": f"{info['title']} · 기출 분석",
                                                 "today": datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")})
     name = f"{info['title']}_기출분석.pdf"

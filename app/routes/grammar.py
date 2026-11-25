@@ -102,7 +102,8 @@ def detail(gid: int, request: Request, teacher: Teacher = Depends(current_teache
         q["answer_text"] = spec.answer_of(q)
         q["problems"] = spec.validate(q)
         qs.append(q)
-    return render(request, "grammar/detail.html", {"teacher": teacher, "gs": gs, "job": job, "busy": _busy(db, gs), "qs": qs, "spec": spec, "active": "grammar"})
+    from .reports import online_exams
+    return render(request, "grammar/detail.html", {"online": online_exams(db, teacher.academy_id, "grammar", gs.id), "teacher": teacher, "gs": gs, "job": job, "busy": _busy(db, gs), "qs": qs, "spec": spec, "active": "grammar"})
 
 
 @router.post("/{gid}/questions")
