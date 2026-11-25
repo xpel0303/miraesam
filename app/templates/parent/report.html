@@ -9,45 +9,66 @@
 {% if token %}<link rel="manifest" href="/p/{{ token }}/manifest.webmanifest">{% endif %}
 <link rel="apple-touch-icon" href="/static/icons/icon-180.png">
 <link rel="stylesheet" href="/static/app.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap">
 {% include "parent/_style.html" %}
 <style>
-.hero { background: linear-gradient(130deg, var(--pb), color-mix(in srgb, var(--pb) 70%, #6C8CD5)); color: #fff; border-radius: 22px; padding: 18px; margin-bottom: 14px; }
-.hero { position: relative; }
-.hero small { opacity: .85; display: block; }
-.hero-logo { display: block; width: fit-content; margin: -4px 0 10px auto; background: #fff; border-radius: 12px; padding: 5px 9px; line-height: 0; }
-.hero-logo img { height: 28px; max-width: 110px; object-fit: contain; }
-.hero h1 { font-size: 1.25rem; margin: 4px 0 2px; color: #fff; }
-.grade { display: inline-block; background: #fff; color: var(--pb); font-weight: 800; border-radius: 999px; padding: 2px 12px; font-size: .85rem; margin-right: 6px; }
-.hero p { margin: 10px 0 0; font-size: .98rem; line-height: 1.5; }
-.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
-.tiles div { background: #fff; border: 2px solid var(--line); border-radius: 14px; text-align: center; padding: 10px 2px; }
-.tiles b { display: block; font-size: 1.25rem; }
-.tiles span { font-size: .72rem; color: var(--ink-2); }
+/* 월간 리포트: 아이보리 바탕 · 남색 + 금색 선 · 명조 제목 (고급 인쇄물 느낌) */
+:root { --gold: #B08D57; --ivory: #FAF8F3; --serif: "Nanum Myeongjo", "AppleMyungjo", "Batang", serif; }
+body { background: #EFECE5; }
+.pw { max-width: 560px; }
+.sheet { background: var(--ivory); border-radius: 4px; box-shadow: 0 10px 40px rgba(30,30,40,.10); overflow: hidden; margin-bottom: 18px; }
+.hero { background: var(--pb); color: #fff; padding: 26px 24px 22px; position: relative; border-bottom: 3px solid var(--gold); }
+.hero-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+.hero-top .lbl { font-size: .68rem; letter-spacing: .28em; color: #D9C7A3; text-transform: uppercase; }
+.hero-logo { display: inline-block; background: #fff; border-radius: 6px; padding: 5px 9px; line-height: 0; }
+.hero-logo img { height: 26px; max-width: 120px; object-fit: contain; }
+.hero small { display: block; opacity: .8; font-size: .8rem; letter-spacing: .02em; }
+.hero h1 { font-family: var(--serif); font-weight: 800; font-size: 1.55rem; margin: 6px 0 0; color: #fff; letter-spacing: -.01em; line-height: 1.35; }
+.hero h1 em { font-style: normal; display: block; font-size: 1rem; font-weight: 700; color: #E8DCC2; margin-top: 2px; }
+.hero p { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.18); font-family: var(--serif); font-size: 1.02rem; line-height: 1.7; }
+.grade { display: inline-block; border: 1px solid var(--gold); color: #E8DCC2; font-family: "Nanum Gothic", sans-serif; font-weight: 700; border-radius: 2px; padding: 1px 9px; font-size: .78rem; margin-right: 8px; vertical-align: 2px; letter-spacing: .05em; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; border-bottom: 1px solid #E7E2D6; }
+.tiles div { text-align: center; padding: 16px 2px 14px; border-right: 1px solid #EFEBE2; }
+.tiles div:last-child { border-right: 0; }
+.tiles b { display: block; font-family: var(--serif); font-size: 1.45rem; font-weight: 800; color: var(--pb); }
+.tiles span { font-size: .72rem; color: #8B8578; letter-spacing: .05em; }
+.pc { background: transparent; border: 0; border-top: 1px solid #E7E2D6; border-radius: 0; padding: 20px 24px; margin: 0; }
+.pc h2 { font-family: var(--serif); font-size: 1.08rem; font-weight: 800; color: #1F2433; margin: 0 0 12px; }
+.pc h2::before { content: ""; display: inline-block; width: 16px; height: 2px; background: var(--gold); vertical-align: middle; margin-right: 8px; }
+.pc h2 .small { font-family: "Nanum Gothic", sans-serif; }
 .tbl { width: 100%; border-collapse: collapse; font-size: .88rem; }
-.tbl td, .tbl th { padding: 6px 4px; border-top: 1px solid #EEF0F4; text-align: left; }
-.tbl th { font-weight: 400; color: var(--ink-3); font-size: .78rem; border-top: 0; }
-.hwg { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
-.hwg div { text-align: center; font-size: .75rem; border-radius: 10px; padding: 5px 2px; background: #F4F6FA; }
-.book { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid #EEF0F4; }
+.tbl td, .tbl th { padding: 7px 4px; border-top: 1px solid #ECE7DC; text-align: left; }
+.tbl th { font-weight: 400; color: #9A9384; font-size: .76rem; border-top: 0; }
+.hwg { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 5px; }
+.hwg div { text-align: center; font-size: .75rem; border-radius: 3px; padding: 6px 2px; background: #fff; border: 1px solid #ECE7DC; }
+.book { display: flex; gap: 14px; padding: 12px 0; border-top: 1px solid #ECE7DC; }
 .book:first-of-type { border-top: 0; padding-top: 0; }
-.book .cv { flex: 0 0 48px; height: 64px; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: .65rem; text-align: center; }
+.book .cv { flex: 0 0 50px; height: 68px; border-radius: 2px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: .65rem; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
 .book .cv img { width: 100%; height: 100%; object-fit: cover; }
-.bar { height: 8px; background: #EEF1F6; border-radius: 99px; overflow: hidden; margin: 6px 0 4px; }
+.bar { height: 5px; background: #ECE7DC; border-radius: 99px; overflow: hidden; margin: 8px 0 5px; }
 .bar i { display: block; height: 100%; border-radius: 99px; }
 .units { display: flex; flex-wrap: wrap; gap: 4px; }
-.units span { font-size: .75rem; background: #F4F6FA; border-radius: 999px; padding: 2px 8px; }
+.units span { font-size: .75rem; background: #fff; border: 1px solid #ECE7DC; border-radius: 2px; padding: 2px 8px; }
 .pgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-.pgrid a { display: block; aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
+.pgrid a { display: block; aspect-ratio: 1; border-radius: 2px; overflow: hidden; }
 .pgrid img { width: 100%; height: 100%; object-fit: cover; }
-.cm h3 { font-size: .9rem; margin: 12px 0 4px; color: var(--pb); }
-.cm h3:first-child { margin-top: 0; }
-.cm p { margin: 0; white-space: pre-wrap; font-size: .95rem; line-height: 1.6; }
+.cm { background: #fff; }
+.cm h3 { font-size: .78rem; letter-spacing: .12em; margin: 18px 0 6px; color: var(--gold); font-weight: 700; }
+.cm h3:first-of-type { margin-top: 0; }
+.cm p { margin: 0; white-space: pre-wrap; font-family: var(--serif); font-size: 1rem; line-height: 1.95; color: #2A2E3A; word-break: keep-all; }
+.cm p.sign { text-align: right; margin-top: 18px; font-family: var(--serif); font-size: .92rem; color: #555; }
+.sign b { color: #1F2433; }
+.foot { text-align: center; font-size: .75rem; color: #9A9384; letter-spacing: .1em; }
+.sheet .tiles { border-radius: 0; box-shadow: none; margin: 0; gap: 0; padding: 0; border: 0; border-bottom: 1px solid #E7E2D6; }
+.sheet .tiles div { background: #fff !important; border: 0; border-right: 1px solid #EFEBE2; border-radius: 0; box-shadow: none; }
+.sheet .pc h2 { display: block; }
 @media print {
   body { background: #fff; }
   .noprint, .preview-bar { display: none !important; }
   .pw { max-width: none; padding: 0; }
-  .pc, .tiles div { break-inside: avoid; border-color: #ddd; }
-  .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sheet { box-shadow: none; }
+  .pc, .tiles div { break-inside: avoid; }
+  .hero, .sheet, .tiles { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   @page { size: A4; margin: 12mm; }
 }
 </style>
@@ -57,10 +78,12 @@
   {% if teacher_view %}<div class="preview-bar noprint">선생님 미리보기{% if r.status != 'public' %} · 아직 공개 전이라 학부모님은 볼 수 없어요{% endif %} · <button class="linklike" onclick="print()">🖨️ 인쇄·PDF 저장</button></div>{% endif %}
   {% if token %}<p class="small noprint" style="margin:0 0 10px"><a href="/p/{{ token }}">← {{ student.name }} 학습관리</a></p>{% endif %}
 
+  <div class="sheet">
   <header class="hero">
-    <span class="hero-logo"><img src="{{ academy.logo if academy and academy.logo else '/static/logo-word.png' }}" alt="{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}"></span>
+    <div class="hero-top"><span class="lbl">Monthly Learning Report</span>
+      <span class="hero-logo"><img src="{{ academy.logo if academy and academy.logo else '/static/logo-word.png' }}" alt="{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}"></span></div>
     <small>{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}{% if r.class_group %} · {{ r.class_group.name }}{% endif %} · {{ r.start.month }}/{{ r.start.day }}~{{ r.end.month }}/{{ r.end.day }}</small>
-    <h1>{{ student.name }} · {{ r.title }}</h1>
+    <h1>{{ student.name }}<em>{{ r.title }}</em></h1>
     {% if r.grade or r.summary %}<p>{% if r.grade %}<span class="grade">{{ r.grade }}</span>{% endif %}{{ r.summary }}</p>{% endif %}
   </header>
 
@@ -140,12 +163,14 @@
   {% if r.strength or r.goal or r.message %}
   <section class="pc cm">
     <h2>담당 선생님 코멘트</h2>
-    {% if r.strength %}<h3>👍 잘한 점</h3><p>{{ r.strength }}</p>{% endif %}
-    {% if r.goal %}<h3>🎯 앞으로의 목표</h3><p>{{ r.goal }}</p>{% endif %}
-    {% if r.message %}<h3>💌 선생님 한마디</h3><p>{{ r.message }}</p>{% endif %}
+    {% if r.strength %}<h3>이번 달 잘한 점</h3><p>{{ r.strength }}</p>{% endif %}
+    {% if r.goal %}<h3>다음 달 목표</h3><p>{{ r.goal }}</p>{% endif %}
+    {% if r.message %}<h3>선생님 한마디</h3><p>{{ r.message }}</p>{% endif %}
+    <p class="sign">{{ r.end.year }}년 {{ r.end.month }}월 · <b>{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}</b> 드림</p>
   </section>
   {% endif %}
-  {% if not d.lessons and not (r.strength or r.goal or r.message) %}<p class="muted small">이 기간 기록이 아직 없어요.</p>{% endif %}
+  {% if not d.lessons and not (r.strength or r.goal or r.message) %}<p class="muted small" style="padding:20px 24px;margin:0">이 기간 기록이 아직 없어요.</p>{% endif %}
+  </div>
 
   <p class="foot">{{ academy.name if academy and academy.logo and academy.name else APP_NAME ~ ' ' ~ APP_SUB }}</p>
 </div>
