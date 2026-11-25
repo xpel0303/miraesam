@@ -1,91 +1,110 @@
-{# 설명회 슬라이드 (1280×720). 화면(미리보기·발표)과 PDF가 같이 씀.
+{# 설명회 슬라이드 (1280×720). 화면(미리보기·발표)과 PDF가 같이 씀. 홈페이지와 같은 톤:
+   제목 주아 · 본문 나눔스퀘어라운드, 점무늬 하늘색 바탕, 파스텔 카드, 물방울 캐릭터.
    쓰는 법: {% import "briefing/_slides.html" as sl with context %} {{ sl.css(font_dir) }} … {{ sl.slide(s, i, n, academy, geom) }} #}
+{% import "_art.html" as art %}
 {% macro css(font_dir) %}
 <style>
-{% for w in (400, 700, 800) %}
-@font-face { font-family: "BNanum"; font-weight: {{ w }}; src: url("{{ font_dir }}/nanum-gothic-korean-{{ w }}-normal.woff") format("woff"); }
-@font-face { font-family: "BNanum"; font-weight: {{ w }}; src: url("{{ font_dir }}/nanum-gothic-latin-{{ w }}-normal.woff") format("woff");
-  unicode-range: U+0000-00FF, U+2000-206F, U+2190-21FF; }
-{% endfor %}
-.sl { --navy:#1B2A5C; --sky:#2563EB; --cream:#FFF4E6; --ink:#1F2740; --ink2:#5C6680; --line:#E3E8F2;
-  position:relative; width:1280px; height:720px; overflow:hidden; background:#fff; color:var(--ink); font-family:"BNanum", sans-serif; box-sizing:border-box; }
+@font-face { font-family:"SNanumR"; font-weight:400; src:url("{{ font_dir }}/NanumSquareRoundR.woff2") format("woff2"); }
+@font-face { font-family:"SNanumR"; font-weight:700; src:url("{{ font_dir }}/NanumSquareRoundB.woff2") format("woff2"); }
+@font-face { font-family:"SNanumR"; font-weight:800; src:url("{{ font_dir }}/NanumSquareRoundEB.woff2") format("woff2"); }
+@font-face { font-family:"SJua"; src:url("{{ font_dir }}/jua-korean.woff2") format("woff2"); }
+@font-face { font-family:"SJua"; src:url("{{ font_dir }}/jua-latin.woff2") format("woff2"); unicode-range:U+0000-00FF, U+2000-206F; }
+.sl { --navy:#1B2A5C; --ink:#1F2740; --ink2:#5C6680; --ink3:#98A1B5; --line:#DDE6F3; --line2:#EAF0F8;
+  --c1:#E6F0FC; --c2:#FFF6DC; --c3:#EAF6F1; --c4:#F3EEFD; --c5:#FDEDF1; --c6:#FFF0E6;
+  position:relative; width:1280px; height:720px; overflow:hidden; color:var(--ink); box-sizing:border-box;
+  font-family:"SNanumR", "NanumSquareRound", sans-serif;
+  background:#F5F8FD radial-gradient(circle at 1.5px 1.5px, rgba(27,42,92,.08) 1.6px, transparent 0) 0 0 / 28px 28px; }
 .sl * { box-sizing:border-box; }
-.sl .hd { position:absolute; left:72px; right:72px; top:56px; }
-.sl .hd h2 { margin:0; font-size:44px; font-weight:800; letter-spacing:-1px; line-height:1.2; color:var(--navy); }
-.sl .hd p { margin:10px 0 0; font-size:22px; color:var(--ink2); }
-.sl .bar { position:absolute; left:72px; top:40px; width:56px; height:6px; border-radius:3px; background:var(--sky); }
-.sl .ft { white-space:nowrap; position:absolute; left:72px; right:72px; bottom:28px; display:flex; justify-content:space-between; align-items:center; font-size:15px; color:#9AA3B8; }
-.sl .ft .brand { display:flex; align-items:center; gap:8px; }
-.sl .ft img { width:24px; height:24px; border-radius:6px; }
-.sl .body { position:absolute; left:72px; right:72px; top:190px; bottom:84px; }
-.sl ul.bl { list-style:none; margin:0; padding:0; }
-.sl ul.bl li { position:relative; padding:0 0 0 40px; margin:0 0 22px; font-size:30px; line-height:1.4; font-weight:700; }
-.sl ul.bl li::before { content:""; position:absolute; left:4px; top:13px; width:16px; height:16px; border-radius:50%; background:var(--sky); }
-.sl ul.bl.sm li { font-size:24px; margin-bottom:16px; padding-left:32px; }
-.sl ul.bl.sm li::before { top:10px; width:12px; height:12px; }
-/* 표지·마무리 */
-.sl.cover, .sl.closing { background:linear-gradient(135deg, #1B2A5C 0%, #2B3F86 60%, #3D5BB8 100%); color:#fff; }
-.sl.cover .in, .sl.closing .in { position:absolute; left:96px; right:96px; top:0; bottom:0; display:flex; flex-direction:column; justify-content:center; }
-.sl.cover .logo, .sl.closing .logo { width:84px; height:84px; border-radius:20px; margin-bottom:36px; }
-.sl.cover h1 { margin:0; font-size:68px; font-weight:800; letter-spacing:-2px; line-height:1.18; }
-.sl.closing h1 { margin:0; font-size:60px; font-weight:800; letter-spacing:-2px; line-height:1.2; }
-.sl.cover .sub, .sl.closing .sub { margin:22px 0 0; font-size:30px; opacity:.9; line-height:1.4; }
-.sl.cover .foot, .sl.closing .foot { margin-top:48px; font-size:24px; display:inline-block; padding:10px 22px; border:2px solid rgba(255,255,255,.5); border-radius:999px; align-self:flex-start; }
-.sl.cover .academy, .sl.closing .academy { position:absolute; right:72px; bottom:40px; font-size:20px; opacity:.75; }
-.sl.cover::after { content:""; position:absolute; right:-160px; top:-160px; width:560px; height:560px; border-radius:50%; background:rgba(255,255,255,.07); }
+.sl .jua, .sl h1, .sl h2, .sl h3 { font-family:"SJua", "Jua", sans-serif; font-weight:400; letter-spacing:0; }
+/* 머리 */
+.sl .hd { position:absolute; left:72px; right:72px; top:48px; }
+.sl .hd h2 { margin:0; font-size:50px; line-height:1.2; color:var(--navy); display:flex; align-items:center; gap:12px; }
+.sl .hd h2 .sparkle { flex:0 0 auto; }
+.sl .hd p { margin:10px 0 0; font-size:23px; color:var(--ink2); }
+.sl .body { position:absolute; left:72px; right:72px; top:178px; bottom:86px; }
+/* 바닥 */
+.sl .ft { position:absolute; left:72px; right:72px; bottom:26px; display:flex; justify-content:space-between; align-items:center; white-space:nowrap; }
+.sl .ft .brand { display:flex; align-items:center; gap:8px; font-family:"SJua", sans-serif; font-size:18px; color:var(--ink3); }
+.sl .ft .pg { font-size:15px; font-weight:700; color:var(--ink2); background:#fff; border:2px solid var(--line); border-radius:999px; padding:3px 14px; }
+/* 카드 공통 */
+.sl .card { background:#fff; border:2px solid var(--line); border-radius:28px; box-shadow:0 3px 0 rgba(27,42,92,.04), 0 14px 30px -18px rgba(27,42,92,.35); }
+/* 목록: 알약 카드 + 파스텔 번호 */
+.sl ul.bl { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:16px; }
+.sl ul.bl li { display:flex; align-items:center; gap:20px; padding:16px 26px 16px 18px; font-size:27px; font-weight:700; line-height:1.35; }
+.sl ul.bl li .no { flex:0 0 48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:"SJua", sans-serif; font-size:26px; color:var(--navy); border:2px solid rgba(27,42,92,.12); }
+.sl ul.bl.sm { gap:11px; } .sl ul.bl.sm li { font-size:22px; padding:11px 22px 11px 14px; } .sl ul.bl.sm li .no { flex-basis:38px; height:38px; font-size:20px; }
+.sl ul.dot { list-style:none; margin:0; padding:0; }
+.sl ul.dot li { position:relative; padding-left:26px; margin:0 0 14px; font-size:22px; font-weight:700; line-height:1.45; }
+.sl ul.dot li::before { content:""; position:absolute; left:2px; top:11px; width:12px; height:12px; border-radius:50%; background:#7FA3E0; }
+.bg1 { background:var(--c1) !important; } .bg2 { background:var(--c2) !important; } .bg3 { background:var(--c3) !important; }
+.bg4 { background:var(--c4) !important; } .bg5 { background:var(--c5) !important; } .bg6 { background:var(--c6) !important; }
+/* 표지·마무리 (홈 인사 배너처럼) */
+.sl.cover, .sl.closing { background:linear-gradient(120deg, #E6F0FC, #EEEAFB 55%, #EAF6F1); }
+.sl .doodles { position:absolute; right:0; top:0; width:760px; height:720px; }
+.sl .hero { position:absolute; left:96px; right:440px; top:0; bottom:0; display:flex; flex-direction:column; justify-content:center; }
+.sl .hero .who { display:flex; align-items:center; gap:10px; font-family:"SJua", sans-serif; font-size:24px; color:var(--navy); margin-bottom:26px; }
+.sl .hero h1 { margin:0; font-size:72px; line-height:1.16; color:var(--navy); }
+.sl.closing .hero h1 { font-size:64px; }
+.sl .hero .sub { margin:22px 0 0; font-size:28px; color:var(--ink2); line-height:1.45; }
+.sl .hero .foot { margin-top:40px; align-self:flex-start; font-size:24px; font-weight:800; color:var(--navy); background:#fff; border:2px solid var(--line); border-radius:999px; padding:12px 26px; box-shadow:0 3px 0 var(--line); }
+.sl .bigm { position:absolute; right:110px; top:170px; }
+.sl .bigm .sparkle { position:absolute; }
 /* 장 나눔 */
-.sl.section { background:var(--cream); }
-.sl.section .in { position:absolute; left:96px; right:96px; top:0; bottom:0; display:flex; flex-direction:column; justify-content:center; }
-.sl.section h1 { margin:0; font-size:64px; font-weight:800; color:var(--navy); letter-spacing:-2px; }
-.sl.section .sub { margin:18px 0 0; font-size:28px; color:var(--ink2); }
-.sl.section .line { width:96px; height:8px; border-radius:4px; background:var(--sky); margin-bottom:32px; }
-/* 숫자 */
-.sl .stats { display:flex; gap:24px; height:100%; align-items:center; }
-.sl .stats > div { flex:1; background:#F3F6FC; border-radius:28px; padding:40px 24px; text-align:center; min-height:300px; display:flex; flex-direction:column; justify-content:center; }
-.sl .stats b { display:block; font-size:64px; font-weight:800; color:var(--navy); letter-spacing:-2px; line-height:1.1; }
-.sl .stats span { display:block; margin-top:14px; font-size:24px; font-weight:700; }
+.sl.section { background:linear-gradient(120deg, #FFF6DC, #FDEFF3 60%, #F3EEFD); }
+.sl.section .hero h1 { font-size:68px; }
+.sl.section .chip { align-self:flex-start; font-family:"SJua", sans-serif; font-size:24px; color:var(--navy); background:#fff; border:2px solid var(--line); border-radius:999px; padding:6px 20px; margin-bottom:22px; }
+/* 숫자 칸 */
+.sl .stats { display:flex; gap:22px; height:100%; align-items:center; }
+.sl .stats > div { flex:1; min-height:330px; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:34px 20px; }
+.sl .stats b { display:block; font-family:"SJua", sans-serif; font-weight:400; font-size:72px; color:var(--navy); line-height:1.05; }
+.sl .stats span { display:block; margin-top:16px; font-size:24px; font-weight:800; }
 .sl .stats small { display:block; margin-top:8px; font-size:18px; color:var(--ink2); }
 /* 그래프 */
-.sl .chart { display:flex; gap:48px; height:100%; align-items:center; }
-.sl .chart .g { flex:1.5; }
-.sl .chart .t { flex:1; }
-.sl .hbar { display:flex; align-items:center; gap:14px; margin:0 0 14px; font-size:21px; }
-.sl .hbar .lb { flex:0 0 170px; text-align:right; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sl .hbar .tr { flex:1; height:32px; background:#EEF2F8; border-radius:8px; overflow:hidden; }
-.sl .hbar .tr i { display:block; height:100%; border-radius:8px; }
-.sl .hbar .v { flex:0 0 90px; font-weight:800; }
+.sl .chart { display:flex; gap:28px; height:100%; }
+.sl .chart .g { flex:1.6; padding:30px 34px; display:flex; flex-direction:column; justify-content:center; }
+.sl .chart .t { flex:1; padding:30px 28px; display:flex; flex-direction:column; justify-content:center; }
+.sl .hbar { display:flex; align-items:center; gap:14px; margin:0 0 12px; font-size:20px; }
+.sl .hbar:last-child { margin-bottom:0; }
+.sl .hbar .lb { flex:0 0 160px; text-align:right; font-weight:700; white-space:nowrap; overflow:hidden; }
+.sl .hbar .tr { flex:1; height:26px; background:var(--line2); border-radius:999px; overflow:hidden; }
+.sl .hbar .tr i { display:block; height:100%; border-radius:999px; }
+.sl .hbar .v { flex:0 0 86px; font-family:"SJua", sans-serif; font-size:22px; color:var(--navy); }
 .sl .legend { list-style:none; margin:0; padding:0; font-size:24px; }
-.sl .legend li { white-space:nowrap; display:flex; align-items:center; gap:12px; margin:0 0 16px; font-weight:700; }
-.sl .legend i { flex:0 0 22px; width:22px; height:22px; border-radius:6px; }
+.sl .legend li { display:flex; align-items:center; gap:12px; margin:0 0 16px; font-weight:800; white-space:nowrap; }
+.sl .legend i { flex:0 0 22px; width:22px; height:22px; border-radius:50%; }
+.sl .legend span { font-weight:400; color:var(--ink2); }
 /* 둘 비교 */
-.sl .two { display:flex; gap:32px; height:100%; }
-.sl .two > div { flex:1; border-radius:28px; padding:36px 40px; background:#F3F6FC; }
-.sl .two > div:last-child { background:#EAF1FF; border:3px solid var(--sky); }
-.sl .two h3 { margin:0 0 24px; font-size:30px; font-weight:800; color:var(--navy); }
+.sl .two { display:flex; gap:28px; align-items:flex-start; }
+.sl .two > div { flex:1; padding:34px 38px; min-height:260px; }
+.sl .two > div:last-child { background:var(--c1); border-color:#A9C4EC; }
+.sl .two h3 { margin:0 0 22px; font-size:34px; color:var(--navy); }
 /* 표 */
-.sl table.tb { width:100%; border-collapse:collapse; font-size:22px; }
-.sl table.tb th { background:var(--navy); color:#fff; text-align:left; padding:14px 18px; font-weight:700; }
-.sl table.tb td { padding:13px 18px; border-bottom:2px solid var(--line); }
-.sl table.tb tr:nth-child(even) td { background:#F7F9FD; }
-.sl table.tb.sm { font-size:18px; } .sl table.tb.sm td, .sl table.tb.sm th { padding:9px 14px; }
+.sl .tbw { overflow:hidden; }
+.sl table.tb { width:100%; border-collapse:collapse; font-size:21px; }
+.sl table.tb th { background:var(--c1); color:var(--navy); text-align:left; padding:14px 20px; font-family:"SJua", sans-serif; font-weight:400; font-size:22px; }
+.sl table.tb td { padding:12px 20px; border-top:2px solid var(--line2); }
+.sl table.tb tr:nth-child(even) td { background:#F9FBFE; }
+.sl table.tb.sm { font-size:17px; } .sl table.tb.sm td { padding:8px 18px; } .sl table.tb.sm th { padding:10px 18px; font-size:19px; }
 /* 일정 */
-.sl .tl { display:flex; gap:16px; height:100%; align-items:stretch; padding-top:20px; position:relative; }
-.sl .tl::before { content:""; position:absolute; left:0; right:0; top:52px; height:6px; background:#DCE5F5; border-radius:3px; }
-.sl .tl > div { flex:1; position:relative; padding-top:70px; }
-.sl .tl > div::before { content:""; position:absolute; left:0; top:20px; width:34px; height:34px; border-radius:50%; background:var(--sky); border:6px solid #fff; box-shadow:0 0 0 3px var(--sky); }
-.sl .tl b { display:block; font-size:26px; font-weight:800; color:var(--navy); margin-bottom:10px; }
-.sl .tl p { margin:0; font-size:22px; line-height:1.45; }
+.sl .tl { display:flex; gap:18px; position:relative; align-items:flex-start; }
+.sl .tl::before { content:""; position:absolute; left:20px; right:20px; top:30px; height:8px; background:#fff; border:2px solid var(--line); border-radius:999px; }
+.sl .tl > div { flex:1; position:relative; padding-top:76px; }
+.sl .tl .dot { position:absolute; left:50%; top:10px; margin-left:-24px; width:48px; height:48px; border-radius:50%; border:4px solid #fff; box-shadow:0 0 0 2px var(--line); display:flex; align-items:center; justify-content:center; font-family:"SJua", sans-serif; font-size:22px; color:var(--navy); }
+.sl .tl .card { min-height:180px; padding:24px 22px; text-align:center; }
+.sl .tl b { display:block; font-family:"SJua", sans-serif; font-weight:400; font-size:28px; color:var(--navy); margin-bottom:10px; }
+.sl .tl p { margin:0; font-size:21px; line-height:1.5; }
 </style>
 {% endmacro %}
 
-{% macro ft(i, n, academy) %}<div class="ft"><span class="brand"><img src="{{ static_url|default('/static') }}/icons/icon-192.png" alt="">{{ academy.name if academy and academy.name else '미래샘 영어연구소' }}</span><span>{{ i }} / {{ n }}</span></div>{% endmacro %}
-{% macro hd(s) %}<div class="bar"></div><div class="hd"><h2>{{ s.title }}</h2>{% if s.sub %}<p>{{ s.sub }}</p>{% endif %}</div>{% endmacro %}
+{% macro logo(size) %}<img src="{{ static_url|default('/static') }}/icons/icon-192.png" alt="" style="width:{{ size }}px;height:{{ size }}px;border-radius:{{ (size * 0.28)|round }}px">{% endmacro %}
+{% macro ft(i, n, academy) %}<div class="ft"><span class="brand">{{ logo(28) }}{{ academy.name if academy and academy.name else '미래샘 영어연구소' }}</span><span class="pg">{{ i }} / {{ n }}</span></div>{% endmacro %}
+{% macro hd(s) %}<div class="hd"><h2>{{ s.title }}{{ art.sparkle(30, "#FFD86B") }}</h2>{% if s.sub %}<p>{{ s.sub }}</p>{% endif %}</div>{% endmacro %}
 
 {% macro chart(ch, geom) %}{% set g = geom(ch) %}
   {% if ch.type == 'donut' %}
-  <div style="display:flex;align-items:center;gap:40px">
-    <svg width="340" height="340" viewBox="-170 -170 340 340">{% for p in g.paths %}{% if p.full %}<circle r="119" fill="none" stroke="{{ p.color }}" stroke-width="62"/>{% else %}<path d="{{ p.d }}" fill="{{ p.color }}"/>{% endif %}{% endfor %}</svg>
-    <ul class="legend">{% for p in g.paths %}<li><i style="background:{{ p.color }}"></i>{{ p.label }} <span style="color:#5C6680;font-weight:400">{{ p.txt }}{{ ch.unit }} · {{ p.pct }}%</span></li>{% endfor %}</ul>
+  <div style="display:flex;align-items:center;gap:44px">
+    <svg width="320" height="320" viewBox="-170 -170 340 340">{% for p in g.paths %}{% if p.full %}<circle r="119" fill="none" stroke="{{ p.color }}" stroke-width="62"/>{% else %}<path d="{{ p.d }}" fill="{{ p.color }}" stroke="#fff" stroke-width="4"/>{% endif %}{% endfor %}</svg>
+    <ul class="legend">{% for p in g.paths %}<li><i style="background:{{ p.color }}"></i>{{ p.label }} <span>{{ p.txt }}{{ ch.unit }} · {{ p.pct }}%</span></li>{% endfor %}</ul>
   </div>
   {% else %}
   {% for b in g.bars %}<div class="hbar"><span class="lb">{{ b.label }}</span><span class="tr"><i style="width:{{ b.w }}%;background:{{ b.color }}"></i></span><span class="v">{{ b.txt }}{{ ch.unit }}</span></div>{% endfor %}
@@ -94,29 +113,35 @@
 
 {% macro slide(s, i, n, academy, geom) %}
 {% set lay = s.layout %}
-{% if lay == 'cover' or lay == 'closing' %}
-<div class="sl {{ lay }}"><div class="in">
-  <img class="logo" src="{{ static_url|default('/static') }}/icons/icon-192.png" alt="">
-  <h1>{{ s.title }}</h1>{% if s.sub %}<p class="sub">{{ s.sub }}</p>{% endif %}{% if s.foot %}<span class="foot">{{ s.foot }}</span>{% endif %}
-</div><span class="academy">{{ academy.name if academy and academy.name else '미래샘 영어연구소' }}</span></div>
-{% elif lay == 'section' %}
-<div class="sl section"><div class="in"><div class="line"></div><h1>{{ s.title }}</h1>{% if s.sub %}<p class="sub">{{ s.sub }}</p>{% endif %}</div>{{ ft(i, n, academy) }}</div>
+{% set aname = academy.name if academy and academy.name else '미래샘 영어연구소' %}
+{% if lay in ('cover', 'closing', 'section') %}
+<div class="sl {{ lay }}">
+  {{ art.doodles() }}
+  <div class="hero">
+    {% if lay == 'section' %}<span class="chip">{{ aname }}</span>{% else %}<div class="who">{{ logo(40) }}{{ aname }}</div>{% endif %}
+    <h1>{{ s.title }}</h1>{% if s.sub %}<p class="sub">{{ s.sub }}</p>{% endif %}{% if s.foot and lay != 'section' %}<span class="foot">{{ s.foot }}</span>{% endif %}
+  </div>
+  <div class="bigm">{{ art.mascot(300, "book" if lay == 'section' else "wave") }}
+    <span class="sparkle" style="left:-40px;top:-10px">{{ art.sparkle(40, "#FFD86B") }}</span>
+    <span class="sparkle" style="right:-20px;top:60px">{{ art.sparkle(28, "#FFB5C2") }}</span></div>
+  {% if lay == 'section' %}{{ ft(i, n, academy) }}{% endif %}
+</div>
 {% else %}
 <div class="sl {{ lay }}">{{ hd(s) }}
   <div class="body">
   {% if lay == 'bullets' %}
-    <ul class="bl {{ 'sm' if (s.bullets|length) > 4 or (s.bullets|map('length')|max if s.bullets else 0) > 32 else '' }}">{% for b in s.bullets %}<li>{{ b }}</li>{% endfor %}</ul>
+    <ul class="bl {{ 'sm' if (s.bullets|length) > 4 or (s.bullets|map('length')|max if s.bullets else 0) > 30 else '' }}">{% for b in s.bullets %}<li class="card"><span class="no bg{{ (loop.index0 % 6) + 1 }}">{{ loop.index }}</span>{{ b }}</li>{% endfor %}</ul>
   {% elif lay == 'stats' %}
-    <div class="stats">{% for it in s['items'] %}<div><b>{{ it.value }}</b><span>{{ it.label }}</span>{% if it.note %}<small>{{ it.note }}</small>{% endif %}</div>{% endfor %}</div>
+    <div class="stats">{% for it in s['items'] %}<div class="card bg{{ (loop.index0 % 4) + 1 }}"><b>{{ it.value }}</b><span>{{ it.label }}</span>{% if it.note %}<small>{{ it.note }}</small>{% endif %}</div>{% endfor %}</div>
   {% elif lay == 'chart' %}
-    <div class="chart"><div class="g">{{ chart(s.chart, geom) }}</div>{% if s.bullets %}<div class="t"><ul class="bl sm">{% for b in s.bullets %}<li>{{ b }}</li>{% endfor %}</ul></div>{% endif %}</div>
+    <div class="chart"><div class="g card">{{ chart(s.chart, geom) }}</div>{% if s.bullets %}<div class="t card bg2"><ul class="dot">{% for b in s.bullets %}<li>{{ b }}</li>{% endfor %}</ul></div>{% endif %}</div>
   {% elif lay == 'two' %}
-    <div class="two">{% for side in (s.left, s.right) %}<div><h3>{{ side.head }}</h3><ul class="bl sm">{% for b in side.bullets %}<li>{{ b }}</li>{% endfor %}</ul></div>{% endfor %}</div>
+    <div class="two">{% for side in (s.left, s.right) %}<div class="card"><h3>{{ side.head }}</h3><ul class="dot">{% for b in side.bullets %}<li>{{ b }}</li>{% endfor %}</ul></div>{% endfor %}</div>
   {% elif lay == 'table' %}
-    <table class="tb {{ 'sm' if (s.rows|length) > 5 else '' }}">{% if s.head %}<thead><tr>{% for h in s.head %}<th>{{ h }}</th>{% endfor %}</tr></thead>{% endif %}
-      <tbody>{% for r in s.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>
+    <div class="card tbw"><table class="tb {{ 'sm' if (s.rows|length) > 5 else '' }}">{% if s.head %}<thead><tr>{% for h in s.head %}<th>{{ h }}</th>{% endfor %}</tr></thead>{% endif %}
+      <tbody>{% for r in s.rows %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>
   {% elif lay == 'timeline' %}
-    <div class="tl">{% for st in s.steps %}<div><b>{{ st.when }}</b><p>{{ st.what }}</p></div>{% endfor %}</div>
+    <div class="tl">{% for st in s.steps %}<div><span class="dot bg{{ (loop.index0 % 6) + 1 }}">{{ loop.index }}</span><div class="card"><b>{{ st.when }}</b><p>{{ st.what }}</p></div></div>{% endfor %}</div>
   {% endif %}
   </div>
   {{ ft(i, n, academy) }}

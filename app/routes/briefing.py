@@ -46,6 +46,14 @@ def index(request: Request, kind: str = "exam", db: Session = Depends(get_db), t
                                                    "has_key": bool(teacher.gemini_key_enc)})
 
 
+@router.get("/fonts.zip")
+async def fonts(teacher: Teacher = Depends(current_teacher)):
+    """PowerPoint 글꼴 (주아 + 나눔스퀘어라운드)."""
+    from ..briefing.pptx_build import fonts_zip
+    data = await asyncio.to_thread(fonts_zip)
+    return Response(data, media_type="application/zip", headers={"Content-Disposition": "attachment; filename*=UTF-8''" + quote("설명회 글꼴 (주아·나눔스퀘어라운드).zip")})
+
+
 @router.post("")
 async def create(request: Request, db: Session = Depends(get_db), teacher: Teacher = Depends(current_teacher)):
     form = await request.form()

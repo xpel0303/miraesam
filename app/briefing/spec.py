@@ -22,7 +22,7 @@ KINDS = {
 }
 LAYOUTS = ("cover", "section", "bullets", "stats", "chart", "two", "table", "timeline", "closing")
 LENGTHS = {"short": ("짧게", 8), "normal": ("보통", 12), "long": ("길게", 16)}
-PALETTE = ["#2563EB", "#F59E0B", "#E11D48", "#10B981", "#8B5CF6", "#0EA5E9", "#F97316", "#64748B"]
+PALETTE = ["#7FA3E0", "#F6C453", "#6CC3A6", "#AE97EC", "#F38FA6", "#F5A97F", "#7CC3E8", "#A9B1C2"]  # 홈페이지 파스텔 (조금 진하게)
 
 
 def _t(v, n: int = 200) -> str:
