@@ -42,7 +42,10 @@
         {% if books %}<button type="button" class="btn ghost small" data-pick="pi-class" data-text="progress" data-who="">📚 교재 목차에서 고르기</button>
         {% else %}<span class="hint"><a href="/care/books">교재를 등록</a>하면 목차를 눌러 진도를 넣을 수 있어요.</span>{% endif %}
       </div>
-      <div class="field"><label for="next_hw">다음 숙제</label><input type="text" id="next_hw" name="next_hw" value="{{ cd.next_hw if cd else '' }}" placeholder="예: 단어 Day 4 암기, 워크북 16~19쪽"></div>
+      <div class="field"><label for="next_hw">다음 숙제</label><input type="text" id="next_hw" name="next_hw" value="{{ cd.next_hw if cd else '' }}" placeholder="예: 단어 Day 4 암기, 워크북 16~19쪽">
+        {% if books %}<input type="hidden" id="ni-class" value="[]"><div class="pi-chips" data-for="ni-class"></div>
+        <button type="button" class="btn ghost small" data-pick="ni-class" data-text="next_hw" data-who="" data-hw="1">📚 교재 목차에서 고르기</button>{% endif %}
+      </div>
     </div>
     <div class="field" style="margin-bottom:0"><label for="note">반 전체 한마디 <span class="hint" style="display:inline">학부모님께 보여요 (선택)</span></label>
       <input type="text" id="note" name="note" value="{{ cd.note if cd else '' }}" placeholder="예: 다음 주 화요일 단원평가가 있어요."></div>
@@ -68,7 +71,9 @@
           <input type="hidden" name="pi_{{ s.id }}" id="pi_{{ s.id }}" value="{{ (r.prog_items if r and r.prog_items else [])|tojson|forceescape }}">
           <div class="pi-chips" data-for="pi_{{ s.id }}"></div>
           {% if books %}<button type="button" class="btn ghost small" data-pick="pi_{{ s.id }}" data-text="p_{{ s.id }}" data-who="{{ s.id }}" style="margin-top:4px">📚 교재에서</button>{% endif %}
-          <input type="text" name="n_{{ s.id }}" value="{{ r.next_hw if r else '' }}" placeholder="이 학생 다음 숙제" style="margin-top:4px;min-width:180px"></details></td>
+          <input type="text" name="n_{{ s.id }}" id="n_{{ s.id }}" value="{{ r.next_hw if r else '' }}" placeholder="이 학생 다음 숙제" style="margin-top:4px;min-width:180px">
+          {% if books %}<input type="hidden" id="ni_{{ s.id }}" value="[]"><div class="pi-chips" data-for="ni_{{ s.id }}"></div>
+          <button type="button" class="btn ghost small" data-pick="ni_{{ s.id }}" data-text="n_{{ s.id }}" data-who="{{ s.id }}" data-hw="1" style="margin-top:4px">📚 숙제도 교재에서</button>{% endif %}</details></td>
       </tr>
     {% endfor %}
     </tbody>
@@ -84,7 +89,7 @@
 <dialog id="pick-dlg" style="border:0;border-radius:20px;padding:0;width:min(640px,94vw);max-height:86vh">
   <div style="padding:18px 20px">
     <h2 style="margin:0 0 4px;font-size:1.1rem" id="pick-title">교재에서 진도 고르기</h2>
-    <p class="small muted" style="margin:0 0 10px">오늘 나간 단원을 누르세요. ✓는 이미 나간 단원, <b>다음</b>은 이어서 나갈 단원이에요.</p>
+    <p class="small muted" style="margin:0 0 10px" id="pick-help">오늘 나간 단원을 누르세요. ✓는 이미 나간 단원, <b>다음</b>은 이어서 나갈 단원이에요.</p>
     <div class="care-chips" id="pick-books"></div>
     <div id="pick-body" style="max-height:50vh;overflow:auto"></div>
     <div class="actions" style="margin-top:14px"><button type="button" class="btn" id="pick-ok">넣기</button><button type="button" class="btn ghost" id="pick-cancel">취소</button></div>
@@ -174,7 +179,8 @@
     list.forEach((b) => { const a = document.createElement("a"); a.href = "#"; a.dataset.id = b.id; a.textContent = b.title + (b.class ? "" : " (개인)");
       a.onclick = (e) => { e.preventDefault(); cur = b.id; draw(); }; tabs.append(a); });
     cur = (list.find((b) => sel[b.id]) || list[0]).id;
-    document.getElementById("pick-title").textContent = target.who ? "이 학생 진도 고르기" : "반 진도 고르기";
+    document.getElementById("pick-title").textContent = target.hw ? (target.who ? "이 학생 숙제 고르기" : "숙제로 낼 단원 고르기") : (target.who ? "이 학생 진도 고르기" : "반 진도 고르기");
+    document.getElementById("pick-help").innerHTML = target.hw ? "숙제로 낼 단원(또는 쪽)을 누르세요. ✓는 이미 나간 단원, <b>다음</b>은 이어서 나갈 단원이에요." : "오늘 나간 단원을 누르세요. ✓는 이미 나간 단원, <b>다음</b>은 이어서 나갈 단원이에요.";
     draw(); dlg.showModal();
   }));
   document.getElementById("pick-cancel").onclick = () => dlg.close();
