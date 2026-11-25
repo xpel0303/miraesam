@@ -215,7 +215,7 @@ def make_pdf(ctx: JobContext) -> dict:
         old = p.file_id
     ctx.step("분석지 만드는 중", 50)
     st = spec.stats(qs)
-    pdf = render_pdf("pdf/exam_analysis.html", {"academy": academy, "p": info, "qs": qs, "st": st, "notes": spec.notes(qs, st),
+    pdf = render_pdf("pdf/exam_analysis.html", {"academy": academy, "p": info, "qs": qs, "st": st, "notes": spec.notes(qs, st), "v": spec.visual(qs, st),
                                                 "doc_title": f"{info['title']} · 기출 분석",
                                                 "today": datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")})
     name = f"{info['title']}_기출분석.pdf"

@@ -324,6 +324,66 @@ def notes(qs: list[dict], st: dict) -> list[str]:
     return out
 
 
+# ---------------- 분석지 그림 (벤다이어그램·도넛·막대) ----------------
+
+AREA_COLORS = {"독해": "#2563EB", "언어형식": "#F59E0B", "서술형": "#E11D48"}
+FORM_TYPES = ("어법", "어휘", "연결어", "서술형(어법)", "서술형(어휘)", "서술형(영작)")
+
+
+def area(q: dict) -> set[str]:
+    """문항의 영역: 독해 / 언어형식(어법·어휘·영작) / 서술형 — 겹칠 수 있음 (서술형 어법 = 언어형식∩서술형)."""
+    t, out = q["type"] or "", set()
+    if q["kind"] == "sa":
+        out.add("서술형")
+    out.add("언어형식" if t in FORM_TYPES else "독해")
+    return out
+
+
+def visual(qs: list[dict], st: dict) -> dict:
+    lab = lambda q: q["label"] + ("" if not q["label"].isdigit() else "")
+    # 1) 영역 벤다이어그램 (독해·언어형식·서술형): 칸마다 문항 번호
+    cells = {k: [] for k in ("독해", "언어형식", "독해+서술형", "언어형식+서술형")}
+    pts = {k: 0.0 for k in cells}
+    for q in qs:
+        a = area(q)
+        key = ("언어형식" if "언어형식" in a else "독해") + ("+서술형" if "서술형" in a else "")
+        cells[key].append(lab(q))
+        pts[key] += q["points"] or 0
+    area_pts = {"독해": pts["독해"] + pts["독해+서술형"], "언어형식": pts["언어형식"] + pts["언어형식+서술형"],
+                "서술형": pts["독해+서술형"] + pts["언어형식+서술형"]}
+    # 2) 지문 벤다이어그램: 객관식만 / 둘 다 / 서술형만 쓴 지문
+    units: dict[str, set] = {}
+    for q in qs:
+        key = q["group"] or q.get("shared_with") or q["label"]
+        if not q["group"] and not q.get("shared_with") and words(q["passage"]) < 40:
+            continue
+        units.setdefault(key, set()).add(q["kind"])
+    pv = {"mc": sum(1 for k in units.values() if k == {"mc"}), "both": sum(1 for k in units.values() if k == {"mc", "sa"}),
+          "sa": sum(1 for k in units.values() if k == {"sa"})}
+    # 3) 도넛: 객관식/서술형 배점
+    total = st["total"] or 0
+    mc_share = (st["mc_points"] / total) if total else 0
+    # 4) 유형별 막대 (색 = 영역)
+    peak = max([t["points"] for t in st["types"]] or [1]) or 1
+    bars = []
+    for t in sorted(st["types"], key=lambda t: -t["points"]):
+        is_sa = t["type"].startswith("서술형")
+        color = AREA_COLORS["서술형"] if is_sa else (AREA_COLORS["언어형식"] if t["type"] in FORM_TYPES else AREA_COLORS["독해"])
+        bars.append({**t, "w": round(100 * t["points"] / peak, 1), "color": color})
+    # 5) 문항 지도: 번호 타일 (색 = 영역, 진하기 = 배점)
+    allp = [q["points"] for q in qs if q["points"]]
+    lo, hi = (min(allp), max(allp)) if allp else (0, 1)
+    tiles = []
+    for q in qs:
+        a = area(q)
+        c = AREA_COLORS["서술형"] if "서술형" in a else AREA_COLORS["언어형식" if "언어형식" in a else "독해"]
+        heavy = 0.62 + 0.38 * (((q["points"] or lo) - lo) / (hi - lo) if hi > lo else 1)
+        tiles.append({"label": q["label"].replace("서술형", "서").replace("서답형", "서").strip(), "type": q["type"], "points": q["points"],
+                      "color": c, "op": round(heavy, 2), "top": q in st["top"]})
+    return {"cells": cells, "cell_pts": {k: round(v, 2) for k, v in pts.items()}, "area_pts": {k: round(v, 2) for k, v in area_pts.items()},
+            "pv": pv, "mc_share": mc_share, "bars": bars, "tiles": tiles, "colors": AREA_COLORS}
+
+
 def _f(x) -> str:
     if x is None:
         return "-"
