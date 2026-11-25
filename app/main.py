@@ -10,7 +10,7 @@ from . import handlers  # noqa: F401  (작업 처리기 등록)
 from .config import BASE_DIR, SECRET_KEY
 from .db import init_db
 from .jobs import start_workers, stop_workers
-from .routes import analysis, bank, auth, care, comprehension, exam, flow, grammar, home, homework, leveltest, library, mock, ocr, paraphrase, parent, pwa, reports, roster, sentence, settings, student, summary, textbook, trend, variant, vocab
+from .routes import analysis, bank, auth, care, care_more, comprehension, exam, flow, grammar, home, homework, leveltest, library, mock, ocr, paraphrase, parent, pwa, reports, roster, sentence, settings, student, summary, textbook, trend, variant, vocab
 from .web import LoginRequired, render
 
 
@@ -31,7 +31,7 @@ app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, session_cookie="hw_session", max_age=60 * 60 * 24 * 30, same_site="lax", https_only=False)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-for r in (auth, home, settings, roster, student, care, parent, comprehension, analysis, summary, flow, textbook, vocab, grammar, variant, sentence, paraphrase, reports, homework, exam, trend, mock, leveltest, library, bank, ocr, pwa):
+for r in (auth, home, settings, roster, student, care, care_more, parent, comprehension, analysis, summary, flow, textbook, vocab, grammar, variant, sentence, paraphrase, reports, homework, exam, trend, mock, leveltest, library, bank, ocr, pwa):
     app.include_router(r.router)
 
 

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ r.student.name }} {{ r.title }} · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% include "care/_tabs.html" %}
+<div class="actions" style="margin-bottom:10px">
+  <a href="/care/reports?ym={{ r.start.strftime('%Y-%m') }}" class="small">← 리포트 목록</a>
+  <span class="small muted">{{ r.class_group.name if r.class_group else '' }} · {{ r.start.month }}/{{ r.start.day }}~{{ r.end.month }}/{{ r.end.day }}</span>
+</div>
+<div class="care-chips" aria-label="같은 반 학생">
+  {% for x in batch %}<a href="/care/reports/{{ x.id }}" {% if x.id == r.id %}aria-current="page"{% endif %}>{{ x.student.name }}{% if x.status == 'public' %} ✓{% endif %}</a>{% endfor %}
+</div>
+
+<div class="rep-wrap">
+  <form method="post" action="/care/reports/{{ r.id }}" class="panel" id="rep-form">
+    <div class="panel-head"><h2>{{ r.student.name }}</h2>{% if r.status == 'public' %}<span class="tag tag-on">공개 중</span>{% else %}<span class="tag">작성 중 (학부모에게 안 보여요)</span>{% endif %}</div>
+    <div class="stats-mini">
+      <div><b>{{ d.lessons }}</b><span>수업</span></div>
+      <div><b>{{ (d.attend_rate ~ '%') if d.attend_rate is not none else '-' }}</b><span>출석률</span></div>
+      <div><b>{{ (d.hw_rate ~ '%') if d.hw_rate is not none else '-' }}</b><span>숙제</span></div>
+      <div><b>{{ d.avg if d.avg is not none else '-' }}</b><span>시험 평균</span></div>
+    </div>
+    {% if not d.lessons %}<p class="flash error" style="margin:0 0 12px">이 기간에 매일 기록이 없어요. 매일 기록을 먼저 적으면 숫자와 그래프가 채워져요.</p>{% endif %}
+    <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ r.title }}" maxlength="80"></div>
+    <div class="actions" style="margin-bottom:10px">
+      <button type="button" class="btn ghost small" id="ai-btn" {% if not has_key %}disabled title="설정에서 Gemini 키를 넣으면 쓸 수 있어요"{% endif %}>✨ AI 코멘트 초안</button>
+      <span class="small muted" id="ai-msg">{{ '기록을 보고 총평·잘한 점·목표·한마디를 써 줘요. 고쳐서 쓰세요.' if has_key else '설정에서 Gemini 키를 넣으면 AI 초안을 쓸 수 있어요.' }}</span>
+    </div>
+    <div class="row">
+      <div class="field" style="max-width:160px"><label for="grade">총평 등급</label><input type="text" id="grade" name="grade" value="{{ r.grade }}" list="grades" maxlength="10" placeholder="아주 좋음">
+        <datalist id="grades"><option>아주 좋음</option><option>좋음</option><option>보통</option><option>노력 필요</option><option>A+</option><option>A</option><option>B</option></datalist></div>
+      <div class="field"><label for="summary">총평 한 줄</label><input type="text" id="summary" name="summary" value="{{ r.summary }}" maxlength="300" placeholder="예: 숙제를 꾸준히 해 오며 단어 시험 점수가 크게 올랐어요."></div>
+    </div>
+    <div class="field"><label for="strength">잘한 점</label><textarea id="strength" name="strength" rows="3">{{ r.strength }}</textarea></div>
+    <div class="field"><label for="goal">다음 달 목표</label><textarea id="goal" name="goal" rows="3">{{ r.goal }}</textarea></div>
+    <div class="field"><label for="message">선생님 한마디</label><textarea id="message" name="message" rows="3">{{ r.message }}</textarea></div>
+    <input type="hidden" name="go" id="go">
+    <div class="care-sticky">
+      <button class="btn ghost" type="submit" name="action" value="save">저장</button>
+      {% if r.status != 'public' %}
+        <button class="btn" type="submit" name="action" value="publish_notify">공개 + 알림 보내기</button>
+        <button class="btn ghost" type="submit" name="action" value="publish">공개만</button>
+      {% else %}
+        <button class="btn" type="submit" name="action" value="publish_notify">{{ '알림 다시 보내기' if r.notified_at else '알림 보내기' }}</button>
+        <button class="btn ghost small" type="submit" name="action" value="unpublish">비공개로</button>
+      {% endif %}
+      {% if next %}<button class="btn ghost" type="submit" name="action" value="save" onclick="document.getElementById('go').value='{{ next.id }}'">저장하고 다음 학생 ({{ next.student.name }}) →</button>{% endif %}
+    </div>
+    {% if r.status == 'public' %}<p class="small muted" style="margin:6px 0 0">공개 {{ r.published_at|kst }}{% if r.notified_at %} · 알림 {{ r.notified_at|kst }}{% endif %}{% if r.viewed_at %} · 학부모가 봄 {{ r.viewed_at|kst }}{% endif %}</p>{% endif %}
+  </form>
+  <div class="rep-preview">
+    <div class="actions" style="margin-bottom:6px"><b class="small">학부모 화면 미리보기</b>
+      <a class="btn ghost small" href="/care/reports/{{ r.id }}/view" target="_blank" rel="noopener">새 창 · 인쇄</a></div>
+    <iframe src="/care/reports/{{ r.id }}/view" title="리포트 미리보기" id="pv"></iframe>
+  </div>
+</div>
+<style>
+.rep-wrap { display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:20px; align-items:start; }
+.rep-preview { position:sticky; top:16px; }
+.rep-preview iframe { width:100%; height:78vh; border:2px solid var(--line); border-radius:20px; background:#fff; }
+.stats-mini { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:14px; text-align:center; }
+.stats-mini div { background:var(--fill); border-radius:12px; padding:8px 2px; }
+.stats-mini b { display:block; font-size:1.15rem; }
+.stats-mini span { font-size:.75rem; color:var(--ink-2); }
+@media (max-width: 1000px) { .rep-wrap { grid-template-columns:1fr; } .rep-preview { position:static; } }
+</style>
+<script>
+(() => {
+  const btn = document.getElementById("ai-btn"), msg = document.getElementById("ai-msg");
+  let dirty = false; const form = document.getElementById("rep-form");
+  form.addEventListener("input", () => (dirty = true)); form.addEventListener("submit", () => (dirty = false));
+  window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+  if (!btn || btn.disabled) return;
+  btn.addEventListener("click", async () => {
+    const filled = ["summary", "strength", "goal", "message"].some((k) => document.getElementById(k).value.trim());
+    if (filled) {
+      // 적어 둔 내용을 AI가 참고하도록 먼저 저장
+      await fetch(form.action, { method: "POST", body: new FormData(form) });
+    }
+    btn.disabled = true; msg.textContent = "AI가 기록을 읽고 쓰는 중이에요… (10~20초)";
+    try {
+      const r = await fetch("/care/reports/{{ r.id }}/ai", { method: "POST" }); const j = await r.json();
+      if (!r.ok) { msg.textContent = "⚠️ " + (j.error || "실패했어요."); return; }
+      for (const k of ["grade", "summary", "strength", "goal", "message"]) if (j[k]) document.getElementById(k).value = j[k];
+      dirty = true; msg.textContent = "✓ 초안을 넣었어요. 고친 뒤 저장해 주세요.";
+    } catch (e) { msg.textContent = "⚠️ 연결이 끊겼어요."; }
+    finally { btn.disabled = false; }
+  });
+})();
+</script>
+{% endblock %}

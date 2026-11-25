@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, selectinload
 from .. import care, push
 from ..config import APP_NAME, BASE_DIR
 from ..db import get_db
-from ..models import Academy, CareNotice, ParentPushSub, Student, now
+from ..models import Academy, CareNotice, CarePhotoStudent, CareReport, ParentPushSub, Student, now
 from ..web import render
 
 router = APIRouter(prefix="/p")
@@ -88,6 +88,14 @@ def home(token: str, request: Request, m: str = "", preview: str = "", db: Sessi
                                   or_(CareNotice.class_id.is_(None), CareNotice.class_id == s.class_id))
     notices = list(db.execute(nq.order_by(CareNotice.important.desc(), CareNotice.id.desc()).limit(10)).scalars())
 
+    reports = list(db.execute(select(CareReport).where(CareReport.student_id == s.id, CareReport.status == "public")
+                              .order_by(CareReport.end.desc(), CareReport.id.desc()).limit(12)).scalars())
+    photos: dict = {}
+    for ph in care.photos_for(db, s.id, start=recs[min(len(recs), 20) - 1]["day"] if recs else today - timedelta(days=30)):
+        photos.setdefault(ph.day, []).append(ph)
+    shown_days = {r["day"] for r in recs[:20]}
+    extra_photo_days = sorted((d for d in photos if d not in shown_days), reverse=True)  # 기록 없이 사진만 있는 날
+
     is_new = lambda t: bool(seen is None or (t and t > seen))  # noqa: E731
     teacher_view = bool(preview) or bool(request.session.get("teacher_id"))
     if not teacher_view:
@@ -99,7 +107,8 @@ def home(token: str, request: Request, m: str = "", preview: str = "", db: Sessi
     return render(request, "parent/home.html", {
         "student": s, "academy": academy, "token": token, "vapid": push.public_key(),
         "recent": recs[:20], "month0": month0, "weeks": _calendar(month0.year, month0.month, attend), "counts": counts,
-        "hw_rate": hw_rate, "scores": scores, "notices": notices, "is_new": is_new, "teacher_view": teacher_view,
+        "hw_rate": hw_rate, "scores": scores, "notices": notices, "reports": reports, "photos": photos, "extra_photo_days": extra_photo_days,
+        "day_label": care.day_label, "is_new": is_new, "teacher_view": teacher_view,
         "prev_m": prev_m, "next_m": next_m if next_m <= today.replace(day=1) else None, "today": today, "fmt": care.fmt_num,
     })
 
@@ -121,3 +130,26 @@ async def subscribe(token: str, request: Request, db: Session = Depends(get_db))
     sub.p256dh, sub.auth, sub.device, sub.fails = str(keys["p256dh"])[:200], str(keys["auth"])[:100], device, 0
     db.commit()
     return {"ok": True}
+
+
+@router.get("/{token}/r/{rid}")
+def report(token: str, rid: int, request: Request, preview: str = "", db: Session = Depends(get_db)):
+    from .care_more import render_report
+    s = _student(db, token)
+    r = db.get(CareReport, rid)
+    if r is None or r.student_id != s.id or r.status != "public":
+        raise HTTPException(404, "리포트를 찾을 수 없어요. 선생님이 아직 공개하지 않았을 수 있어요.")
+    teacher_view = bool(preview) or bool(request.session.get("teacher_id"))
+    if not teacher_view and r.viewed_at is None:
+        r.viewed_at = now()
+        db.commit()
+    return render_report(request, db, r, teacher_view=teacher_view, token=token)
+
+
+@router.get("/{token}/photo/{pid}.jpg")
+def photo(token: str, pid: int, s: str = "", db: Session = Depends(get_db)):
+    from .care_more import photo_response
+    st = _student(db, token)
+    if not db.execute(select(CarePhotoStudent.id).where(CarePhotoStudent.photo_id == pid, CarePhotoStudent.student_id == st.id)).first():
+        raise HTTPException(404)
+    return photo_response(db, pid, s == "t")

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}월간 리포트 · 학습관리 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% include "care/_tabs.html" %}
+<section class="panel">
+  <h2>새 리포트 만들기</h2>
+  <p class="small muted" style="margin-top:-6px">반을 고르면 그 반 학생 모두의 리포트가 한 번에 만들어져요. 출석·숙제·시험·진도·사진은 매일 기록에서 저절로 채워지고, 선생님은 코멘트만 적으면 돼요.</p>
+  <form method="post" action="/care/reports/new" id="new-form">
+    <div class="row">
+      <div class="field"><label for="r-class">반</label><select id="r-class" name="class_id" required>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="r-month">달</label><input type="month" id="r-month" value="{{ ym }}"></div>
+      <div class="field"><label for="r-start">시작</label><input type="date" id="r-start" name="start" value="{{ start.isoformat() }}" required></div>
+      <div class="field"><label for="r-end">끝</label><input type="date" id="r-end" name="end" value="{{ end.isoformat() }}" required></div>
+    </div>
+    <div class="field" style="max-width:420px"><label for="r-title">제목 <span class="hint" style="display:inline">비우면 '2026년 11월 학습 리포트'처럼</span></label><input type="text" id="r-title" name="title" maxlength="80"></div>
+    <button class="btn" type="submit" {% if not classes %}disabled{% endif %}>반 학생 모두 리포트 만들기</button>
+  </form>
+</section>
+
+<div class="actions" style="margin-bottom:12px">
+  <a class="btn ghost small" href="/care/reports?ym={{ prev_m }}">◀</a><b>{{ start.year }}년 {{ start.month }}월</b><a class="btn ghost small" href="/care/reports?ym={{ next_m }}">▶</a>
+</div>
+{% for key, rs in groups.items() %}
+{% set pub = rs|selectattr("status", "equalto", "public")|list %}
+<section class="panel">
+  <div class="panel-head"><h2>{{ key[3] }} · {{ rs[0].title }}</h2>
+    <span class="small muted">{{ key[1].month }}/{{ key[1].day }}~{{ key[2].month }}/{{ key[2].day }} · 공개 {{ pub|length }}/{{ rs|length }}</span></div>
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th>학생</th><th>상태</th><th>총평</th><th>알림</th><th>학부모가 봄</th><th></th></tr></thead>
+    <tbody>{% for r in rs %}
+      <tr><td><a href="/care/reports/{{ r.id }}"><b>{{ r.student.name }}</b></a></td>
+        <td>{% if r.status == 'public' %}<span class="tag tag-on">공개</span>{% else %}<span class="tag">작성 중</span>{% endif %}</td>
+        <td class="small wrap">{{ r.summary|truncate(40) if r.summary else '' }}{% if not (r.summary or r.message or r.strength) %}<span class="muted">코멘트 없음</span>{% endif %}</td>
+        <td class="small muted">{{ r.notified_at|kst if r.notified_at else '' }}</td>
+        <td class="small">{{ ('✓ ' ~ (r.viewed_at|kst)) if r.viewed_at else '' }}</td>
+        <td><a class="btn ghost small" href="/care/reports/{{ r.id }}">쓰기</a></td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  <div class="actions" style="margin-top:10px">
+    <form method="post" action="/care/reports/{{ rs[0].id }}/batch" onsubmit="return confirm('이 반 리포트 {{ rs|length }}개를 모두 공개하고 학부모님께 알림을 보낼까요? (이미 알림 보낸 리포트는 빼고 보내요)')">
+      <input type="hidden" name="action" value="publish_notify"><button class="btn small" type="submit">모두 공개 + 알림 보내기</button></form>
+    <form method="post" action="/care/reports/{{ rs[0].id }}/batch" onsubmit="return confirm('이 반 리포트 {{ rs|length }}개를 모두 지울까요? 적은 코멘트도 지워져요. (수업 기록은 그대로)')">
+      <input type="hidden" name="action" value="delete"><button class="btn danger small" type="submit">모두 지우기</button></form>
+  </div>
+</section>
+{% else %}
+<div class="panel empty"><p>{{ start.month }}월 리포트가 아직 없어요.</p></div>
+{% endfor %}
+<script>
+(() => {
+  const m = document.getElementById("r-month"), a = document.getElementById("r-start"), z = document.getElementById("r-end");
+  m.addEventListener("change", () => {
+    if (!m.value) return; const [y, mo] = m.value.split("-").map(Number);
+    const last = new Date(y, mo, 0).getDate();
+    a.value = `${m.value}-01`; z.value = `${m.value}-${String(last).padStart(2, "0")}`;
+  });
+})();
+</script>
+{% endblock %}

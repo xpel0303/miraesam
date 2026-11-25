@@ -3,7 +3,7 @@
 {% block main %}
 {% include "care/_tabs.html" %}
 {% set LABEL = {"sent": "받음", "fail": "실패", "none": "앱 알림 안 켬"} %}
-{% set KIND = {"record": "수업 기록", "notice": "공지", "test": "시험 알림"} %}
+{% set KIND = {"record": "수업 기록", "notice": "공지", "test": "시험 알림", "report": "리포트"} %}
 <div class="care-chips">
   <a href="/care/log" {% if not status %}aria-current="page"{% endif %}>전체</a>
   <a href="/care/log?status=sent" {% if status == 'sent' %}aria-current="page"{% endif %}>받음</a>

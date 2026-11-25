@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>사진 올리기 · {{ APP_NAME }}</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/static/app.css">
+<style>
+body { background:#F5F8FD; }
+.w { max-width:480px; margin:0 auto; padding:28px 16px; text-align:center; }
+.big { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:18px; border-radius:20px; border:0; background:#1B2A5C; color:#fff; font:inherit; font-weight:800; font-size:1.1rem; cursor:pointer; margin-bottom:10px; }
+.big.ghost { background:#fff; color:#1B2A5C; border:2px solid #D7DEEA; }
+.thumbs { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:14px; }
+.thumbs img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:8px; }
+</style>
+</head>
+<body>
+<div class="w">
+  <img src="/static/icons/icon-180.png" alt="" style="width:56px;border-radius:14px">
+  <h1 style="font-size:1.3rem;margin:10px 0 4px">수업 사진 올리기</h1>
+  <p class="small muted" style="margin:0 0 20px">{{ academy.name if academy else APP_NAME }} · 올린 사진은 컴퓨터 화면의 '학생 정하기 전'에 모여요.</p>
+  <label class="big">📷 사진 찍기<input type="file" accept="image/*" capture="environment" hidden data-up></label>
+  <label class="big ghost">🖼️ 앨범에서 고르기<input type="file" accept="image/*" multiple hidden data-up></label>
+  <p id="msg" class="small" aria-live="polite"></p>
+  <div class="thumbs" id="thumbs"></div>
+</div>
+<script>
+(() => {
+  const msg = document.getElementById("msg"), thumbs = document.getElementById("thumbs");
+  let total = 0;
+  document.querySelectorAll("[data-up]").forEach((inp) => inp.addEventListener("change", async () => {
+    const files = [...inp.files]; if (!files.length) return;
+    let done = 0;
+    for (let i = 0; i < files.length; i += 3) {
+      const part = files.slice(i, i + 3), fd = new FormData(); part.forEach((f) => fd.append("files", f));
+      msg.textContent = `올리는 중… ${done} / ${files.length}`;
+      try {
+        const r = await fetch(location.pathname, { method: "POST", body: fd });
+        if (!r.ok) { msg.textContent = "⚠️ QR 주소가 끝났어요. 컴퓨터에서 QR을 다시 띄워 주세요."; return; }
+        const j = await r.json(); done += j.ok || 0;
+        part.forEach((f) => { const im = document.createElement("img"); im.src = URL.createObjectURL(f); thumbs.prepend(im); });
+      } catch (e) { msg.textContent = "⚠️ 연결이 끊겼어요. 다시 올려 주세요."; return; }
+    }
+    total += done; msg.textContent = `✓ 지금까지 ${total}장 올렸어요. 더 올리거나 컴퓨터에서 학생을 정해 주세요.`;
+    inp.value = "";
+  }));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+{# 교재 입력 칸 (새 교재·고치기 같이 씀). b 가 없으면 새 교재 #}
+<div class="row">
+  <div class="field"><label for="b-title">교재 이름</label><input type="text" id="b-title" name="title" required maxlength="120" value="{{ b.title if b else '' }}" placeholder="예: 수능특강 영어 (2027)"></div>
+  <div class="field"><label for="b-pub">출판사 <span class="hint" style="display:inline">선택</span></label><input type="text" id="b-pub" name="publisher" maxlength="60" value="{{ b.publisher if b else '' }}" placeholder="예: EBS"></div>
+</div>
+<div class="field">
+  <label>진도 넣는 방식</label>
+  <div class="seg" role="radiogroup" aria-label="진도 넣는 방식" style="max-width:420px;margin-bottom:6px">
+    <label><input type="radio" name="mode" value="unit" {% if not b or b.mode != 'page' %}checked{% endif %}> 목차(단원)로</label>
+    <label><input type="radio" name="mode" value="page" {% if b and b.mode == 'page' %}checked{% endif %}> 쪽수로 (p.12~18)</label>
+  </div>
+</div>
+<div class="field">
+  <label for="b-units">목차 <span class="hint" style="display:inline">한 줄에 단원 하나 · 순서대로</span></label>
+  <textarea id="b-units" name="units" rows="8" placeholder="1강 글의 목적&#10;2강 심경·분위기&#10;3강 주장&#10;…">{{ (b.units or [])|join('\n') if b else '' }}</textarea>
+  <div class="actions" style="margin-top:6px">
+    <label class="btn ghost small" style="margin:0">📷 목차 사진으로 채우기 (AI)<input type="file" id="toc-file" accept="image/*,application/pdf" multiple hidden></label>
+    <span class="small muted" id="toc-msg">목차 쪽을 찍어 올리면 AI가 단원 목록으로 바꿔 줘요. 사진은 저장하지 않아요.</span>
+  </div>
+</div>
+<div class="row">
+  <div class="field"><label for="b-pages">전체 쪽수 <span class="hint" style="display:inline">선택</span></label><input type="text" inputmode="numeric" id="b-pages" name="total_pages" value="{{ (b.total_pages or '') if b else '' }}" placeholder="예: 240"></div>
+  <div class="field"><label>색</label>
+    <div class="actions">{% for c in colors %}<label style="margin:0;cursor:pointer"><input type="radio" name="color" value="{{ c }}" {% if (b and b.color == c) or (not b and loop.first) %}checked{% endif %} style="accent-color:{{ c }}"><span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:{{ c }};vertical-align:middle"></span></label>{% endfor %}</div></div>
+</div>
+<div class="field"><label for="b-note">설명 <span class="hint" style="display:inline">학부모 리포트에 같이 보여요 (선택)</span></label><input type="text" id="b-note" name="note" value="{{ b.note if b else '' }}" placeholder="예: 수능 연계 교재, 주 2강씩"></div>
+<div class="row">
+  <div class="field"><label for="b-cover">표지 사진 <span class="hint" style="display:inline">선택</span></label>
+    {% if b and b.has_cover %}<img src="/care/cover/{{ b.id }}.jpg?v={{ b.id }}" alt="" style="height:80px;border-radius:6px;display:block;margin-bottom:6px">
+      <label style="font-weight:400"><input type="checkbox" name="cover_remove" value="1"> 표지 지우기</label>{% endif %}
+    <input type="file" id="b-cover" name="cover" accept="image/*"></div>
+  <div class="field"><label style="font-weight:400;margin-top:24px"><input type="checkbox" name="show" value="1" {% if not b or b.show %}checked{% endif %}> 학부모 화면·리포트에 이 교재 보이기</label></div>
+</div>
+<script>
+(() => {
+  const f = document.getElementById("toc-file"), msg = document.getElementById("toc-msg"), ta = document.getElementById("b-units"), title = document.getElementById("b-title");
+  f.addEventListener("change", async () => {
+    if (!f.files.length) return;
+    const fd = new FormData(); [...f.files].forEach((x) => fd.append("files", x));
+    msg.textContent = "AI가 목차를 읽는 중이에요… (10~30초)";
+    try {
+      const r = await fetch("/care/book-toc", { method: "POST", body: fd }); const j = await r.json();
+      if (!r.ok) { msg.textContent = "⚠️ " + (j.error || "목차를 읽지 못했어요."); return; }
+      if (ta.value.trim() && !confirm("지금 적힌 목차를 사진에서 읽은 목차로 바꿀까요? (취소하면 뒤에 붙여요)")) ta.value = ta.value.trimEnd() + "\n" + j.units.join("\n");
+      else ta.value = j.units.join("\n");
+      if (!title.value.trim() && j.title) title.value = j.title;
+      msg.textContent = `✓ 단원 ${j.units.length}개를 넣었어요. 틀린 곳은 고친 뒤 저장해 주세요.`;
+    } catch (e) { msg.textContent = "⚠️ 연결이 끊겼어요. 다시 해 주세요."; }
+    f.value = "";
+  });
+})();
+</script>

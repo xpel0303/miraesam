@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}사진 · 학습관리 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% include "care/_tabs.html" %}
+<section class="panel">
+  <h2>사진 올리기</h2>
+  <div class="drop" id="drop" tabindex="0">
+    <p style="margin:0 0 6px"><b>사진을 여기로 끌어다 놓거나</b></p>
+    <label class="btn small" style="margin:0">파일 고르기<input type="file" id="files" accept="image/*" multiple hidden></label>
+    <button type="button" class="btn ghost small" id="qr-btn">📱 휴대폰으로 올리기 (QR)</button>
+    <p class="small muted" style="margin:8px 0 0" id="up-msg">한 번에 40장까지. 사진은 작게 줄여서 저장해요. 올린 사진은 아래 '학생 정하기 전'에 모여요.</p>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><h2>학생 정하기 전 <span class="tag">{{ pending|length }}</span></h2>
+    {% if pending %}<span class="small muted">사진을 눌러 고른 뒤 학생·날짜를 정하세요.</span>{% endif %}</div>
+  {% if pending %}
+  <div class="ph-grid" data-group="pending">
+    {% for p in pending %}<button type="button" class="ph" data-id="{{ p.id }}"><img src="/care/photo/{{ p.id }}.jpg?s=t" alt="" loading="lazy"></button>{% endfor %}
+  </div>
+  <div class="actions" style="margin-top:10px"><button type="button" class="btn ghost small" data-all="pending">모두 고르기</button></div>
+  {% else %}<p class="muted small" style="margin:0">없어요.</p>{% endif %}
+</section>
+
+<form method="post" action="/care/photos/assign" class="panel" id="assign" hidden>
+  <h2>고른 사진 <span id="n-sel">0</span>장 → 학생에게</h2>
+  <input type="hidden" name="photo_ids" id="photo_ids">
+  <div class="row">
+    <div class="field"><label for="a-day">수업 날짜</label><input type="date" id="a-day" name="day" value="{{ today.isoformat() }}"></div>
+    <div class="field"><label for="a-memo">메모 <span class="hint" style="display:inline">학부모님께 보여요 (선택)</span></label><input type="text" id="a-memo" name="memo" maxlength="300" placeholder="예: 영어 말하기 발표 시간"></div>
+  </div>
+  <div class="field"><label>학생 <span class="hint" style="display:inline">단체 사진은 여러 명을 고르세요</span></label>
+    {% for c in classes %}
+    <div style="margin-bottom:6px"><button type="button" class="linklike small" data-cls="{{ c.id }}"><b>{{ c.name }}</b> 모두</button>
+      {% for s in students if s.class_id == c.id %}<label class="stu"><input type="checkbox" name="student_ids" value="{{ s.id }}" data-c="{{ c.id }}"> {{ s.name }}</label>{% endfor %}</div>
+    {% endfor %}
+    {% set nocls = students|selectattr("class_id", "none")|list %}
+    {% if nocls %}<div><b class="small">반 없음</b> {% for s in nocls %}<label class="stu"><input type="checkbox" name="student_ids" value="{{ s.id }}"> {{ s.name }}</label>{% endfor %}</div>{% endif %}
+  </div>
+  <label style="font-weight:400"><input type="checkbox" name="replace" value="1"> 이미 연결된 학생은 빼고 지금 고른 학생으로 바꾸기</label>
+  <div class="actions" style="margin-top:10px">
+    <button class="btn" type="submit">학생 기록에 올리기</button>
+    <button class="btn danger" type="submit" formaction="/care/photos/delete" onclick="return confirm('고른 사진을 지울까요? 학부모 화면에서도 사라져요.')">고른 사진 지우기</button>
+  </div>
+</form>
+
+<section class="panel">
+  <div class="panel-head"><h2>올린 사진</h2>
+    <form method="get" action="/care/photos"><select name="student_id" onchange="this.form.submit()" style="width:auto" aria-label="학생으로 거르기">
+      <option value="">모든 학생</option>{% for s in students %}<option value="{{ s.id }}" {% if student_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></form></div>
+  {% if done %}
+  <div class="ph-grid" data-group="done">
+    {% for p in done %}<button type="button" class="ph" data-id="{{ p.id }}" title="{{ p.memo }}"><img src="/care/photo/{{ p.id }}.jpg?s=t" alt="" loading="lazy">
+      <span class="cap">{{ p.day.month }}/{{ p.day.day }} · {{ names.get(p.id, [])|join(', ')|truncate(22, True, '…') }}</span></button>{% endfor %}
+  </div>
+  <p class="small muted">사진을 고르면 날짜·학생을 고치거나 지울 수 있어요.</p>
+  {% else %}<p class="muted small" style="margin:0">아직 없어요.</p>{% endif %}
+</section>
+
+<dialog id="qr-dlg" style="border:0;border-radius:20px;padding:24px;text-align:center;max-width:360px">
+  <p style="margin:0 0 4px"><b>휴대폰 카메라로 찍으세요</b></p>
+  <p class="small muted" style="margin:0 0 12px">로그인 없이 휴대폰 사진을 바로 올릴 수 있어요. 2시간 동안 쓸 수 있어요.</p>
+  <div id="qr-box" style="display:inline-block;padding:10px;background:#fff"></div>
+  <p class="small" id="qr-url" style="word-break:break-all"></p>
+  <p><button class="btn ghost small" type="button" onclick="location.reload()">다 올렸어요 (새로고침)</button></p>
+</dialog>
+
+<style>
+.drop { border:2.5px dashed var(--line); border-radius:16px; padding:22px; text-align:center; background:var(--fill); }
+.drop.over { border-color:var(--brand); background:var(--brand-soft); }
+.ph-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; }
+.ph { position:relative; padding:0; border:3px solid transparent; border-radius:12px; overflow:hidden; cursor:pointer; background:var(--fill); aspect-ratio:1; }
+.ph img { width:100%; height:100%; object-fit:cover; display:block; }
+.ph.on { border-color:var(--brand); }
+.ph.on::after { content:"✓"; position:absolute; top:4px; right:6px; background:var(--brand); color:#fff; border-radius:50%; width:22px; height:22px; font-weight:800; line-height:22px; }
+.ph .cap { position:absolute; left:0; right:0; bottom:0; background:rgba(0,0,0,.55); color:#fff; font-size:.7rem; padding:2px 6px; text-align:left; }
+.stu { display:inline-flex; align-items:center; gap:4px; font-weight:400; margin:2px 8px 2px 0; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(() => {
+  const msg = document.getElementById("up-msg");
+  async function upload(files) {
+    files = [...files].filter((f) => f.type.startsWith("image/") || /\.(heic|heif)$/i.test(f.name));
+    if (!files.length) return;
+    let done = 0, bad = [];
+    for (let i = 0; i < files.length; i += 4) {   // 4장씩 나눠 보냄 (서버 메모리)
+      const fd = new FormData(); files.slice(i, i + 4).forEach((f) => fd.append("files", f));
+      msg.textContent = `올리는 중… ${done} / ${files.length}`;
+      try { const r = await fetch("/care/photos/upload", { method: "POST", body: fd }); const j = await r.json(); done += j.ok || 0; bad = bad.concat(j.bad || []); }
+      catch (e) { bad.push("연결 끊김"); }
+    }
+    msg.textContent = `${done}장 올렸어요.` + (bad.length ? ` 못 올린 사진: ${bad.join(", ")}` : "");
+    setTimeout(() => location.reload(), 600);
+  }
+  document.getElementById("files").addEventListener("change", (e) => upload(e.target.files));
+  const drop = document.getElementById("drop");
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => upload(e.dataTransfer.files));
+
+  document.getElementById("qr-btn").addEventListener("click", async () => {
+    const r = await fetch("/care/photos/qr", { method: "POST" }); const j = await r.json();
+    const box = document.getElementById("qr-box"); box.innerHTML = "";
+    if (window.QRCode) new QRCode(box, { text: j.url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+    document.getElementById("qr-url").textContent = j.url;
+    document.getElementById("qr-dlg").showModal();
+  });
+
+  const form = document.getElementById("assign"), ids = document.getElementById("photo_ids");
+  const sync = () => {
+    const sel = [...document.querySelectorAll(".ph.on")].map((x) => x.dataset.id);
+    ids.value = sel.join(","); document.getElementById("n-sel").textContent = sel.length; form.hidden = !sel.length;
+  };
+  document.querySelectorAll(".ph").forEach((p) => p.addEventListener("click", () => { p.classList.toggle("on"); sync(); }));
+  document.querySelectorAll("[data-all]").forEach((b) => b.addEventListener("click", () => {
+    const ps = document.querySelectorAll(`[data-group="${b.dataset.all}"] .ph`); const all = [...ps].every((p) => p.classList.contains("on"));
+    ps.forEach((p) => p.classList.toggle("on", !all)); sync(); form.scrollIntoView({ behavior: "smooth" });
+  }));
+  document.querySelectorAll("[data-cls]").forEach((b) => b.addEventListener("click", () => {
+    const cbs = document.querySelectorAll(`input[data-c="${b.dataset.cls}"]`); const all = [...cbs].every((c) => c.checked);
+    cbs.forEach((c) => (c.checked = !all));
+  }));
+})();
+</script>
+{% endblock %}

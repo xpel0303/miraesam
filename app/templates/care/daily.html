@@ -36,7 +36,12 @@
       <div class="field"><label for="test_total">만점</label><input type="text" inputmode="decimal" id="test_total" name="test_total" value="{{ fmt(cd.test_total) if cd else '' }}" placeholder="100"></div>
     </div>
     <div class="row">
-      <div class="field"><label for="progress">오늘 진도</label><input type="text" id="progress" name="progress" value="{{ cd.progress if cd else '' }}" placeholder="예: 수능특강 3강 1~5번"></div>
+      <div class="field"><label for="progress">오늘 진도</label><input type="text" id="progress" name="progress" value="{{ cd.progress if cd else '' }}" placeholder="예: 수능특강 3강 1~5번">
+        <input type="hidden" name="prog_items" id="pi-class" value="{{ (cd.prog_items if cd and cd.prog_items else [])|tojson|forceescape }}">
+        <div class="pi-chips" data-for="pi-class"></div>
+        {% if books %}<button type="button" class="btn ghost small" data-pick="pi-class" data-text="progress" data-who="">📚 교재 목차에서 고르기</button>
+        {% else %}<span class="hint"><a href="/care/books">교재를 등록</a>하면 목차를 눌러 진도를 넣을 수 있어요.</span>{% endif %}
+      </div>
       <div class="field"><label for="next_hw">다음 숙제</label><input type="text" id="next_hw" name="next_hw" value="{{ cd.next_hw if cd else '' }}" placeholder="예: 단어 Day 4 암기, 워크북 16~19쪽"></div>
     </div>
     <div class="field" style="margin-bottom:0"><label for="note">반 전체 한마디 <span class="hint" style="display:inline">학부모님께 보여요 (선택)</span></label>
@@ -58,8 +63,11 @@
         <td data-l="숙제"><span class="pick" role="radiogroup" aria-label="{{ s.name }} 숙제">{% for k in HW %}<label><input type="radio" class="v-{{ k }}" name="h_{{ s.id }}" value="{{ k }}" {% if r and r.hw == k %}checked{% endif %}><span title="{{ HW[k] }}">{{ k }}</span></label>{% endfor %}</span></td>
         <td data-l="점수"><input type="text" inputmode="decimal" name="s_{{ s.id }}" value="{{ fmt(r.score) if r else '' }}" style="width:70px" aria-label="{{ s.name }} 점수"></td>
         <td data-l="코멘트" style="min-width:220px"><input type="text" name="c_{{ s.id }}" value="{{ r.comment if r else '' }}" placeholder="예: 서술형이 많이 늘었어요!" aria-label="{{ s.name }} 코멘트"></td>
-        <td style="min-width:90px"><details {% if r and (r.progress or r.next_hw) %}open{% endif %}><summary class="small">진도·숙제 따로</summary>
-          <input type="text" name="p_{{ s.id }}" value="{{ r.progress if r else '' }}" placeholder="이 학생 진도" style="margin-top:6px;min-width:180px">
+        <td style="min-width:90px"><details {% if r and (r.progress or r.next_hw or r.prog_items) %}open{% endif %}><summary class="small">진도·숙제 따로</summary>
+          <input type="text" name="p_{{ s.id }}" id="p_{{ s.id }}" value="{{ r.progress if r else '' }}" placeholder="이 학생 진도" style="margin-top:6px;min-width:180px">
+          <input type="hidden" name="pi_{{ s.id }}" id="pi_{{ s.id }}" value="{{ (r.prog_items if r and r.prog_items else [])|tojson|forceescape }}">
+          <div class="pi-chips" data-for="pi_{{ s.id }}"></div>
+          {% if books %}<button type="button" class="btn ghost small" data-pick="pi_{{ s.id }}" data-text="p_{{ s.id }}" data-who="{{ s.id }}" style="margin-top:4px">📚 교재에서</button>{% endif %}
           <input type="text" name="n_{{ s.id }}" value="{{ r.next_hw if r else '' }}" placeholder="이 학생 다음 숙제" style="margin-top:4px;min-width:180px"></details></td>
       </tr>
     {% endfor %}
@@ -73,6 +81,109 @@
 </form>
 {% endif %}
 {% endif %}
+<dialog id="pick-dlg" style="border:0;border-radius:20px;padding:0;width:min(640px,94vw);max-height:86vh">
+  <div style="padding:18px 20px">
+    <h2 style="margin:0 0 4px;font-size:1.1rem" id="pick-title">교재에서 진도 고르기</h2>
+    <p class="small muted" style="margin:0 0 10px">오늘 나간 단원을 누르세요. ✓는 이미 나간 단원, <b>다음</b>은 이어서 나갈 단원이에요.</p>
+    <div class="care-chips" id="pick-books"></div>
+    <div id="pick-body" style="max-height:50vh;overflow:auto"></div>
+    <div class="actions" style="margin-top:14px"><button type="button" class="btn" id="pick-ok">넣기</button><button type="button" class="btn ghost" id="pick-cancel">취소</button></div>
+  </div>
+</dialog>
+<style>
+.pi-chips { display:flex; flex-wrap:wrap; gap:4px; margin:6px 0; }
+.pi-chips span { font-size:.8rem; padding:2px 4px 2px 10px; border-radius:999px; background:var(--fill); border:1.5px solid var(--line); }
+.pi-chips button { border:0; background:none; cursor:pointer; color:var(--ink-3); padding:0 4px; font:inherit; }
+.unit-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; }
+.unit-grid button { text-align:left; font:inherit; font-size:.85rem; padding:8px 10px; border-radius:10px; border:2px solid var(--line); background:#fff; cursor:pointer; color:var(--ink); position:relative; }
+.unit-grid button.done { color:var(--ink-3); background:var(--fill); }
+.unit-grid button.done::after { content:"✓"; position:absolute; right:8px; top:6px; color:#2E9E6A; font-weight:800; }
+.unit-grid button.next { border-color:var(--brand); }
+.unit-grid button.next::before { content:"다음"; position:absolute; right:6px; top:-9px; font-size:.68rem; background:var(--brand); color:#fff; border-radius:999px; padding:0 6px; }
+.unit-grid button.on { background:var(--brand); border-color:var(--brand); color:#fff; }
+</style>
+<script>
+(() => {
+  const BOOKS = {{ books|tojson }};
+  const byId = Object.fromEntries(BOOKS.map((b) => [b.id, b]));
+  const label = (it) => {
+    const b = byId[it.b]; if (!b) return "";
+    let t = b.title;
+    if (it.u && it.u.length) t += " " + it.u.map((i) => b.units[i]).filter(Boolean).join(", ");
+    if (it.p) t += ` p.${it.p[0]}${it.p[1] !== it.p[0] ? "~" + it.p[1] : ""}`;
+    return t;
+  };
+  const get = (id) => { try { return JSON.parse(document.getElementById(id).value || "[]"); } catch (e) { return []; } };
+  const autoText = (items) => items.map(label).filter(Boolean).join(" / ");
+  function setItems(hid, textId, items) {
+    const h = document.getElementById(hid), t = document.getElementById(textId);
+    const before = autoText(get(hid)), after = autoText(items);
+    h.value = JSON.stringify(items);
+    if (!t.value.trim() || t.value === before) t.value = after;
+    else if (before && t.value.includes(before)) t.value = t.value.replace(before, after);
+    else if (after) t.value = t.value + " / " + after;
+    t.dispatchEvent(new Event("input", { bubbles: true }));
+    chips(hid, textId);
+  }
+  function chips(hid, textId) {
+    const box = document.querySelector(`.pi-chips[data-for="${hid}"]`); if (!box) return;
+    const items = get(hid); box.innerHTML = "";
+    items.forEach((it, k) => {
+      const sp = document.createElement("span"); sp.textContent = "📚 " + label(it);
+      const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", "빼기");
+      x.onclick = () => { const a = get(hid); a.splice(k, 1); setItems(hid, textId, a); };
+      sp.append(x); box.append(sp);
+    });
+  }
+  document.querySelectorAll("[data-pick]").forEach((b) => chips(b.dataset.pick, b.dataset.text));
+
+  const dlg = document.getElementById("pick-dlg");
+  let target = null, cur = null, sel = {};
+  function books(who) { return BOOKS.filter((b) => who ? (b.class || b.personal.includes(+who)) : b.class); }
+  function draw() {
+    const b = byId[cur], body = document.getElementById("pick-body");
+    document.querySelectorAll("#pick-books a").forEach((a) => a.toggleAttribute("aria-current", +a.dataset.id === cur));
+    const s = sel[cur] || (sel[cur] = { u: new Set(), p: null });
+    body.innerHTML = "";
+    if (b.mode === "page" || !b.units.length) {
+      body.innerHTML = `<p class="small">${b.last_page ? `지난번에 <b>p.${b.last_page}</b>까지 나갔어요.` : "쪽수로 진도를 적어요."}${b.mode !== "page" && !b.units.length ? ' (목차가 없어 쪽수로 넣어요. <a href="/care/books/' + b.id + '">목차 넣기</a>)' : ""}</p>
+        <div class="actions">p. <input type="number" id="pg-a" min="1" style="width:90px" value="${s.p ? s.p[0] : (b.last_page ? b.last_page + 1 : "")}"> ~ <input type="number" id="pg-z" min="1" style="width:90px" value="${s.p ? s.p[1] : ""}"></div>`;
+      const upd = () => { const a = +document.getElementById("pg-a").value, z = +document.getElementById("pg-z").value || a; s.p = a ? [Math.min(a, z), Math.max(a, z)] : null; };
+      body.querySelectorAll("input").forEach((i) => i.addEventListener("input", upd)); upd();
+      return;
+    }
+    const done = new Set(b.done), next = b.units.findIndex((_, i) => !done.has(i) && i > Math.max(-1, ...b.done));
+    const grid = document.createElement("div"); grid.className = "unit-grid";
+    b.units.forEach((u, i) => {
+      const btn = document.createElement("button"); btn.type = "button"; btn.textContent = u;
+      if (done.has(i)) btn.classList.add("done");
+      if (i === next) btn.classList.add("next");
+      if (s.u.has(i)) btn.classList.add("on");
+      btn.onclick = () => { s.u.has(i) ? s.u.delete(i) : s.u.add(i); btn.classList.toggle("on"); };
+      grid.append(btn);
+    });
+    body.append(grid);
+    const nb = grid.querySelector(".next"); if (nb) setTimeout(() => nb.scrollIntoView({ block: "center" }), 30);
+  }
+  document.querySelectorAll("[data-pick]").forEach((btn) => btn.addEventListener("click", () => {
+    target = btn.dataset; const list = books(target.who);
+    if (!list.length) { alert("이 학생에게 연결된 교재가 없어요. 교재 화면에서 반이나 학생에게 연결해 주세요."); return; }
+    sel = {};
+    for (const it of get(target.pick)) sel[it.b] = { u: new Set(it.u || []), p: it.p || null };
+    const tabs = document.getElementById("pick-books"); tabs.innerHTML = "";
+    list.forEach((b) => { const a = document.createElement("a"); a.href = "#"; a.dataset.id = b.id; a.textContent = b.title + (b.class ? "" : " (개인)");
+      a.onclick = (e) => { e.preventDefault(); cur = b.id; draw(); }; tabs.append(a); });
+    cur = (list.find((b) => sel[b.id]) || list[0]).id;
+    document.getElementById("pick-title").textContent = target.who ? "이 학생 진도 고르기" : "반 진도 고르기";
+    draw(); dlg.showModal();
+  }));
+  document.getElementById("pick-cancel").onclick = () => dlg.close();
+  document.getElementById("pick-ok").onclick = () => {
+    const items = Object.entries(sel).map(([b, s]) => ({ b: +b, u: [...s.u].sort((x, y) => x - y), p: s.p })).filter((it) => it.u.length || it.p);
+    setItems(target.pick, target.text, items); dlg.close();
+  };
+})();
+</script>
 <script>
 (() => {
   const form = document.getElementById("care-form");

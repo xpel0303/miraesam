@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}교재 · 학습관리 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% include "care/_tabs.html" %}
+<div class="care-chips">
+  <a href="/care/books" {% if not done %}aria-current="page"{% endif %}>쓰는 교재</a>
+  <a href="/care/books?done=1" {% if done %}aria-current="page"{% endif %}>보관함</a>
+</div>
+{% if items %}
+<div class="book-grid">
+  {% for b in items %}
+  <a class="book-card" href="/care/books/{{ b.id }}" style="--bc:{{ b.color }}">
+    <div class="cov">{% if b.has_cover %}<img src="/care/cover/{{ b.id }}.jpg" alt="">{% else %}<span>{{ b.title[:6] }}</span>{% endif %}</div>
+    <div class="info">
+      <b>{{ b.title }}</b>
+      <span class="small muted">{{ b.publisher }}{% if b.publisher %} · {% endif %}{{ ('목차 ' ~ (b.units|length) ~ '단원') if b.mode == 'unit' else '쪽수로' }}{% if not b.show %} · 학부모에게 숨김{% endif %}</span>
+      <span class="small">{% for u in uses.get(b.id, []) %}<span class="tag {{ 'muted' if u.done else '' }}">{{ u.class_group.name if u.class_group else (u.student.name ~ ' 개인') if u.student else '' }}{% if u.done %} 끝{% endif %}</span> {% else %}<span class="muted">아직 반·학생에 연결 안 함</span>{% endfor %}</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="panel empty"><p>{{ '보관한 교재가 없어요.' if done else '아직 등록한 교재가 없어요. 아래에서 첫 교재를 등록해 보세요.' }}</p></div>
+{% endif %}
+
+{% if not done %}
+<section class="panel" id="new">
+  <h2>새 교재 등록</h2>
+  <form method="post" action="/care/books" enctype="multipart/form-data">
+    {% set b = None %}
+    {% include "care/_bookform.html" %}
+    <div class="field" style="max-width:320px"><label for="b-class">바로 연결할 반 <span class="hint" style="display:inline">선택</span></label>
+      <select id="b-class" name="class_id"><option value="">나중에</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+    <button class="btn" type="submit">교재 등록</button>
+  </form>
+</section>
+{% endif %}
+<style>
+.book-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; margin-bottom:20px; }
+.book-card { display:flex; gap:12px; padding:12px; border:2px solid var(--line); border-left:6px solid var(--bc); border-radius:16px; background:#fff; text-decoration:none; color:var(--ink); }
+.book-card:hover { border-color:var(--bc); }
+.book-card .cov { flex:0 0 56px; height:76px; border-radius:6px; background:color-mix(in srgb, var(--bc) 35%, #fff); display:flex; align-items:center; justify-content:center; overflow:hidden; font-size:.72rem; text-align:center; padding:2px; }
+.book-card .cov img { width:100%; height:100%; object-fit:cover; }
+.book-card .info { display:flex; flex-direction:column; gap:4px; min-width:0; }
+</style>
+{% endblock %}

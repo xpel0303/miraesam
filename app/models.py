@@ -789,6 +789,7 @@ class CareClassDay(Base):
     progress: Mapped[str] = mapped_column(Text, default="")  # 오늘 진도
     next_hw: Mapped[str] = mapped_column(Text, default="")  # 다음 숙제
     note: Mapped[str] = mapped_column(Text, default="")  # 반 전체 한마디 (학부모에게 보임)
+    prog_items: Mapped[list] = mapped_column(JSON, default=list)  # 교재 목차로 고른 진도 [{"b": 교재id, "u": [단원 번호], "p": [시작쪽, 끝쪽]}]
     notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
@@ -810,6 +811,7 @@ class CareRecord(Base):
     progress: Mapped[str] = mapped_column(Text, default="")
     next_hw: Mapped[str] = mapped_column(Text, default="")
     comment: Mapped[str] = mapped_column(Text, default="")  # 학생별 선생님 코멘트
+    prog_items: Mapped[list] = mapped_column(JSON, default=list)  # 이 학생만 따로 나간 교재 진도 (형식은 CareClassDay.prog_items)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
@@ -866,3 +868,108 @@ class PushLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
     student: Mapped[Student | None] = relationship()
+
+
+class CareBook(Base):
+    """교재(학습자료): 목차(units)를 저장해 두고 매일 기록에서 단원을 눌러 진도를 넣음. mode: unit(목차) / page(쪽수)."""
+
+    __tablename__ = "care_books"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    title: Mapped[str] = mapped_column(String(120))
+    publisher: Mapped[str] = mapped_column(String(60), default="")
+    mode: Mapped[str] = mapped_column(String(6), default="unit")
+    units: Mapped[list] = mapped_column(JSON, default=list)  # ["1강 Gateway", "2강 ...", ...]
+    total_pages: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    color: Mapped[str] = mapped_column(String(9), default="#7FB3E6")
+    note: Mapped[str] = mapped_column(Text, default="")  # 리포트에 같이 보이는 설명
+    show: Mapped[bool] = mapped_column(Boolean, default=True)  # 학부모 화면·리포트에 보이기
+    has_cover: Mapped[bool] = mapped_column(Boolean, default=False)
+    cover: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True, deferred=True)  # 표지 (JPEG, 작게 줄여 저장)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class CareBookUse(Base):
+    """교재를 반(class_id) 또는 학생 한 명(student_id)에게 연결. done 이면 끝낸 교재."""
+
+    __tablename__ = "care_book_uses"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    book_id: Mapped[int] = mapped_column(ForeignKey("care_books.id", ondelete="CASCADE"), index=True)
+    class_id: Mapped[int | None] = mapped_column(ForeignKey("class_groups.id"), nullable=True, index=True)
+    student_id: Mapped[int | None] = mapped_column(ForeignKey("students.id"), nullable=True, index=True)
+    done: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+    book: Mapped[CareBook] = relationship()
+    class_group: Mapped[ClassGroup | None] = relationship()
+    student: Mapped[Student | None] = relationship()
+
+
+class CarePhoto(Base):
+    """수업 사진. 올리면 임시 보관(학생 없음) → 학생·날짜를 정하면 학부모 화면·리포트에 보임. 무료 서버 디스크가 지워지므로 DB에 작게 줄여 저장."""
+
+    __tablename__ = "care_photos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    day: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    memo: Mapped[str] = mapped_column(Text, default="")
+    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # 긴 변 1600px JPEG (목록에선 안 읽음)
+    thumb: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # 긴 변 480px JPEG
+    width: Mapped[int] = mapped_column(Integer, default=0)
+    height: Mapped[int] = mapped_column(Integer, default=0)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class CarePhotoStudent(Base):
+    __tablename__ = "care_photo_students"
+    __table_args__ = (UniqueConstraint("photo_id", "student_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    photo_id: Mapped[int] = mapped_column(ForeignKey("care_photos.id", ondelete="CASCADE"), index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), index=True)
+
+
+class CareUploadToken(Base):
+    """QR 사진 올리기: 로그인 없이 휴대폰에서 올릴 수 있는 2시간짜리 주소 /up/{token}."""
+
+    __tablename__ = "care_upload_tokens"
+
+    token: Mapped[str] = mapped_column(String(24), primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class CareReport(Base):
+    """월간(기간) 학습 리포트. 숫자(출석·숙제·시험·진도·사진)는 열 때마다 기록에서 다시 계산하고, 코멘트만 저장.
+    status: draft(작성 중, 학부모가 못 봄) / public(공개)."""
+
+    __tablename__ = "care_reports"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), index=True)
+    class_id: Mapped[int | None] = mapped_column(ForeignKey("class_groups.id"), nullable=True, index=True)
+    title: Mapped[str] = mapped_column(String(80))
+    start: Mapped[date] = mapped_column(Date)
+    end: Mapped[date] = mapped_column(Date)
+    grade: Mapped[str] = mapped_column(String(10), default="")  # 총평 등급 (A+, 매우 좋음 등)
+    summary: Mapped[str] = mapped_column(String(300), default="")  # 총평 한 줄
+    strength: Mapped[str] = mapped_column(Text, default="")  # 잘하는 점
+    goal: Mapped[str] = mapped_column(Text, default="")  # 앞으로의 목표
+    message: Mapped[str] = mapped_column(Text, default="")  # 선생님 한마디
+    status: Mapped[str] = mapped_column(String(8), default="draft")
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    viewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # 학부모가 처음 연 때
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+    student: Mapped[Student] = relationship()
+    class_group: Mapped[ClassGroup | None] = relationship()

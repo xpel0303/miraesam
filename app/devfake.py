@@ -159,6 +159,12 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
                 "strategy": ["[가짜] 본문 문장 변형 연습"]}
     if system and "시험지 이미지를 글자 그대로" in system:
         return _exam(prompt)
+    if system and "교재 목차 사진" in system:
+        return {"title": "[가짜] 수능특강 영어", "units": [f"{i}강 [가짜] 단원 {i}" for i in range(1, 13)] + ["Mini Test 1"]}
+    if system and "월간 학습 리포트" in system:
+        return {"grade": "A", "summary": "[가짜] 숙제를 꾸준히 해 오며 시험 점수가 오르고 있어요.",
+                "strength": "[가짜] 단어 시험에서 꾸준히 90% 이상을 받았어요.", "goal": "[가짜] 서술형 문장 쓰기를 연습해요.",
+                "message": "[가짜] 한 달 동안 성실하게 해 주어 고마워요. 다음 달도 함께 힘내요!"}
     if json_mode:
         return {"reply": "[가짜 응답] 선생님, 오늘도 좋은 수업 되세요."}
     return "[가짜 응답]"

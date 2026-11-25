@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ student.name }} {{ r.title }} · {{ APP_NAME }}</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+{% if token %}<link rel="manifest" href="/p/{{ token }}/manifest.webmanifest">{% endif %}
+<link rel="apple-touch-icon" href="/static/icons/icon-180.png">
+<link rel="stylesheet" href="/static/app.css">
+{% include "parent/_style.html" %}
+<style>
+.hero { background: linear-gradient(130deg, var(--pb), color-mix(in srgb, var(--pb) 70%, #6C8CD5)); color: #fff; border-radius: 22px; padding: 18px; margin-bottom: 14px; }
+.hero small { opacity: .85; }
+.hero h1 { font-size: 1.25rem; margin: 4px 0 2px; color: #fff; }
+.grade { display: inline-block; background: #fff; color: var(--pb); font-weight: 800; border-radius: 999px; padding: 2px 12px; font-size: .85rem; margin-right: 6px; }
+.hero p { margin: 10px 0 0; font-size: .98rem; line-height: 1.5; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+.tiles div { background: #fff; border: 2px solid var(--line); border-radius: 14px; text-align: center; padding: 10px 2px; }
+.tiles b { display: block; font-size: 1.25rem; }
+.tiles span { font-size: .72rem; color: var(--ink-2); }
+.tbl { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.tbl td, .tbl th { padding: 6px 4px; border-top: 1px solid #EEF0F4; text-align: left; }
+.tbl th { font-weight: 400; color: var(--ink-3); font-size: .78rem; border-top: 0; }
+.hwg { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
+.hwg div { text-align: center; font-size: .75rem; border-radius: 10px; padding: 5px 2px; background: #F4F6FA; }
+.book { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid #EEF0F4; }
+.book:first-of-type { border-top: 0; padding-top: 0; }
+.book .cv { flex: 0 0 48px; height: 64px; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: .65rem; text-align: center; }
+.book .cv img { width: 100%; height: 100%; object-fit: cover; }
+.bar { height: 8px; background: #EEF1F6; border-radius: 99px; overflow: hidden; margin: 6px 0 4px; }
+.bar i { display: block; height: 100%; border-radius: 99px; }
+.units { display: flex; flex-wrap: wrap; gap: 4px; }
+.units span { font-size: .75rem; background: #F4F6FA; border-radius: 999px; padding: 2px 8px; }
+.pgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.pgrid a { display: block; aspect-ratio: 1; border-radius: 10px; overflow: hidden; }
+.pgrid img { width: 100%; height: 100%; object-fit: cover; }
+.cm h3 { font-size: .9rem; margin: 12px 0 4px; color: var(--pb); }
+.cm h3:first-child { margin-top: 0; }
+.cm p { margin: 0; white-space: pre-wrap; font-size: .95rem; line-height: 1.6; }
+@media print {
+  body { background: #fff; }
+  .noprint, .preview-bar { display: none !important; }
+  .pw { max-width: none; padding: 0; }
+  .pc, .tiles div { break-inside: avoid; border-color: #ddd; }
+  .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { size: A4; margin: 12mm; }
+}
+</style>
+</head>
+<body>
+<div class="pw">
+  {% if teacher_view %}<div class="preview-bar noprint">선생님 미리보기{% if r.status != 'public' %} · 아직 공개 전이라 학부모님은 볼 수 없어요{% endif %} · <button class="linklike" onclick="print()">🖨️ 인쇄·PDF 저장</button></div>{% endif %}
+  {% if token %}<p class="small noprint" style="margin:0 0 10px"><a href="/p/{{ token }}">← {{ student.name }} 학습관리</a></p>{% endif %}
+
+  <header class="hero">
+    <small>{{ APP_NAME }} {{ APP_SUB }}{% if r.class_group %} · {{ r.class_group.name }}{% endif %} · {{ r.start.month }}/{{ r.start.day }}~{{ r.end.month }}/{{ r.end.day }}</small>
+    <h1>{{ student.name }} · {{ r.title }}</h1>
+    {% if r.grade or r.summary %}<p>{% if r.grade %}<span class="grade">{{ r.grade }}</span>{% endif %}{{ r.summary }}</p>{% endif %}
+  </header>
+
+  <div class="tiles">
+    <div><b>{{ d.lessons }}</b><span>수업</span></div>
+    <div><b>{{ (d.attend_rate ~ '%') if d.attend_rate is not none else '-' }}</b><span>출석률</span></div>
+    <div><b>{{ (d.hw_rate ~ '%') if d.hw_rate is not none else '-' }}</b><span>숙제 완료</span></div>
+    <div><b>{{ d.avg if d.avg is not none else '-' }}</b><span>시험 평균</span></div>
+  </div>
+
+  {% if d.att_n %}
+  <section class="pc">
+    <h2>출결</h2>
+    <p style="margin:0 0 6px">출석 <b>{{ d.att['출'] }}</b> · 지각 <b>{{ d.att['지'] }}</b> · 결석 <b>{{ d.att['결'] }}</b></p>
+    {% set misses = d.recs|selectattr("attend", "in", ["지", "결"])|list %}
+    {% if misses %}<div class="units">{% for x in misses %}<span class="chip c-{{ x.attend }}">{{ x.day.month }}/{{ x.day.day }} {{ x.attend_text }}</span>{% endfor %}</div>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if d.tests %}
+  <section class="pc">
+    <h2>시험 점수 <span class="small muted" style="font-weight:400">100점 환산{% if d.tests|selectattr('class_avg')|list %} · 점선은 반 평균{% endif %}</span></h2>
+    {% if d.tests|length >= 2 %}
+    {% set W, H, L, R, T, B = 320, 150, 28, 12, 18, 26 %}{% set n = d.tests|length %}{% set step = (W - L - R) / (n - 1) %}
+    {% macro y(v) %}{{ T + (H - T - B) * (100 - [[v, 0]|max, 100]|min) / 100 }}{% endmacro %}
+    <svg viewBox="0 0 {{ W }} {{ H }}" width="100%" role="img" aria-label="시험 점수 그래프">
+      {% for g in [0, 50, 100] %}<line x1="{{ L }}" x2="{{ W - R }}" y1="{{ y(g) }}" y2="{{ y(g) }}" stroke="#E6E9F0"/><text x="{{ L - 6 }}" y="{{ y(g)|float + 4 }}" font-size="10" text-anchor="end" fill="#8A93A8">{{ g }}</text>{% endfor %}
+      {% set avgs = d.tests|selectattr('class_avg')|list %}
+      {% if avgs|length >= 2 %}<polyline fill="none" stroke="#B5BDCC" stroke-width="2" stroke-dasharray="4 4" points="{% for t in d.tests %}{% if t.class_avg is not none %}{{ L + step * loop.index0 }},{{ y(t.class_avg) }} {% endif %}{% endfor %}"/>{% endif %}
+      <polyline fill="none" stroke="var(--pb)" stroke-width="2.5" stroke-linejoin="round" points="{% for t in d.tests %}{{ L + step * loop.index0 }},{{ y(t.pct) }} {% endfor %}"/>
+      {% for t in d.tests %}{% set x = L + step * loop.index0 %}
+        <circle cx="{{ x }}" cy="{{ y(t.pct) }}" r="4" fill="#fff" stroke="var(--pb)" stroke-width="2"/>
+        {% if n <= 8 or loop.last %}<text x="{{ x }}" y="{{ y(t.pct)|float - 8 }}" font-size="10" text-anchor="middle" font-weight="700" fill="#1F2740">{{ t.pct }}</text>{% endif %}
+        {% if n <= 8 or loop.first or loop.last %}<text x="{{ x }}" y="{{ H - 8 }}" font-size="9.5" text-anchor="middle" fill="#8A93A8">{{ t.day.month }}/{{ t.day.day }}</text>{% endif %}
+      {% endfor %}
+    </svg>
+    {% endif %}
+    <table class="tbl"><thead><tr><th>날짜</th><th>시험</th><th>점수</th><th>반 평균</th></tr></thead>
+      <tbody>{% for t in d.tests %}<tr><td>{{ t.day.month }}/{{ t.day.day }}</td><td>{{ t.test_name }}</td><td><b>{{ fmt(t.score) }}</b>/{{ fmt(t.total) }}</td><td class="muted">{{ t.class_avg if t.class_avg is not none else '' }}</td></tr>{% endfor %}</tbody></table>
+  </section>
+  {% endif %}
+
+  {% if d.hws %}
+  <section class="pc">
+    <h2>숙제 <span class="small muted" style="font-weight:400">O 완료 · △ 일부 · X 안 함</span></h2>
+    <div class="hwg">{% for h in d.hws %}<div class="chip c-{{ h.hw }}" title="{{ h.hw_name }}">{{ h.day.month }}/{{ h.day.day }}<br><b>{{ h.hw }}</b></div>{% endfor %}</div>
+  </section>
+  {% endif %}
+
+  {% if d.progress or d.free %}
+  <section class="pc">
+    <h2>이번 달 진도</h2>
+    {% for p in d.progress %}
+    <div class="book">
+      <div class="cv" style="background:color-mix(in srgb, {{ p.book.color }} 35%, #fff)">{% if p.book.has_cover %}<img src="/care/cover/{{ p.book.id }}.jpg" alt="">{% else %}{{ p.book.title[:8] }}{% endif %}</div>
+      <div style="flex:1;min-width:0">
+        <b>{{ p.book.title }}</b>{% if p.book.note %} <span class="small muted">{{ p.book.note }}</span>{% endif %}
+        {% if p.n_units %}<div class="bar"><i style="width:{{ (100 * p.done_upto / p.n_units)|round }}%;background:{{ p.book.color }}"></i></div>
+          <span class="small muted">{{ p.done_upto }} / {{ p.n_units }} 단원까지</span>{% endif %}
+        {% if p.pages %}<p class="small" style="margin:4px 0">p.{{ p.pages[0] }} ~ {{ p.pages[1] }}{% if p.book.total_pages %} <span class="muted">(전체 {{ p.book.total_pages }}쪽)</span>{% endif %}</p>{% endif %}
+        {% if p.units %}<div class="units" style="margin-top:4px">{% for u in p.units %}<span>{{ u }}</span>{% endfor %}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+    {% if d.free %}<table class="tbl" style="margin-top:6px">{% for f in d.free %}<tr><td style="white-space:nowrap" class="muted">{{ f.label }}</td><td>{{ f.text }}</td></tr>{% endfor %}</table>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if d.photos %}
+  <section class="pc">
+    <h2>수업 사진</h2>
+    <div class="pgrid">{% for ph in d.photos %}{% set src = ('/p/' ~ token ~ '/photo/' ~ ph.id ~ '.jpg') if token else ('/care/photo/' ~ ph.id ~ '.jpg') %}
+      <a href="{{ src }}" target="_blank" rel="noopener" title="{{ ph.day.month }}/{{ ph.day.day }} {{ ph.memo }}"><img src="{{ src }}?s=t" alt="{{ ph.memo or '수업 사진' }}" loading="lazy"></a>{% endfor %}</div>
+  </section>
+  {% endif %}
+
+  {% if r.strength or r.goal or r.message %}
+  <section class="pc cm">
+    <h2>담당 선생님 코멘트</h2>
+    {% if r.strength %}<h3>👍 잘한 점</h3><p>{{ r.strength }}</p>{% endif %}
+    {% if r.goal %}<h3>🎯 앞으로의 목표</h3><p>{{ r.goal }}</p>{% endif %}
+    {% if r.message %}<h3>💌 선생님 한마디</h3><p>{{ r.message }}</p>{% endif %}
+  </section>
+  {% endif %}
+  {% if not d.lessons and not (r.strength or r.goal or r.message) %}<p class="muted small">이 기간 기록이 아직 없어요.</p>{% endif %}
+
+  <p class="foot">{{ APP_NAME }} {{ APP_SUB }}</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ b.title }} · 교재 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% include "care/_tabs.html" %}
+<p class="small"><a href="/care/books">← 교재 목록</a></p>
+
+<section class="panel">
+  <div class="panel-head"><h2>쓰는 반·학생</h2></div>
+  {% if uses %}
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th>반·학생</th><th>진도</th><th>상태</th><th></th></tr></thead>
+    <tbody>{% for u in uses %}{% set c = cov.get(u.id) %}
+      <tr><td>{{ u.class_group.name if u.class_group else (u.student.name ~ ' (개인)') if u.student else '' }}</td>
+        <td class="small">{% if c and b.mode == 'unit' and b.units %}{{ c.u|length }} / {{ b.units|length }} 단원
+            <div class="hbar sm" style="display:inline-block;width:90px;vertical-align:middle"><i style="width:{{ (100 * (c.u|length) / (b.units|length))|round }}%"></i></div>
+          {% elif c and c.p %}p.{{ c.p }}까지{% else %}<span class="muted">-</span>{% endif %}</td>
+        <td>{{ '끝냄' if u.done else '진행 중' }}</td>
+        <td class="actions">
+          <form method="post" action="/care/books/use/{{ u.id }}/done"><button class="btn ghost small" type="submit">{{ '다시 진행' if u.done else '끝냄으로' }}</button></form>
+          <form method="post" action="/care/books/use/{{ u.id }}/delete" onsubmit="return confirm('연결을 끊을까요? 지난 진도 기록은 그대로 남아요.')"><button class="btn danger small" type="submit">연결 끊기</button></form>
+        </td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="muted small">아직 연결한 반·학생이 없어요. 연결해야 매일 기록에서 이 교재를 고를 수 있어요.</p>{% endif %}
+  <form class="actions" method="post" action="/care/books/{{ b.id }}/use" style="margin-top:10px">
+    <select name="target" style="width:auto;min-width:220px" aria-label="연결할 반이나 학생">
+      <option value="">반이나 학생 고르기</option>
+      <optgroup label="반 (반 학생 모두)">{% for c in classes %}<option value="c:{{ c.id }}">{{ c.name }}</option>{% endfor %}</optgroup>
+      <optgroup label="학생 한 명 (개인 진도)">{% for s in students %}<option value="s:{{ s.id }}">{{ s.name }}{% if s.class_group %} ({{ s.class_group.name }}){% endif %}</option>{% endfor %}</optgroup>
+    </select>
+    <button class="btn small" type="submit">연결</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>교재 정보·목차</h2>
+  <form method="post" action="/care/books/{{ b.id }}" enctype="multipart/form-data">
+    {% include "care/_bookform.html" %}
+    <button class="btn" type="submit">저장</button>
+  </form>
+  <p class="small muted" style="margin:12px 0 0">목차 순서를 바꾸거나 중간에 단원을 끼워 넣으면 이미 넣은 진도의 단원 이름이 바뀔 수 있어요. 새 단원은 되도록 맨 끝에 붙여 주세요.</p>
+</section>
+
+<form method="post" action="/care/books/{{ b.id }}/active"><button class="btn ghost small" type="submit">{{ '쓰는 교재로 되돌리기' if not b.active else '보관함으로 옮기기 (다 끝낸 교재)' }}</button></form>
+{% endblock %}

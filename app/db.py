@@ -58,6 +58,8 @@ ADDED_COLUMNS = [
     ("homework_results", "stages", "JSON", "'{}'"),  # 단어 숙제 단계별 진행 (암기·리콜·스펠·게임)
     ("students", "parent_token", "VARCHAR(16)", "NULL"),  # 학습관리: 학부모 화면 링크
     ("students", "parent_seen_at", "TIMESTAMP WITH TIME ZONE", "NULL"),
+    ("care_class_days", "prog_items", "JSON", "'[]'"),  # 학습관리: 교재 목차로 고른 진도
+    ("care_records", "prog_items", "JSON", "'[]'"),
 ]
 
 

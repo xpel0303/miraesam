@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from .. import care, push
 from ..db import get_db
-from ..models import CareClassDay, CareNotice, CareRecord, ClassGroup, PushLog, ParentPushSub, Student, Teacher, now
+from ..models import CareBook, CareBookUse, CareClassDay, CareNotice, CareRecord, ClassGroup, PushLog, ParentPushSub, Student, Teacher, now
 from ..web import current_teacher, flash, render
 
 router = APIRouter(prefix="/care")
@@ -75,8 +75,16 @@ def daily(request: Request, class_id: str = "", day: str = "", db: Session = Dep
     first = d.replace(day=1)
     days_with = {x for (x,) in db.execute(select(CareClassDay.day).where(CareClassDay.class_id == cls.id, CareClassDay.day >= first,
                                                                           CareClassDay.day < (first + timedelta(days=32)).replace(day=1)))}
+    books, personal = care.books_for_class(db, aid, cls.id, [s.id for s in students])
+    cov = care.covered(db, cls.id, [b.id for b in books])
+    book_js = [{"id": b.id, "title": b.title, "mode": b.mode, "units": b.units or [], "color": b.color, "pages": b.total_pages,
+                "done": cov[b.id]["u"], "last_page": cov[b.id]["p"],
+                "personal": [sid for sid, bids in personal.items() if b.id in bids]} for b in books]
+    class_book_ids = {u for (u,) in db.execute(select(CareBookUse.book_id).where(CareBookUse.class_id == cls.id, CareBookUse.done.is_(False)))}
+    for bj in book_js:
+        bj["class"] = bj["id"] in class_book_ids
     return render(request, "care/daily.html", {
-        "teacher": teacher, "active": "care", "tab": "daily", "classes": classes, "cls": cls, "day": d, "day_label": care.day_label(d),
+        "books": book_js, "teacher": teacher, "active": "care", "tab": "daily", "classes": classes, "cls": cls, "day": d, "day_label": care.day_label(d),
         "prev_day": d - timedelta(days=1), "next_day": d + timedelta(days=1), "today": care.today(),
         "students": students, "cd": cd, "recs": recs, "prev": prev, "subs": _sub_counts(db, [s.id for s in students]),
         "days_with": sorted(days_with), "fmt": care.fmt_num, "ATTEND": care.ATTEND, "HW": care.HW,
@@ -97,17 +105,20 @@ async def daily_save(request: Request, db: Session = Depends(get_db), teacher: T
         db.add(cd)
     cd.hw_name, cd.test_name, cd.test_total = g("hw_name")[:120], g("test_name")[:80], care.num(g("test_total"))
     cd.progress, cd.next_hw, cd.note = g("progress"), g("next_hw"), g("note")
+    book_ids = {b for (b,) in db.execute(select(CareBook.id).where(CareBook.academy_id == aid))}
+    cd.prog_items = care.clean_items(form.get("prog_items", ""), book_ids)
 
     students = _students(db, aid, cls.id)
     recs = {r.student_id: r for r in db.execute(select(CareRecord).where(CareRecord.day == d, CareRecord.student_id.in_([s.id for s in students] or [0]))).scalars()}
     saved: list[CareRecord] = []
     for s in students:
         vals = {"attend": g(f"a_{s.id}"), "hw": g(f"h_{s.id}"), "score": care.num(g(f"s_{s.id}")),
-                "progress": g(f"p_{s.id}"), "next_hw": g(f"n_{s.id}"), "comment": g(f"c_{s.id}")}
+                "progress": g(f"p_{s.id}"), "next_hw": g(f"n_{s.id}"), "comment": g(f"c_{s.id}"),
+                "prog_items": care.clean_items(form.get(f"pi_{s.id}", ""), book_ids)}
         vals["attend"] = vals["attend"] if vals["attend"] in care.ATTEND else ""
         vals["hw"] = vals["hw"] if vals["hw"] in care.HW else ""
         r = recs.get(s.id)
-        if not any(v not in ("", None) for v in vals.values()):
+        if not any(v not in ("", None, []) for v in vals.values()):
             if r is not None:
                 db.delete(r)
             continue

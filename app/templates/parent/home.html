@@ -13,58 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="{{ APP_NAME }} {{ student.name }}">
 <meta name="theme-color" content="{{ academy.brand_color if academy and academy.brand_color else '#1B2A5C' }}">
 <link rel="stylesheet" href="/static/app.css">
-<style>
-:root { --pb: {{ academy.brand_color if academy and academy.brand_color else '#1B2A5C' }}; }
-body { background: #F5F8FD; }
-.pw { max-width: 520px; margin: 0 auto; padding: 16px 16px 48px; padding-top: max(16px, env(safe-area-inset-top)); }
-.ph { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; }
-.ph img { width: 40px; height: 40px; border-radius: 10px; }
-.ph small { display: block; color: var(--ink-3); font-size: .78rem; }
-.ph b { font-size: 1.15rem; }
-.pc { background: #fff; border: 2px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 14px; }
-.pc h2 { font-size: 1rem; margin: 0 0 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.pc h2 a { font-size: .85rem; font-weight: 400; text-decoration: none; }
-.app { background: linear-gradient(120deg, #E6F0FC, #EEEAFB); }
-.app p { margin: 0 0 10px; font-size: .92rem; }
-.app ol { margin: 0 0 6px; padding-left: 20px; font-size: .92rem; line-height: 1.7; }
-.app .ok { color: #2E7D57; font-weight: 700; margin: 0; }
-.pbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 12px; border: 0; border-radius: 999px; background: var(--pb); color: #fff; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; text-decoration: none; }
-.pbtn.ghost { background: #fff; color: var(--ink); border: 2px solid var(--line); }
-.pbtn + .pbtn { margin-top: 8px; }
-.sum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; margin-bottom: 12px; }
-.sum div { background: var(--fill, #F4F6FA); border-radius: 12px; padding: 8px 2px; }
-.sum b { display: block; font-size: 1.2rem; }
-.sum span { font-size: .75rem; color: var(--ink-2); }
-.cal { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: center; font-size: .85rem; }
-.cal th { font-weight: 400; color: var(--ink-3); font-size: .75rem; padding-bottom: 4px; }
-.cal td { padding: 3px 0; }
-.cal i { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; font-style: normal; }
-.cal i.a-출 { background: #2E9E6A; color: #fff; }
-.cal i.a-지 { background: #E0A100; color: #fff; }
-.cal i.a-결 { background: #D9534F; color: #fff; }
-.cal i.today { outline: 2px solid var(--pb); }
-.legend { display: flex; gap: 12px; justify-content: center; font-size: .75rem; color: var(--ink-2); margin-top: 6px; }
-.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 3px; vertical-align: -1px; }
-.rec { border-top: 1px solid var(--line-2, #eef0f4); padding: 12px 0; }
-.rec:first-of-type { border-top: 0; padding-top: 0; }
-.rec .d { font-weight: 800; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
-.chip { display: inline-block; font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #EEF1F6; color: var(--ink-2); }
-.chip.c-출, .chip.c-O { background: #E3F4EC; color: #1F7A50; }
-.chip.c-지, .chip.c-△ { background: #FFF3D6; color: #8A6400; }
-.chip.c-결, .chip.c-X { background: #FBE3E2; color: #A8322E; }
-.new { background: #FF6B57; color: #fff; font-size: .7rem; padding: 1px 7px; border-radius: 999px; font-weight: 800; }
-.rec dl { display: grid; grid-template-columns: 64px 1fr; gap: 4px 8px; margin: 0; font-size: .9rem; }
-.rec dt { color: var(--ink-3); }
-.rec dd { margin: 0; }
-.cmt { background: #F4F7FF; border-radius: 12px; padding: 8px 12px; margin-top: 8px; font-size: .9rem; }
-.notice { border-top: 1px solid var(--line-2, #eef0f4); padding: 10px 0; }
-.notice:first-of-type { border-top: 0; padding-top: 0; }
-.notice summary { cursor: pointer; font-weight: 700; list-style: none; }
-.notice summary::-webkit-details-marker { display: none; }
-.notice p { white-space: pre-wrap; margin: 8px 0 0; font-size: .92rem; }
-.preview-bar { background: #FFF6DC; border: 2px solid #F3E2A8; border-radius: 12px; padding: 8px 12px; font-size: .85rem; margin-bottom: 12px; }
-.foot { text-align: center; color: var(--ink-3); font-size: .75rem; margin-top: 20px; }
-</style>
+{% include "parent/_style.html" %}
 </head>
 <body>
 <div class="pw">
@@ -76,6 +25,18 @@ body { background: #F5F8FD; }
   {% if teacher_view %}<div class="preview-bar">선생님 미리보기예요. 이 화면을 봐도 학부모님 쪽 '새 기록' 표시는 그대로 남아요.</div>{% endif %}
 
   <section class="pc app" id="app-card" hidden aria-live="polite"></section>
+
+  {% if reports %}
+  <section class="pc" id="reports">
+    <h2>학습 리포트</h2>
+    {% for r in reports %}
+    <a class="rep-link" href="/p/{{ token }}/r/{{ r.id }}{{ '?preview=1' if teacher_view else '' }}">
+      <span><b>{{ r.title }}</b>{% if not r.viewed_at %} <span class="new">새 리포트</span>{% endif %}<br><span class="small muted">{{ r.summary|truncate(48) if r.summary else (r.start.month ~ '/' ~ r.start.day ~ '~' ~ r.end.month ~ '/' ~ r.end.day) }}</span></span>
+      <span aria-hidden="true">›</span>
+    </a>
+    {% endfor %}
+  </section>
+  {% endif %}
 
   {% if notices %}
   <section class="pc" id="notices">
@@ -141,10 +102,18 @@ body { background: #F5F8FD; }
         {% if r.progress %}<dt>진도</dt><dd>{{ r.progress }}</dd>{% endif %}
         {% if r.next_hw %}<dt>다음 숙제</dt><dd>{{ r.next_hw }}</dd>{% endif %}
       </dl>
+      {% if photos.get(r.day) %}<div class="phs">{% for ph in photos[r.day] %}<a href="/p/{{ token }}/photo/{{ ph.id }}.jpg" target="_blank" rel="noopener" title="{{ ph.memo }}"><img src="/p/{{ token }}/photo/{{ ph.id }}.jpg?s=t" alt="{{ ph.memo or '수업 사진' }}" loading="lazy"></a>{% endfor %}</div>
+        {% set memos = photos[r.day]|map(attribute='memo')|select|unique|list %}{% if memos %}<p class="small muted" style="margin:4px 0 0">📷 {{ memos|join(' · ') }}</p>{% endif %}{% endif %}
       {% if r.comment or r.note %}<div class="cmt">{% if r.comment %}💬 {{ r.comment }}{% endif %}{% if r.comment and r.note %}<br>{% endif %}{% if r.note %}📢 {{ r.note }}{% endif %}</div>{% endif %}
     </article>
     {% else %}
-    <p class="muted small" style="margin:0">아직 올라온 수업 기록이 없어요. 수업이 끝나면 선생님이 기록을 올려 드려요.</p>
+    {% if not extra_photo_days %}<p class="muted small" style="margin:0">아직 올라온 수업 기록이 없어요. 수업이 끝나면 선생님이 기록을 올려 드려요.</p>{% endif %}
+    {% endfor %}
+    {% for d0 in extra_photo_days %}
+    <article class="rec"><div class="d">{{ day_label(d0) }} <span class="chip">📷 사진</span></div>
+      <div class="phs">{% for ph in photos[d0] %}<a href="/p/{{ token }}/photo/{{ ph.id }}.jpg" target="_blank" rel="noopener"><img src="/p/{{ token }}/photo/{{ ph.id }}.jpg?s=t" alt="{{ ph.memo or '수업 사진' }}" loading="lazy"></a>{% endfor %}</div>
+      {% set memos = photos[d0]|map(attribute='memo')|select|unique|list %}{% if memos %}<p class="small muted" style="margin:4px 0 0">📷 {{ memos|join(' · ') }}</p>{% endif %}
+    </article>
     {% endfor %}
   </section>
 
