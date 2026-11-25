@@ -77,6 +77,7 @@ def _exam_facts(db: Session, aid: int, inp: dict, lines: list[str], data: dict):
         qs = [x for x in (p.questions or []) if isinstance(x, dict)]
         if not qs:
             continue
+        qs = es.fill_points(qs)
         st = es.stats(qs)
         lab = _paper_label(p)
         key = f"p{p.id}"

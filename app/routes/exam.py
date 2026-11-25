@@ -139,7 +139,7 @@ def detail(pid: int, request: Request, pdf_job: int | None = None, teacher: Teac
     p = _own(db, pid, teacher)
     job = db.get(Job, p.last_job_id) if p.last_job_id else None
     qs = p.questions or []
-    st = spec.stats(qs) if qs else None
+    st = spec.stats(spec.fill_points(qs)) if qs else None
     report = db.get(Exam, p.report_exam_id) if p.report_exam_id else None
     others = []
     if p.school_id:

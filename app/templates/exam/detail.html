@@ -19,7 +19,7 @@
     <form method="post" action="/exam/{{ p.id }}/pdf"><button class="btn" type="submit">분석지 PDF 만들기</button></form>
     {% if p.file_id %}<a class="btn ghost" href="/files/{{ p.file_id }}" target="_blank" rel="noopener">지난 분석지 열기</a>{% endif %}
     <a class="btn" href="/mock/new?template={{ p.id }}">📝 이 시험지로 동형 모의고사</a>
-    <form method="post" action="/exam/{{ p.id }}/to_report"><button class="btn ghost" type="submit">{{ "리포트 시험 열기" if report else "학생·반 리포트로 보내기" }}</button></form>
+    <form method="post" action="/exam/{{ p.id }}/to_report"><button class="btn ghost" type="submit">{{ "리포트 시험 열기" if report else "시험 결과로 보내기 (학습관리)" }}</button></form>
   </div>
   <p class="small muted" style="margin:8px 0 0">리포트로 보내면 문항 번호·배점·유형이 그대로 들어가요. 정답 한 줄만 넣으면 우리 학원 학생들 답으로 채점·리포트를 만들 수 있어요.</p>
   {% if pdf_job %}<div class="job" data-job-id="{{ pdf_job }}"></div>{% endif %}

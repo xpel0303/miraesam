@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}학생·반 리포트 · {{ APP_NAME }}{% endblock %}
+{% block title %}시험 결과 · {{ APP_NAME }}{% endblock %}
 {% block main %}
-<div class="panel-head" style="margin-bottom:4px"><h1>학생·반 리포트</h1><a class="btn" href="/reports/new">새 시험</a></div>
-<p class="lead">시험 정답과 배점을 넣고 학생 답을 받으면 자동으로 채점해요. 학생별 오답 리포트, 반 리포트, 상담·게시용 결과 이미지를 만들 수 있어요.</p>
+{% set tab = "exams" %}{% include "care/_tabs.html" %}
+<div class="panel-head" style="margin:6px 0 4px"><p class="lead" style="margin:0">시험 정답과 배점을 넣고 학생 답을 받으면 자동으로 채점해요. 온라인 시험 결과도 여기 모여요. 학생별 오답 리포트, 반 리포트, 결과 이미지를 만들 수 있어요.</p><a class="btn" href="/reports/new">새 시험</a></div>
 {% if exams %}
 <div class="table-wrap"><table class="list">
   <thead><tr><th>시험</th><th>학교</th><th>반</th><th>문항</th><th>응시</th><th>시험일</th><th></th></tr></thead>

@@ -67,14 +67,14 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
     counts = {}
     for eid, in db.execute(select(ExamResponse.exam_id).where(ExamResponse.academy_id == teacher.academy_id)):
         counts[eid] = counts.get(eid, 0) + 1
-    return render(request, "reports/index.html", {"teacher": teacher, "exams": exams, "counts": counts, "active": "reports"})
+    return render(request, "reports/index.html", {"teacher": teacher, "exams": exams, "counts": counts, "active": "care"})
 
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     today = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
     return render(request, "reports/new.html", {"teacher": teacher, "form": {"mc": 25, "sa": 0, "date": today}, "classes": _classes(db, teacher),
-                                                "schools": _schools(db, teacher), "active": "reports"})
+                                                "schools": _schools(db, teacher), "active": "care"})
 
 
 @router.post("")
@@ -106,7 +106,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         form = {k: f.get(k, "") for k in ("title", "key", "mc_points", "sa_points", "school_id")}
         form.update({"mc": f.get("mc"), "sa": f.get("sa"), "date": f.get("date"), "class_ids": {int(x) for x in f.getlist("class_id") if str(x).isdigit()}})
         return render(request, "reports/new.html", {"teacher": teacher, "form": form, "errors": errors, "classes": _classes(db, teacher),
-                                                    "schools": _schools(db, teacher), "active": "reports"}, 400)
+                                                    "schools": _schools(db, teacher), "active": "care"}, 400)
     e = Exam(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, school_id=school_id, exam_date=_date(f.get("date")),
              items=spec.make_items(mc, sa, key, mc_pts, sa_pts), options={"open": False, "reveal": True})
     db.add(e)
@@ -209,7 +209,7 @@ def detail(eid: int, request: Request, tab: str = "", class_id: str = "", pdf_jo
         "teacher": teacher, "e": e, "tab": tab, "tabs": TABS, "items": items, "mc_items": mc_items, "sa_items": sa_items,
         "warnings": spec.check_items(items), "S": S, "rows": rows, "types": spec.TYPES, "fmt": spec.fmt, "circ": spec.CIRCLED,
         "classes": _classes(db, teacher), "assigned": {c.id for c in e.classes}, "schools": _schools(db, teacher),
-        "class_id": cid, "pdf_job": pdf_job, "active": "reports", "easy": spec.EASY_MISS,
+        "class_id": cid, "pdf_job": pdf_job, "active": "care", "easy": spec.EASY_MISS,
         "has_content": obuild.has_content(e.items), "going": [row for row in rows if row["r"] and (row["r"].meta or {}).get("started_at") and not (row["r"].meta or {}).get("submitted_at")],
     })
 
@@ -353,7 +353,7 @@ def student_page(eid: int, sid: int, request: Request, pdf_job: int | None = Non
     return render(request, "reports/student.html", {
         "teacher": teacher, "e": e, "st": st, "r": r, "items": items, "view": view, "S": S, "fmt": spec.fmt, "circ": spec.CIRCLED,
         "prev": order[i - 1] if i > 0 else None, "next": order[i + 1] if i + 1 < len(order) else None, "pdf_job": pdf_job,
-        "active": "reports", "has_results": bool(ids),
+        "active": "care", "has_results": bool(ids),
     })
 
 

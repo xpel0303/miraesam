@@ -143,7 +143,10 @@ def extract(ctx: JobContext) -> dict:
         if not qs:
             raise llm.LLMError("문항을 하나도 찾지 못했어요. 시험지 이미지가 흐리거나 문항이 없는 쪽만 올렸는지 확인해 주세요.")
         failed = sorted(pg_ for c in chunks.values() for pg_ in (c or {}).get("_failed", []))
-        warns = ([f"{', '.join(map(str, failed))}쪽은 Gemini가 빈 답을 보내 읽지 못했어요. 아래 쪽 이미지에서 체크하고 '다시 읽기'를 눌러 주세요."] if failed else []) \
+        qs = spec.fill_points(qs)
+        filled = [q for q in qs if q.get("points_est")]
+        warns = ([f"배점이 안 보이는 {len(filled)}문항은 100점 만점에 맞춰 {spec._f(filled[0]['points'])}점씩으로 넣었어요. 실제 배점과 다르면 문항을 펼쳐 고쳐 주세요."] if filled else []) \
+            + ([f"{', '.join(map(str, failed))}쪽은 Gemini가 빈 답을 보내 읽지 못했어요. 아래 쪽 이미지에서 체크하고 '다시 읽기'를 눌러 주세요."] if failed else []) \
             + spec.validate(qs, n) + spec.check_counts(qs, meta)
         with session_scope() as db:
             p = db.get(ExamPaper, pid)
@@ -214,6 +217,7 @@ def make_pdf(ctx: JobContext) -> dict:
                 "semester": p.semester, "term": p.term, "date": (p.meta or {}).get("read_date", "")}
         old = p.file_id
     ctx.step("분석지 만드는 중", 50)
+    qs = spec.fill_points(qs)
     st = spec.stats(qs)
     pdf = render_pdf("pdf/exam_analysis.html", {"academy": academy, "p": info, "qs": qs, "st": st, "notes": spec.notes(qs, st), "v": spec.visual(qs, st),
                                                 "doc_title": f"{info['title']} · 기출 분석",

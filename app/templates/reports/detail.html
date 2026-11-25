@@ -13,7 +13,7 @@
   {% endif %}
 {% endmacro %}
 {% block main %}
-<p class="small"><a href="/reports">학생·반 리포트</a></p>
+<p class="small"><a href="/care">학습관리</a> › <a href="/reports">시험 결과</a></p>
 <h1>{{ e.title }}</h1>
 <p class="lead">{{ [e.school.name if e.school else None, e.exam_date or None, e.classes|map(attribute="name")|join(", ") or "반 없음"]|select|join(" · ") }}
   · {{ items|length }}문항 · 만점 {{ fmt(S.full) }}점</p>
@@ -223,7 +223,7 @@
         <p class="small muted" style="margin:0">이 시험은 문제 글이 아직 없어요. 기출 분석에서 읽은 발문·지문·선지를 붙이면 온라인으로 낼 수 있어요.</p>
         <button class="btn ghost small" type="submit" form="attach-form" style="margin-top:6px">기출 문제 글 붙이기</button>
       {% else %}
-        <p class="small muted" style="margin:0">문제 글이 있는 시험만 온라인으로 낼 수 있어요. <b>변형문제</b>·<b>어법 문제</b> 화면의 '온라인 시험으로 내기', 또는 <b>기출 분석</b>의 '학생·반 리포트로 보내기'로 만들어 주세요.</p>
+        <p class="small muted" style="margin:0">문제 글이 있는 시험만 온라인으로 낼 수 있어요. <b>변형문제</b>·<b>어법 문제</b> 화면의 '온라인 시험으로 내기', 또는 <b>기출 분석</b>의 '시험 결과로 보내기 (학습관리)'로 만들어 주세요.</p>
       {% endif %}
     </div>
     <button class="btn small" type="submit" style="margin-top:10px">저장</button>

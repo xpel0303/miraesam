@@ -222,6 +222,24 @@ def words(text: str) -> int:
     return len(re.findall(r"[A-Za-z]+(?:'[A-Za-z]+)?", re.sub(r"\[/?u\]", "", text or "")))
 
 
+TOTAL = 100  # 학교 정기고사는 늘 100점 만점
+
+
+def fill_points(qs: list[dict]) -> list[dict]:
+    """배점을 못 읽은 문항이 있으면 100점에서 읽은 배점을 뺀 나머지를 똑같이 나눠 채움 (points_est=True).
+    예: 서술형 7문항 30점만 읽혔으면 객관식 20문항에 70점 → 3.5점씩."""
+    qs = [dict(q) for q in qs]
+    miss = [q for q in qs if q.get("points") is None]
+    known = sum(q["points"] for q in qs if q.get("points") is not None)
+    if not miss or known >= TOTAL:
+        return qs
+    each = round((TOTAL - known) / len(miss), 1)
+    for q in miss:
+        q["points"], q["points_est"] = each, True
+    miss[-1]["points"] = round(TOTAL - known - each * (len(miss) - 1), 1)  # 반올림 남은 것은 마지막 문항에
+    return qs
+
+
 def stats(qs: list[dict]) -> dict:
     total = round(sum(q["points"] or 0 for q in qs), 2)
     by_type: dict[str, dict] = {}

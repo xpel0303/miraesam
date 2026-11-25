@@ -28,7 +28,7 @@ def compare(papers: list) -> dict:
     """여러 회 비교 표: 회차별 숫자 + 유형 × 회차 행렬 + 평균."""
     rows, types = [], {}
     for p in papers:
-        qs = p.questions or []
+        qs = exam_spec.fill_points(p.questions or [])
         st = exam_spec.stats(qs)
         ap = {"독해": 0.0, "언어형식": 0.0, "서술형": 0.0}
         for q in qs:  # 영역별 배점 (서술형이면 서술형으로)

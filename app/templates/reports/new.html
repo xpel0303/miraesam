@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}새 시험 · {{ APP_NAME }}{% endblock %}
 {% block main %}
-<p class="small"><a href="/reports">학생·반 리포트</a></p>
+<p class="small"><a href="/care">학습관리</a> › <a href="/reports">시험 결과</a></p>
 <h1>새 시험</h1>
 <p class="lead">문항 수와 정답만 넣으면 바로 시작할 수 있어요. 유형·출처·문항별 배점은 다음 화면에서 고칩니다.</p>
 {% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}

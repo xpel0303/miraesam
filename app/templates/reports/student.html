@@ -2,7 +2,7 @@
 {% block title %}{{ st.name }} · {{ e.title }} · {{ APP_NAME }}{% endblock %}
 {% macro ans(a) %}{% if a %}{% for c in a.split("/") %}{{ circ[c] }}{% endfor %}{% endif %}{% endmacro %}
 {% block main %}
-<p class="small"><a href="/reports">학생·반 리포트</a> · <a href="/reports/{{ e.id }}?tab=answers">{{ e.title }}</a></p>
+<p class="small"><a href="/care">학습관리</a> › <a href="/reports">시험 결과</a> · <a href="/reports/{{ e.id }}?tab=answers">{{ e.title }}</a></p>
 <div class="panel-head" style="margin-bottom:4px">
   <h1>{{ st.name }} <span class="small muted" style="font-weight:400">{{ [st.school.name if st.school else None, st.grade, st.class_group.name if st.class_group else None]|select|join(" / ") }}</span></h1>
   <div class="actions">
