@@ -1,7 +1,8 @@
 <div class="panel-head" style="margin-bottom:4px"><h1>학습관리</h1></div>
-<p class="lead">출결·숙제·시험·진도를 매일 한 표에 적으면 학부모 화면(앱)에 바로 쌓이고, 알림을 켠 학부모님 휴대폰으로 알림이 가요. 카톡·문자 비용이 없어요.</p>
+{% if tab != "homework" %}<p class="lead">출결·숙제·시험·진도를 매일 한 표에 적으면 학부모 화면(앱)에 바로 쌓이고, 알림을 켠 학부모님 휴대폰으로 알림이 가요. 카톡·문자 비용이 없어요.</p>{% endif %}
 <nav class="tabs" aria-label="학습관리">
   <a href="/care" {% if tab == "daily" %}aria-current="page"{% endif %}>매일 기록</a>
+  <a href="/homework" {% if tab == "homework" %}aria-current="page"{% endif %}>숙제</a>
   <a href="/care/reports" {% if tab == "reports" %}aria-current="page"{% endif %}>월간 리포트</a>
   <a href="/care/books" {% if tab == "books" %}aria-current="page"{% endif %}>교재</a>
   <a href="/care/photos" {% if tab == "photos" %}aria-current="page"{% endif %}>사진</a>

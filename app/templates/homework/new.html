@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}새 숙제 · {{ APP_NAME }}{% endblock %}
 {% block main %}
-<p class="small"><a href="/homework">숙제</a></p>
+<p class="small"><a href="/care">학습관리</a> › <a href="/homework">숙제</a></p>
 <h1>새 숙제</h1>
 <p class="lead">만들어 둔 단어장·워크북·변형문제·어법 문제를 골라 숙제로 내요. 학생은 접속 코드로 들어와 폰으로 풀고, 바로 채점됩니다.</p>
 {% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}

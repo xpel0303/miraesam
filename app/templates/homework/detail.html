@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ h.title }} · {{ APP_NAME }}{% endblock %}
 {% block main %}
-<p class="small"><a href="/homework">숙제</a></p>
+<p class="small"><a href="/care">학습관리</a> › <a href="/homework">숙제</a></p>
 <h1>{{ h.title }}{% if not h.active %} <span class="tag">닫음</span>{% endif %}</h1>
 <p class="lead">{{ h.classes|map(attribute="name")|join(", ") or "반 없음" }}{% if h.due %} · 마감 {{ h.due }}{% if late %} (지남){% endif %}{% endif %} · 할 일 {{ h.tasks|length }}개{% if h.memo %}<br>{{ h.memo }}{% endif %}</p>
 

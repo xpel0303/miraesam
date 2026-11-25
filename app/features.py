@@ -46,9 +46,8 @@ FEATURES: list[Feature] = [
     Feature("briefing", "설명회 자료", "시험 운영", "학교별 시험대비·학원 입학·시즌 설명회 슬라이드 (AI 구성, 발표·PowerPoint·PDF)", 3, True, "/briefing"),
     # 학원 관리
     Feature("roster", "학생 명단", "학원 관리", "학교·반·학생 관리와 학생 접속 코드", 0, True, "/roster"),
+    Feature("care", "학습관리", "학원 관리", "숙제 내기·자동 채점, 출결·숙제·시험·진도 매일 기록, 월간 리포트, 학부모 앱", 4, True, "/care"),
     Feature("leveltest", "레벨테스트", "학원 관리", "재원생·신규생 온라인 응시, 자동 채점, 레벨 리포트", 4, True, "/leveltest"),
-    Feature("care", "학습관리", "학원 관리", "출결·숙제·시험·진도 매일 기록, 학부모 앱(홈 화면 추가·알림), 공지", 4, True, "/care"),
-    Feature("homework", "숙제", "학원 관리", "단어·OX 퀴즈, 시험지 답 입력, 자동 채점, 카톡 문구", 4, True, "/homework"),
 ]
 
 BY_KEY = {f.key: f for f in FEATURES}

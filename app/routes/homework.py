@@ -179,14 +179,14 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
     tried = dict(db.execute(select(QuizResult.list_id, func.count(func.distinct(QuizResult.student_id)))
                             .where(QuizResult.list_id.in_([w.id for w in open_lists] or [0])).group_by(QuizResult.list_id)).all())
     return render(request, "homework/index.html", {"online": online_exams(db, teacher.academy_id),
-                                                   "open_lists": [{"wl": w, "n": tried.get(w.id, 0)} for w in open_lists], "teacher": teacher, "hws": hws, "rate": rate, "today": spec.today(), "active": "homework"})
+                                                   "open_lists": [{"wl": w, "n": tried.get(w.id, 0)} for w in open_lists], "teacher": teacher, "hws": hws, "rate": rate, "today": spec.today(), "active": "care"})
 
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     return render(request, "homework/new.html", {"teacher": teacher, "form": {"reveal": True}, "classes": _classes(db, teacher), "roster": roster(db, teacher.academy_id),
                                                  "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "stage_sets": spec.STAGE_SETS, "ox_levels": spec.OX_LEVELS,
-                                                 "max": spec.MAX_TASKS, "active": "homework"})
+                                                 "max": spec.MAX_TASKS, "active": "care"})
 
 
 @router.post("")
@@ -203,7 +203,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         form = {"title": title, "due": f.get("due"), "memo": f.get("memo"), "reveal": f.get("reveal") == "1", "class_ids": {int(x) for x in class_ids}}
         return render(request, "homework/new.html", {"teacher": teacher, "form": form, "errors": errors, "classes": _classes(db, teacher), "roster": roster(db, teacher.academy_id),
                                                      "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "stage_sets": spec.STAGE_SETS, "ox_levels": spec.OX_LEVELS,
-                                                     "max": spec.MAX_TASKS, "active": "homework"}, 400)
+                                                     "max": spec.MAX_TASKS, "active": "care"}, 400)
     h = Homework(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, due=_date(f.get("due")),
                  memo=str(f.get("memo", "")).strip()[:1000], tasks=tasks, options={"reveal": f.get("reveal") == "1"})
     db.add(h)
@@ -273,7 +273,7 @@ def detail(hid: int, request: Request, class_id: str = "", teacher: Teacher = De
     return render(request, "homework/detail.html", {
         "alert_on": alert_on, "teacher": teacher, "h": h, "rows": rows, "per_task": per_task, "todo_people": todo_people, "notice": notice,
         "kinds": spec.KINDS, "summary": spec.summary_text, "classes": _classes(db, teacher), "assigned": {c.id for c in h.classes}, "roster": roster(db, teacher.academy_id), "picked": (h.options or {}).get("students") or [],
-        "class_id": cid, "late": spec.is_late(h.due), "active": "homework",
+        "class_id": cid, "late": spec.is_late(h.due), "active": "care",
     })
 
 

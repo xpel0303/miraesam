@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block title %}숙제 · {{ APP_NAME }}{% endblock %}
 {% block main %}
-<div class="panel-head" style="margin-bottom:4px"><h1>숙제</h1><a class="btn" href="/homework/new">새 숙제</a></div>
-<p class="lead">단어 퀴즈, OX 퀴즈, 시험지 답 입력, 할 일 체크를 숙제로 내요. 학생은 접속 코드 링크로 들어와 풀고, 누가 했는지 한 표로 봅니다.</p>
+{% set tab = "homework" %}{% include "care/_tabs.html" %}
+<div class="panel-head" style="margin:6px 0 4px"><p class="lead" style="margin:0">단어 퀴즈, OX 퀴즈, 시험지 답 입력, 할 일 체크를 숙제로 내요. 학생은 접속 코드 링크로 들어와 풀고, 누가 했는지 한 표로 봅니다.</p><a class="btn" href="/homework/new">새 숙제</a></div>
 {% if hws %}
 <div class="table-wrap"><table class="list">
   <thead><tr><th>숙제</th><th>반</th><th>할 일</th><th>완료</th><th>마감</th><th></th></tr></thead>
