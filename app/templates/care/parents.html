@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}학부모 앱 연결 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% include "care/_tabs.html" %}
+<div class="care-chips" aria-label="반 고르기">
+  <a href="/care/parents" {% if not cls %}aria-current="page"{% endif %}>전체</a>
+  {% for c in classes %}<a href="/care/parents?class_id={{ c.id }}" {% if cls and c.id == cls.id %}aria-current="page"{% endif %}>{{ c.name }}</a>{% endfor %}
+</div>
+
+<section class="panel">
+  <h2>이렇게 연결해요</h2>
+  <ol class="small" style="margin:0;padding-left:20px;line-height:1.8">
+    <li>학생마다 <b>학부모 링크</b>가 하나씩 있어요. 아래 <b>안내 문구 복사</b>를 눌러 카톡이나 문자로 <b>한 번만</b> 보내세요. 상담 때는 <b>QR</b>을 보여 드려도 돼요.</li>
+    <li>학부모님이 링크를 열고 <b>홈 화면에 추가 → 알림 켜기</b>를 하면 '🔔 알림 켬'으로 바뀌어요.</li>
+    <li>그다음부터는 <b>매일 기록</b>에서 '저장하고 학부모 알림 보내기'만 누르면 돼요. 카톡을 따로 보낼 필요가 없어요.</li>
+  </ol>
+  <p class="small muted" style="margin:8px 0 0">아이폰은 iOS 16.4 이상, 사파리로 열어 홈 화면에 추가해야 알림이 와요. 카톡 안에서 바로 열면 알림을 켤 수 없어서, 화면에 '다른 브라우저로 열기' 안내가 나와요.</p>
+</section>
+
+<p><b>{{ on }}</b> / {{ students|length }}명 알림 켬{% if students|length > on %} · <button type="button" class="linklike" id="copy-off">알림 안 켠 {{ students|length - on }}명 안내 문구 한꺼번에 복사</button>{% endif %}</p>
+
+{% if students %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>학생</th><th>반</th><th>학부모 번호</th><th>앱 알림</th><th>마지막으로 본 때</th><th>링크</th><th></th></tr></thead>
+  <tbody>
+  {% for s in students %}
+    <tr data-off="{{ '' if subs.get(s.id) else '1' }}" data-name="{{ s.name }}" data-link="{{ links[s.id] }}">
+      <td><b>{{ s.name }}</b></td>
+      <td class="small">{{ s.class_group.name if s.class_group else '' }}</td>
+      <td class="small">{{ s.parent_phone or '' }}</td>
+      <td>{% if subs.get(s.id) %}🔔 켬 <span class="small muted">({{ subs[s.id] }}대)</span>{% else %}<span class="muted">🔕 안 켬</span>{% endif %}</td>
+      <td class="small muted">{{ s.parent_seen_at|kst if s.parent_seen_at else '아직 안 봄' }}</td>
+      <td class="actions">
+        <button type="button" class="btn small" data-copy-msg>안내 문구 복사</button>
+        <button type="button" class="btn ghost small" data-copy-link>링크만</button>
+        <button type="button" class="btn ghost small" data-qr>QR</button>
+        <a class="btn ghost small" href="/p/{{ s.parent_token }}?preview=1" target="_blank" rel="noopener">미리보기</a>
+      </td>
+      <td class="actions">
+        {% if subs.get(s.id) %}<form method="post" action="/care/parents/{{ s.id }}/test"><button class="btn ghost small" type="submit">시험 알림</button></form>{% endif %}
+        <details class="edit"><summary>링크 바꾸기</summary>
+          <form method="post" action="/care/parents/{{ s.id }}/reset" onsubmit="return confirm('{{ s.name }} 학부모 링크를 새로 만들까요? 예전 링크와 알림 연결이 끊겨서 새 링크를 다시 보내야 해요.')">
+            <p class="small" style="margin:6px 0">링크가 엉뚱한 사람에게 갔을 때만 쓰세요.</p><button class="btn danger small" type="submit">새 링크 만들기</button></form>
+        </details>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>학생이 없어요.</p><a class="btn" href="/roster">학생 명단</a></div>
+{% endif %}
+
+<dialog id="qr-dlg" style="border:0;border-radius:20px;padding:24px;text-align:center;max-width:340px">
+  <p style="margin:0 0 4px"><b id="qr-name"></b> 학부모님</p>
+  <p class="small muted" style="margin:0 0 12px">휴대폰 카메라로 찍으면 학부모 화면이 열려요.</p>
+  <div id="qr-box" style="display:inline-block;padding:10px;background:#fff"></div>
+  <p><button class="btn ghost small" type="button" onclick="this.closest('dialog').close()">닫기</button></p>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(() => {
+  const ACADEMY = {{ ((academy.name if academy and academy.name else APP_NAME ~ ' ' ~ APP_SUB))|tojson }};
+  const msg = (name, link) => `[${ACADEMY}] ${name} 학부모님, 안녕하세요.
+${name} 학생의 출결·숙제·시험·진도를 매일 확인하실 수 있는 학부모 페이지예요.
+${link}
+
+▶ 아이폰: 사파리로 열고 아래 공유 버튼(□↑) → '홈 화면에 추가' → 홈 화면의 아이콘으로 열어 '알림 켜기'
+▶ 안드로이드: 크롬으로 열고 '앱 설치' → '알림 켜기'
+알림을 켜 두시면 수업 기록과 공지가 올라올 때 바로 알려 드려요.`;
+  const copy = async (text, btn) => {
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) { const t = document.createElement("textarea"); t.value = text; document.body.append(t); t.select(); document.execCommand("copy"); t.remove(); }
+    if (btn) { const o = btn.textContent; btn.textContent = "복사됨 ✓"; setTimeout(() => (btn.textContent = o), 1500); }
+  };
+  document.querySelectorAll("[data-copy-msg]").forEach((b) => b.addEventListener("click", () => { const tr = b.closest("tr"); copy(msg(tr.dataset.name, tr.dataset.link), b); }));
+  document.querySelectorAll("[data-copy-link]").forEach((b) => b.addEventListener("click", () => copy(b.closest("tr").dataset.link, b)));
+  const off = document.getElementById("copy-off");
+  if (off) off.addEventListener("click", () => {
+    const rows = [...document.querySelectorAll("tr[data-off='1']")];
+    copy(rows.map((tr) => `■ ${tr.dataset.name}\n${msg(tr.dataset.name, tr.dataset.link)}`).join("\n\n"), off);
+  });
+  const dlg = document.getElementById("qr-dlg");
+  document.querySelectorAll("[data-qr]").forEach((b) => b.addEventListener("click", () => {
+    const tr = b.closest("tr");
+    document.getElementById("qr-name").textContent = tr.dataset.name;
+    const box = document.getElementById("qr-box"); box.innerHTML = "";
+    if (window.QRCode) new QRCode(box, { text: tr.dataset.link, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+    else box.textContent = tr.dataset.link;
+    dlg.showModal();
+  }));
+})();
+</script>
+{% endblock %}

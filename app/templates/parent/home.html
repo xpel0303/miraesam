@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ student.name }} 학습관리 · {{ APP_NAME }}</title>
+<meta name="robots" content="noindex">
+<link rel="manifest" href="/p/{{ token }}/manifest.webmanifest">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="{{ APP_NAME }} {{ student.name }}">
+<meta name="theme-color" content="{{ academy.brand_color if academy and academy.brand_color else '#1B2A5C' }}">
+<link rel="stylesheet" href="/static/app.css">
+<style>
+:root { --pb: {{ academy.brand_color if academy and academy.brand_color else '#1B2A5C' }}; }
+body { background: #F5F8FD; }
+.pw { max-width: 520px; margin: 0 auto; padding: 16px 16px 48px; padding-top: max(16px, env(safe-area-inset-top)); }
+.ph { display: flex; align-items: center; gap: 10px; margin: 4px 0 14px; }
+.ph img { width: 40px; height: 40px; border-radius: 10px; }
+.ph small { display: block; color: var(--ink-3); font-size: .78rem; }
+.ph b { font-size: 1.15rem; }
+.pc { background: #fff; border: 2px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 14px; }
+.pc h2 { font-size: 1rem; margin: 0 0 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pc h2 a { font-size: .85rem; font-weight: 400; text-decoration: none; }
+.app { background: linear-gradient(120deg, #E6F0FC, #EEEAFB); }
+.app p { margin: 0 0 10px; font-size: .92rem; }
+.app ol { margin: 0 0 6px; padding-left: 20px; font-size: .92rem; line-height: 1.7; }
+.app .ok { color: #2E7D57; font-weight: 700; margin: 0; }
+.pbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 12px; border: 0; border-radius: 999px; background: var(--pb); color: #fff; font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; text-decoration: none; }
+.pbtn.ghost { background: #fff; color: var(--ink); border: 2px solid var(--line); }
+.pbtn + .pbtn { margin-top: 8px; }
+.sum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; margin-bottom: 12px; }
+.sum div { background: var(--fill, #F4F6FA); border-radius: 12px; padding: 8px 2px; }
+.sum b { display: block; font-size: 1.2rem; }
+.sum span { font-size: .75rem; color: var(--ink-2); }
+.cal { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: center; font-size: .85rem; }
+.cal th { font-weight: 400; color: var(--ink-3); font-size: .75rem; padding-bottom: 4px; }
+.cal td { padding: 3px 0; }
+.cal i { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; font-style: normal; }
+.cal i.a-출 { background: #2E9E6A; color: #fff; }
+.cal i.a-지 { background: #E0A100; color: #fff; }
+.cal i.a-결 { background: #D9534F; color: #fff; }
+.cal i.today { outline: 2px solid var(--pb); }
+.legend { display: flex; gap: 12px; justify-content: center; font-size: .75rem; color: var(--ink-2); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 3px; vertical-align: -1px; }
+.rec { border-top: 1px solid var(--line-2, #eef0f4); padding: 12px 0; }
+.rec:first-of-type { border-top: 0; padding-top: 0; }
+.rec .d { font-weight: 800; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.chip { display: inline-block; font-size: .75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #EEF1F6; color: var(--ink-2); }
+.chip.c-출, .chip.c-O { background: #E3F4EC; color: #1F7A50; }
+.chip.c-지, .chip.c-△ { background: #FFF3D6; color: #8A6400; }
+.chip.c-결, .chip.c-X { background: #FBE3E2; color: #A8322E; }
+.new { background: #FF6B57; color: #fff; font-size: .7rem; padding: 1px 7px; border-radius: 999px; font-weight: 800; }
+.rec dl { display: grid; grid-template-columns: 64px 1fr; gap: 4px 8px; margin: 0; font-size: .9rem; }
+.rec dt { color: var(--ink-3); }
+.rec dd { margin: 0; }
+.cmt { background: #F4F7FF; border-radius: 12px; padding: 8px 12px; margin-top: 8px; font-size: .9rem; }
+.notice { border-top: 1px solid var(--line-2, #eef0f4); padding: 10px 0; }
+.notice:first-of-type { border-top: 0; padding-top: 0; }
+.notice summary { cursor: pointer; font-weight: 700; list-style: none; }
+.notice summary::-webkit-details-marker { display: none; }
+.notice p { white-space: pre-wrap; margin: 8px 0 0; font-size: .92rem; }
+.preview-bar { background: #FFF6DC; border: 2px solid #F3E2A8; border-radius: 12px; padding: 8px 12px; font-size: .85rem; margin-bottom: 12px; }
+.foot { text-align: center; color: var(--ink-3); font-size: .75rem; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="pw">
+  <header class="ph">
+    <img src="/static/apple-touch-icon.png" alt="">
+    <div><small>{{ APP_NAME }} {{ APP_SUB }}{% if student.class_group %} · {{ student.class_group.name }}{% endif %}</small><b>{{ student.name }} 학습관리</b></div>
+  </header>
+
+  {% if teacher_view %}<div class="preview-bar">선생님 미리보기예요. 이 화면을 봐도 학부모님 쪽 '새 기록' 표시는 그대로 남아요.</div>{% endif %}
+
+  <section class="pc app" id="app-card" hidden aria-live="polite"></section>
+
+  {% if notices %}
+  <section class="pc" id="notices">
+    <h2>공지</h2>
+    {% for n in notices %}
+    <details class="notice" {% if loop.first and is_new(n.created_at) %}open{% endif %}>
+      <summary>{% if n.important %}📌 {% endif %}{{ n.title }} {% if is_new(n.created_at) %}<span class="new">새 공지</span>{% endif %}<br><span class="small muted" style="font-weight:400">{{ n.created_at|kst("%m월 %d일") }}</span></summary>
+      {% if n.body %}<p>{{ n.body }}</p>{% endif %}
+    </details>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="pc">
+    <h2><span>{{ month0.month }}월 출석</span>
+      <span><a href="?m={{ prev_m.strftime('%Y-%m') }}{{ '&preview=1' if teacher_view else '' }}" aria-label="이전 달">◀</a>{% if next_m %} <a href="?m={{ next_m.strftime('%Y-%m') }}{{ '&preview=1' if teacher_view else '' }}" aria-label="다음 달">▶</a>{% endif %}</span></h2>
+    <div class="sum">
+      <div><b>{{ counts['출'] }}</b><span>출석</span></div>
+      <div><b>{{ counts['지'] }}</b><span>지각</span></div>
+      <div><b>{{ counts['결'] }}</b><span>결석</span></div>
+      <div><b>{{ (hw_rate ~ '%') if hw_rate is not none else '-' }}</b><span>숙제 완료</span></div>
+    </div>
+    <table class="cal" aria-label="{{ month0.month }}월 출석 달력">
+      <thead><tr>{% for w in "일월화수목금토" %}<th>{{ w }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for week in weeks %}<tr>{% for c in week %}<td>{% if c %}<i class="{{ ('a-' ~ c.a) if c.a else '' }} {{ 'today' if c.d == today else '' }}" {% if c.a %}title="{{ {'출':'출석','지':'지각','결':'결석'}[c.a] }}"{% endif %}>{{ c.d.day }}</i>{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table>
+    <div class="legend"><span><i style="background:#2E9E6A"></i>출석</span><span><i style="background:#E0A100"></i>지각</span><span><i style="background:#D9534F"></i>결석</span></div>
+  </section>
+
+  {% if scores|length >= 2 %}
+  {% set W, H, L, R, T, B = 320, 150, 28, 12, 18, 26 %}
+  {% set n = scores|length %}
+  {% set step = (W - L - R) / (n - 1) %}
+  <section class="pc">
+    <h2>시험 점수 변화 <span class="small muted" style="font-weight:400">100점 환산</span></h2>
+    <svg viewBox="0 0 {{ W }} {{ H }}" width="100%" role="img" aria-label="최근 시험 점수 그래프">
+      {% for g in [0, 50, 100] %}{% set y = T + (H - T - B) * (100 - g) / 100 %}
+        <line x1="{{ L }}" x2="{{ W - R }}" y1="{{ y }}" y2="{{ y }}" stroke="#E6E9F0" stroke-width="1"/>
+        <text x="{{ L - 6 }}" y="{{ y + 4 }}" font-size="10" text-anchor="end" fill="#8A93A8">{{ g }}</text>
+      {% endfor %}
+      <polyline fill="none" stroke="var(--pb)" stroke-width="2.5" stroke-linejoin="round" points="{% for s in scores %}{{ L + step * loop.index0 }},{{ T + (H - T - B) * (100 - [[s.pct, 0]|max, 100]|min) / 100 }} {% endfor %}"/>
+      {% for s in scores %}{% set x = L + step * loop.index0 %}{% set y = T + (H - T - B) * (100 - [[s.pct, 0]|max, 100]|min) / 100 %}
+        <circle cx="{{ x }}" cy="{{ y }}" r="4" fill="#fff" stroke="var(--pb)" stroke-width="2"><title>{{ s.label }} {{ s.test_name }} {{ fmt(s.score) }}/{{ fmt(s.total) }}</title></circle>
+        {% if loop.last or n <= 6 %}<text x="{{ x }}" y="{{ y - 8 }}" font-size="10" text-anchor="middle" fill="#1F2740" font-weight="700">{{ s.pct }}</text>{% endif %}
+        {% if loop.first or loop.last or n <= 6 %}<text x="{{ x }}" y="{{ H - 8 }}" font-size="9.5" text-anchor="middle" fill="#8A93A8">{{ s.day.month }}/{{ s.day.day }}</text>{% endif %}
+      {% endfor %}
+    </svg>
+  </section>
+  {% endif %}
+
+  <section class="pc">
+    <h2>수업 기록</h2>
+    {% for r in recent %}
+    <article class="rec">
+      <div class="d">{{ r.label }}
+        {% if r.attend %}<span class="chip c-{{ r.attend }}">{{ r.attend_text }}</span>{% endif %}
+        {% if r.hw %}<span class="chip c-{{ r.hw }}">숙제 {{ r.hw_text }}</span>{% endif %}
+        {% if is_new(r.updated_at) %}<span class="new">새 기록</span>{% endif %}
+      </div>
+      <dl>
+        {% if r.hw_name %}<dt>숙제</dt><dd>{{ r.hw_name }}{% if r.hw_text %} · {{ r.hw_text }}{% endif %}</dd>{% endif %}
+        {% if r.score is not none %}<dt>시험</dt><dd>{{ r.test_name }} <b>{{ fmt(r.score) }}</b> / {{ fmt(r.total) }}</dd>{% endif %}
+        {% if r.progress %}<dt>진도</dt><dd>{{ r.progress }}</dd>{% endif %}
+        {% if r.next_hw %}<dt>다음 숙제</dt><dd>{{ r.next_hw }}</dd>{% endif %}
+      </dl>
+      {% if r.comment or r.note %}<div class="cmt">{% if r.comment %}💬 {{ r.comment }}{% endif %}{% if r.comment and r.note %}<br>{% endif %}{% if r.note %}📢 {{ r.note }}{% endif %}</div>{% endif %}
+    </article>
+    {% else %}
+    <p class="muted small" style="margin:0">아직 올라온 수업 기록이 없어요. 수업이 끝나면 선생님이 기록을 올려 드려요.</p>
+    {% endfor %}
+  </section>
+
+  <p class="foot">{{ APP_NAME }} {{ APP_SUB }} · 이 링크는 {{ student.name }} 학부모님 전용이에요.</p>
+</div>
+
+<script>
+(() => {
+  const TOKEN = {{ token|tojson }};
+  const VAPID = {{ vapid|tojson }};
+  const APP = {{ (APP_NAME ~ " " ~ student.name)|tojson }};
+  const card = document.getElementById("app-card");
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/.test(ua);
+  const inApp = /KAKAOTALK|NAVER\(|Instagram|FBAN|FBAV|Line\/|DaumApps|everytimeApp|BAND\//i.test(ua);
+  const isKakao = /KAKAOTALK/i.test(ua);
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const pushOK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  let installEvt = null;
+
+  const key = (b64) => {
+    const pad = "=".repeat((4 - (b64.length % 4)) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  };
+  const show = (html) => { card.innerHTML = html; card.hidden = false; };
+  const hide = () => { card.hidden = true; };
+
+  async function reg() {
+    if (!("serviceWorker" in navigator)) return null;
+    try { return await navigator.serviceWorker.register("/p/sw.js", { scope: "/p/" }); } catch (e) { return null; }
+  }
+  async function save(sub) {
+    await fetch(`/p/${TOKEN}/subscribe`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(sub) });
+  }
+  async function turnOn(btn) {
+    btn.disabled = true; btn.textContent = "알림 켜는 중…";
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { render(); return; }
+      const r = await navigator.serviceWorker.ready;
+      let sub = await r.pushManager.getSubscription();
+      if (!sub) sub = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key(VAPID) });
+      await save(sub);
+      show(`<p class="ok">🔔 알림이 켜졌어요!</p><p style="margin:6px 0 0">수업 기록이나 공지가 올라오면 이 휴대폰으로 알려 드려요.</p>`);
+    } catch (e) {
+      show(`<p>알림을 켜지 못했어요. 잠시 뒤 다시 눌러 주세요.</p><button class="pbtn" id="on">🔔 알림 켜기</button>`);
+      document.getElementById("on").onclick = (ev) => turnOn(ev.currentTarget);
+    }
+  }
+
+  async function render() {
+    if (inApp) {
+      const url = location.href.split("?")[0];
+      show(`<p><b>알림을 받으려면 ${isIOS ? "사파리" : "크롬"}로 열어 주세요.</b><br>${isKakao ? "카카오톡" : "이 앱"} 안에서는 알림을 켤 수 없어요.</p>`
+        + (isKakao ? `<a class="pbtn" href="kakaotalk://web/openExternal?url=${encodeURIComponent(url)}">${isIOS ? "사파리" : "다른 브라우저"}로 열기</a>` : "")
+        + `<button class="pbtn ghost" id="cp">링크 복사하기</button><p class="small muted" style="margin:8px 0 0">복사한 링크를 ${isIOS ? "사파리" : "크롬"} 주소창에 붙여 넣어도 돼요.</p>`);
+      document.getElementById("cp").onclick = async (ev) => { try { await navigator.clipboard.writeText(url); ev.currentTarget.textContent = "복사됨 ✓"; } catch (e) { prompt("링크를 길게 눌러 복사해 주세요", url); } };
+      return;
+    }
+    if (isIOS && !standalone) {
+      show(`<p><b>📲 홈 화면에 추가하면 앱처럼 쓰고 알림도 받을 수 있어요</b></p>
+        <ol><li>사파리 화면 아래(또는 위)의 <b>공유 버튼</b> <span aria-hidden="true">□↑</span>을 눌러요.</li>
+        <li><b>'홈 화면에 추가'</b>를 눌러요. (안 보이면 목록을 아래로 내려 보세요)</li>
+        <li>홈 화면에 생긴 <b>${APP}</b> 아이콘으로 열고 <b>'알림 켜기'</b>를 눌러요.</li></ol>
+        <p class="small muted" style="margin:0">아이폰 iOS 16.4 이상에서 돼요.</p>`);
+      return;
+    }
+    if (!pushOK) {
+      if (installEvt) { show(`<p>홈 화면에 앱으로 추가해 두면 편하게 볼 수 있어요.</p><button class="pbtn" id="inst">📲 앱 설치</button>`); bindInstall(); }
+      else hide();
+      return;
+    }
+    await reg();
+    const perm = Notification.permission;
+    if (perm === "granted") {
+      const r = await navigator.serviceWorker.ready;
+      let sub = await r.pushManager.getSubscription();
+      if (!sub) { try { sub = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key(VAPID) }); } catch (e) { sub = null; } }
+      if (sub) { save(sub); }
+      if (installEvt && !standalone) { show(`<p class="ok">🔔 알림 켜짐</p><p style="margin:6px 0 10px">홈 화면에 앱으로도 추가해 두세요.</p><button class="pbtn" id="inst">📲 앱 설치</button>`); bindInstall(); }
+      else hide();
+      return;
+    }
+    if (perm === "denied") {
+      show(`<p><b>알림이 꺼져 있어요.</b><br>${isIOS ? "아이폰 설정 → 알림 → " + APP + " 에서 알림 허용을 켜 주세요." : "주소창 왼쪽 자물쇠(또는 ⋮ → 설정) → 사이트 설정 → 알림 → 허용으로 바꿔 주세요."}</p>`);
+      return;
+    }
+    show(`<p><b>🔔 알림을 켜 두세요</b><br>선생님이 수업 기록이나 공지를 올리면 바로 알려 드려요.</p>
+      <button class="pbtn" id="on">🔔 알림 켜기</button>${installEvt && !standalone ? '<button class="pbtn ghost" id="inst">📲 홈 화면에 앱 설치</button>' : ""}`);
+    document.getElementById("on").onclick = (ev) => turnOn(ev.currentTarget);
+    bindInstall();
+  }
+  function bindInstall() {
+    const b = document.getElementById("inst");
+    if (b && installEvt) b.onclick = async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; render(); };
+  }
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; render(); });
+  render();
+  if (location.hash === "#notices") { const n = document.getElementById("notices"); if (n) { const d = n.querySelector("details"); if (d) d.open = true; } }
+})();
+</script>
+</body>
+</html>

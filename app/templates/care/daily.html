@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}학습관리 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% include "care/_tabs.html" %}
+{% if not classes %}
+<div class="panel empty"><p>먼저 반을 만들고 학생을 넣어 주세요. 매일 기록은 반 단위로 적어요.</p><a class="btn" href="/roster?tab=classes">학생 명단에서 반 만들기</a></div>
+{% else %}
+<div class="care-chips" aria-label="반 고르기">
+  {% for c in classes %}<a href="/care?class_id={{ c.id }}&day={{ day.isoformat() }}" {% if c.id == cls.id %}aria-current="page"{% endif %}>{{ c.name }}</a>{% endfor %}
+</div>
+<form class="actions" method="get" action="/care" style="margin-bottom:14px">
+  <input type="hidden" name="class_id" value="{{ cls.id }}">
+  <a class="btn ghost small" href="/care?class_id={{ cls.id }}&day={{ prev_day.isoformat() }}" aria-label="전날">◀</a>
+  <input type="date" name="day" value="{{ day.isoformat() }}" onchange="this.form.submit()" style="width:auto">
+  <a class="btn ghost small" href="/care?class_id={{ cls.id }}&day={{ next_day.isoformat() }}" aria-label="다음날">▶</a>
+  {% if day != today %}<a class="btn ghost small" href="/care?class_id={{ cls.id }}">오늘</a>{% endif %}
+  <b style="margin-left:6px">{{ day_label }}</b>
+  {% if days_with %}<span class="small muted">· 이번 달 기록한 날: {% for x in days_with %}<a href="/care?class_id={{ cls.id }}&day={{ x.isoformat() }}">{{ x.day }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}
+</form>
+
+{% if not students %}
+<div class="panel empty"><p>{{ cls.name }}에 학생이 없어요.</p><a class="btn" href="/roster">학생 명단에서 학생 넣기</a></div>
+{% else %}
+<form method="post" action="/care" id="care-form">
+  <input type="hidden" name="class_id" value="{{ cls.id }}">
+  <input type="hidden" name="day" value="{{ day.isoformat() }}">
+  <section class="panel">
+    <h2>반 전체</h2>
+    <p class="small muted" style="margin-top:-6px">여기 적은 건 반 학생 모두에게 들어가요. 한 학생만 다르면 아래 학생 줄의 '따로'에 적으세요.</p>
+    <div class="row">
+      <div class="field"><label for="hw_name">오늘 검사한 숙제</label>
+        <input type="text" id="hw_name" name="hw_name" value="{{ cd.hw_name if cd else '' }}" placeholder="{{ ('지난 수업 숙제: ' ~ prev.next_hw) if prev and prev.next_hw else '예: 단어 Day 3, 워크북 12~15쪽' }}">
+        {% if prev and prev.next_hw and not (cd and cd.hw_name) %}<button type="button" class="linklike small" onclick="document.getElementById('hw_name').value={{ prev.next_hw|tojson|forceescape }}">지난 수업에 낸 숙제 그대로 넣기</button>{% endif %}
+      </div>
+      <div class="field"><label for="test_name">오늘 본 시험</label><input type="text" id="test_name" name="test_name" value="{{ cd.test_name if cd else '' }}" placeholder="예: 단어 시험 Day 3"></div>
+      <div class="field"><label for="test_total">만점</label><input type="text" inputmode="decimal" id="test_total" name="test_total" value="{{ fmt(cd.test_total) if cd else '' }}" placeholder="100"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="progress">오늘 진도</label><input type="text" id="progress" name="progress" value="{{ cd.progress if cd else '' }}" placeholder="예: 수능특강 3강 1~5번"></div>
+      <div class="field"><label for="next_hw">다음 숙제</label><input type="text" id="next_hw" name="next_hw" value="{{ cd.next_hw if cd else '' }}" placeholder="예: 단어 Day 4 암기, 워크북 16~19쪽"></div>
+    </div>
+    <div class="field" style="margin-bottom:0"><label for="note">반 전체 한마디 <span class="hint" style="display:inline">학부모님께 보여요 (선택)</span></label>
+      <input type="text" id="note" name="note" value="{{ cd.note if cd else '' }}" placeholder="예: 다음 주 화요일 단원평가가 있어요."></div>
+  </section>
+
+  <div class="actions" style="margin-bottom:8px">
+    <button type="button" class="btn ghost small" data-all="a" data-v="출">모두 출석</button>
+    <button type="button" class="btn ghost small" data-all="h" data-v="O">모두 숙제 O</button>
+    <span class="small muted">한 번 더 누르면 선택이 풀려요.</span>
+  </div>
+  <div class="table-wrap"><table class="list care">
+    <thead><tr><th>학생</th><th>출결</th><th>숙제</th><th>점수</th><th>선생님 코멘트</th><th>따로</th></tr></thead>
+    <tbody>
+    {% for s in students %}{% set r = recs.get(s.id) %}
+      <tr>
+        <td><b>{{ s.name }}</b><br><span class="bell {{ '' if subs.get(s.id) else 'off' }}" title="학부모 앱 알림">{{ '🔔 알림 켬' if subs.get(s.id) else '🔕 알림 안 켬' }}</span></td>
+        <td data-l="출결"><span class="pick" role="radiogroup" aria-label="{{ s.name }} 출결">{% for k in ATTEND %}<label><input type="radio" class="v-{{ k }}" name="a_{{ s.id }}" value="{{ k }}" {% if r and r.attend == k %}checked{% endif %}><span title="{{ ATTEND[k] }}">{{ k }}</span></label>{% endfor %}</span></td>
+        <td data-l="숙제"><span class="pick" role="radiogroup" aria-label="{{ s.name }} 숙제">{% for k in HW %}<label><input type="radio" class="v-{{ k }}" name="h_{{ s.id }}" value="{{ k }}" {% if r and r.hw == k %}checked{% endif %}><span title="{{ HW[k] }}">{{ k }}</span></label>{% endfor %}</span></td>
+        <td data-l="점수"><input type="text" inputmode="decimal" name="s_{{ s.id }}" value="{{ fmt(r.score) if r else '' }}" style="width:70px" aria-label="{{ s.name }} 점수"></td>
+        <td data-l="코멘트" style="min-width:220px"><input type="text" name="c_{{ s.id }}" value="{{ r.comment if r else '' }}" placeholder="예: 서술형이 많이 늘었어요!" aria-label="{{ s.name }} 코멘트"></td>
+        <td style="min-width:90px"><details {% if r and (r.progress or r.next_hw) %}open{% endif %}><summary class="small">진도·숙제 따로</summary>
+          <input type="text" name="p_{{ s.id }}" value="{{ r.progress if r else '' }}" placeholder="이 학생 진도" style="margin-top:6px;min-width:180px">
+          <input type="text" name="n_{{ s.id }}" value="{{ r.next_hw if r else '' }}" placeholder="이 학생 다음 숙제" style="margin-top:4px;min-width:180px"></details></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="care-sticky">
+    <button class="btn ghost" type="submit">저장</button>
+    <button class="btn" type="submit" name="notify" value="1">저장하고 학부모 알림 보내기</button>
+    {% if cd and cd.notified_at %}<span class="small muted">이 날 알림 보냄: {{ cd.notified_at|kst }}</span>{% endif %}
+  </div>
+</form>
+{% endif %}
+{% endif %}
+<script>
+(() => {
+  const form = document.getElementById("care-form");
+  if (!form) return;
+  // 이미 고른 단추를 다시 누르면 선택 해제
+  form.querySelectorAll(".pick input").forEach((inp) => {
+    inp.addEventListener("pointerdown", () => { inp.dataset.was = inp.checked ? "1" : ""; });
+    inp.addEventListener("click", () => { if (inp.dataset.was === "1") { inp.checked = false; inp.dataset.was = ""; } });
+  });
+  form.querySelectorAll("[data-all]").forEach((b) => b.addEventListener("click", () => {
+    const boxes = [...form.querySelectorAll(`input[name^="${b.dataset.all}_"][value="${b.dataset.v}"]`)];
+    const all = boxes.every((x) => x.checked);
+    boxes.forEach((x) => { if (all) x.checked = false; else x.checked = true; });
+  }));
+  let dirty = false;
+  form.addEventListener("input", () => { dirty = true; });
+  form.addEventListener("change", () => { dirty = true; });
+  form.addEventListener("submit", () => { dirty = false; });
+  window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+})();
+</script>
+{% endblock %}

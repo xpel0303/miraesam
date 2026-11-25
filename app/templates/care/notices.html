@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}공지 · 학습관리 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% include "care/_tabs.html" %}
+<section class="panel">
+  <h2>새 공지</h2>
+  <form method="post" action="/care/notices">
+    <div class="row">
+      <div class="field"><label for="n-title">제목</label><input type="text" id="n-title" name="title" required maxlength="120" placeholder="예: 12월 시험대비 특강 안내"></div>
+      <div class="field"><label for="n-class">보일 곳</label>
+        <select id="n-class" name="class_id"><option value="">학원 전체</option>{% for c in classes %}<option value="{{ c.id }}">{{ c.name }}만</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label for="n-body">내용</label><textarea id="n-body" name="body" rows="6" placeholder="날짜·시간·준비물 등"></textarea></div>
+    <div class="actions" style="margin-bottom:12px">
+      <label style="font-weight:400;margin:0"><input type="checkbox" name="important" value="1"> 중요 공지 (맨 위에 고정)</label>
+      <label style="font-weight:400;margin:0"><input type="checkbox" name="notify" value="1" checked> 학부모 앱 알림도 보내기</label>
+    </div>
+    <button class="btn" type="submit">공지 올리기</button>
+  </form>
+</section>
+
+{% if items %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>공지</th><th>보일 곳</th><th>올린 때</th><th></th></tr></thead>
+  <tbody>
+  {% for n in items %}
+    <tr><td class="wrap">{% if n.important %}<span class="tag">중요</span> {% endif %}<b>{{ n.title }}</b>{% if n.body %}<br><span class="small muted">{{ n.body|truncate(80) }}</span>{% endif %}</td>
+      <td class="small">{{ n.class_group.name if n.class_group else '학원 전체' }}</td>
+      <td class="small muted">{{ n.created_at|kst }}</td>
+      <td><form method="post" action="/care/notices/{{ n.id }}/delete" onsubmit="return confirm('이 공지를 지울까요? 학부모 화면에서도 사라져요.')"><button class="btn danger small" type="submit">지우기</button></form></td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 올린 공지가 없어요.</p></div>
+{% endif %}
+{% endblock %}

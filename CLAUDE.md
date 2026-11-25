@@ -37,6 +37,7 @@
 - **단어장** (`app/vocab`): 실전형 시험지(객관식+주관식, 정답지 따로), 지문별 시험지/페이지, 단어 수 제한 없음(MAX_WORDS 3000).
 - **흐름분석** (`app/flow`): 왼쪽 한글 분류·구조 도식 + 오른쪽 4컷 만화, A4 가로 한 지문 한 쪽, 감자꽃 글꼴, `**하이라이트**`.
 - **10단계 본문 워크북**: 유형별/지문별 순서 선택, 지문마다 새 쪽.
+- **학습관리** (`routes/care.py`, `routes/parent.py`, `app/care.py`, `app/push.py`): 리포트닷(reportdot.net)을 참고한 매일 기록 표 + 학부모 PWA. 표: `care_class_days`(반 하루), `care_records`(학생 하루, 반 값보다 우선), `care_notices`, `push_subs`, `push_logs`, `app_kv`(VAPID 키 — 지우지 말 것). 학부모 링크 `/p/{students.parent_token}`, 서비스워커 `/p/sw.js`(static/parent-sw.js). 알림은 스레드로 바로 보냄(작업 대기열 아님). 아직 없는 것: 월간 리포트(그래프·코멘트 묶음), 교재 등록·진도 목차, 사진, 선생님별 담당 반 권한.
 - **문법뱅크** (`app/bank`):
   - 분류는 지인에듀(ginedu.com/grammar_bank) 체계: 학년 단계 7개(g1 초등기초 ~ g7 고등) → 중분류 91 → 소분류 707, `bank/taxonomy.txt`.
   - 문항 `cat` = "학년 단계 · 중분류", `subcat` = 소분류, `tier`, `sub_id`. 원래 분류는 `old_cat`/`old_sub`.

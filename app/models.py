@@ -11,12 +11,14 @@
 
 1단계 이후(기출 분석 등)의 테이블은 이 위에 추가합니다.
 """
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    Date,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     LargeBinary,
@@ -102,6 +104,8 @@ class Student(Base):
     memo: Mapped[str | None] = mapped_column(Text, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    parent_token: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)  # 학부모 화면 /p/{parent_token}
+    parent_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # 학부모가 마지막으로 본 때 ('새 기록' 표시용)
 
     school: Mapped[School | None] = relationship()
     class_group: Mapped[ClassGroup | None] = relationship()
@@ -740,3 +744,109 @@ class GrammarBook(Base):
     name: Mapped[str] = mapped_column(String(80), default="")  # 능률(민병천)
     lessons: Mapped[list] = mapped_column(JSON, default=list)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+# ── 학습관리: 매일 기록 · 공지 · 학부모 앱 알림 ─────────────────────────────
+
+
+class CareClassDay(Base):
+    """반 하루 기록: 반 전체에 같은 숙제·시험·진도·다음 숙제. 학생 줄에 따로 적으면 그게 우선."""
+
+    __tablename__ = "care_class_days"
+    __table_args__ = (UniqueConstraint("class_id", "day"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    class_id: Mapped[int] = mapped_column(ForeignKey("class_groups.id"), index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    hw_name: Mapped[str] = mapped_column(String(120), default="")  # 오늘 검사한 숙제
+    test_name: Mapped[str] = mapped_column(String(80), default="")  # 오늘 본 시험
+    test_total: Mapped[float | None] = mapped_column(Float, nullable=True)  # 만점 (비우면 100)
+    progress: Mapped[str] = mapped_column(Text, default="")  # 오늘 진도
+    next_hw: Mapped[str] = mapped_column(Text, default="")  # 다음 숙제
+    note: Mapped[str] = mapped_column(Text, default="")  # 반 전체 한마디 (학부모에게 보임)
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class CareRecord(Base):
+    """학생 하루 기록. attend: 출/지/결, hw: O/△/X. progress·next_hw 가 비면 반 기록을 씀."""
+
+    __tablename__ = "care_records"
+    __table_args__ = (UniqueConstraint("student_id", "day"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
+    class_id: Mapped[int | None] = mapped_column(ForeignKey("class_groups.id"), nullable=True, index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    attend: Mapped[str] = mapped_column(String(2), default="")
+    hw: Mapped[str] = mapped_column(String(2), default="")
+    score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    progress: Mapped[str] = mapped_column(Text, default="")
+    next_hw: Mapped[str] = mapped_column(Text, default="")
+    comment: Mapped[str] = mapped_column(Text, default="")  # 학생별 선생님 코멘트
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class CareNotice(Base):
+    """공지: class_id 가 없으면 학원 전체."""
+
+    __tablename__ = "care_notices"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    class_id: Mapped[int | None] = mapped_column(ForeignKey("class_groups.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(120))
+    body: Mapped[str] = mapped_column(Text, default="")
+    important: Mapped[bool] = mapped_column(Boolean, default=False)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+    class_group: Mapped[ClassGroup | None] = relationship()
+
+
+class PushSub(Base):
+    """학부모 휴대폰의 알림 구독 (웹 푸시). 학생 한 명에 여러 대(엄마·아빠 폰) 가능."""
+
+    __tablename__ = "push_subs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), index=True)
+    endpoint: Mapped[str] = mapped_column(Text)
+    p256dh: Mapped[str] = mapped_column(String(200))
+    auth: Mapped[str] = mapped_column(String(100))
+    device: Mapped[str] = mapped_column(String(40), default="")  # 아이폰 / 안드로이드 / PC
+    fails: Mapped[int] = mapped_column(Integer, default=0)
+    last_ok_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class PushLog(Base):
+    """알림 보낸 기록. status: sent(한 대 이상 받음) / fail / none(앱 알림을 안 켬)."""
+
+    __tablename__ = "push_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    student_id: Mapped[int | None] = mapped_column(ForeignKey("students.id"), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(10), default="")  # record / notice / test
+    title: Mapped[str] = mapped_column(String(120), default="")
+    body: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(6), default="")
+    devices: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+    student: Mapped[Student | None] = relationship()
+
+
+class AppKV(Base):
+    """서버가 스스로 만들어 두는 값 (웹 푸시 VAPID 키 등)."""
+
+    __tablename__ = "app_kv"
+
+    key: Mapped[str] = mapped_column(String(40), primary_key=True)
+    value: Mapped[str] = mapped_column(Text)
