@@ -3,6 +3,7 @@
 실제 키 없이 화면·작업 대기열·PDF 흐름을 시험하기 위한 것입니다. 문제 품질과는 무관합니다.
 지문에 FAKE_FAIL 이 있으면 늘 규칙 위반 답을, FAKE_REPAIR 가 있으면 첫 답만 위반하고 두 번째는 정상 답을 줍니다.
 """
+import json
 import re
 import time
 
@@ -106,6 +107,11 @@ def _vocab(prompt: str) -> dict:
 
 def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = False):
     time.sleep(1.2)
+    if system and "교과 연계 분석가" in system:
+        t = prompt.split("[영어 지문]")[-1].lower()
+        ids = ["u59", "u55"] if any(w in t for w in ("energy", "climate", "carbon", "ecosystem")) else ["u44", "u48"]
+        return json.dumps({"topic": "가짜 주제", "links": [{"id": i, "fit": "높음" if k == 0 else "보통", "reason": "지문의 내용이 이 단원 개념과 이어져요 (가짜 답).",
+                                                         "terms": ["지속가능성"]} for k, i in enumerate(ids)]}, ensure_ascii=False)
     if system and "영어 단어장" in system:
         return _vocab(prompt)
     if system and "어법 문제를 출제" in system:

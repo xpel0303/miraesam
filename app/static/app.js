@@ -91,6 +91,7 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
       ta.insertAdjacentHTML("beforebegin",
         '<div class="ocr-bar" style="display:flex;gap:8px;align-items:center;margin:0 0 4px">' +
         '<button type="button" class="btn ghost small ocr-btn" style="padding:3px 10px;font-size:12.5px">📄 PDF·사진에서 지문 가져오기</button>' +
+        '<button type="button" class="btn ghost small cur-btn" style="padding:3px 10px;font-size:12.5px" title="이 지문이 어떤 사회·과학 교과 단원과 이어지는지 찾아요">📚 교과 연계 찾기</button>' +
         '<span class="small muted ocr-msg">또는 PDF·사진을 아래 칸에 끌어다 놓거나 붙여넣기(Ctrl+V)</span></div>');
     });
   }
@@ -295,5 +296,50 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
     if (!files.length) return;
     const inp = inputs.find((i) => files.some((f) => accepts(i, f)));
     if (inp && put(inp, files, true)) { e.preventDefault(); inp.closest(".drop-zone").scrollIntoView({ block: "center", behavior: "smooth" }); }
+  });
+})();
+
+
+// ---------------------------------------------------------------- 교과 연계 찾기 (사회·과학, 필요할 때만)
+// 지문 칸 위 '📚 교과 연계 찾기' → 어느 과목·학년·단원과 이어지는지 칸 아래에 보여 주고, 제목에 붙일 수 있게.
+(function () {
+  const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".cur-btn");
+    if (btn) {
+      const bar = btn.closest(".ocr-bar"), ta = bar.nextElementSibling;
+      let box = ta.nextElementSibling;
+      if (!box || !box.classList.contains("cur-box")) { ta.insertAdjacentHTML("afterend", '<div class="cur-box"></div>'); box = ta.nextElementSibling; }
+      if (ta.value.trim().split(/\s+/).length < 15) { box.innerHTML = '<span class="small" style="color:var(--err)">지문을 먼저 넣어 주세요.</span>'; return; }
+      btn.disabled = true; box.innerHTML = '<span class="small muted">교과 단원 찾는 중… (10초쯤)</span>';
+      try {
+        const r = await fetch("/api/curriculum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: ta.value }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.error || "찾지 못했어요.");
+        if (!j.links || !j.links.length) { box.innerHTML = '<span class="small muted">이어지는 사회·과학 단원이 없어요.' + (j.topic ? ` (주제: ${esc(j.topic)})` : "") + "</span>"; return; }
+        const card = ta.closest(".passage-card, section, .panel, form");
+        const title = card && card.querySelector('input[name="p_title"], input[name="title"]');
+        box.innerHTML = (j.topic ? `<div class="small muted" style="margin-bottom:4px">지문 주제: ${esc(j.topic)}</div>` : "") + j.links.map((l, k) => `
+          <div class="cur-item ${l.fit === "높음" ? "hi" : ""}">
+            <div><b>${esc(l.subject)}</b> <span class="cur-g">${esc(l.grade)}</span> · ${esc(l.unit)} <span class="cur-a">${esc(l.area)}</span> <span class="cur-fit">${esc(l.fit)}</span></div>
+            <div class="small">${esc(l.reason)}${l.terms && l.terms.length ? ` <span class="muted">· ${l.terms.map(esc).join(", ")}</span>` : ""}</div>
+            <div class="small muted">성취기준 ${esc(l.std)}${title ? ` · <a href="#" class="cur-tag" data-tag="${esc(l.tag)}">제목에 [${esc(l.tag)}] 붙이기</a>` : ""}</div>
+          </div>`).join("");
+      } catch (err) {
+        box.innerHTML = `<span class="small" style="color:var(--err)">${esc(err.message)}</span>`;
+      } finally { btn.disabled = false; }
+      return;
+    }
+    const tag = e.target.closest(".cur-tag");
+    if (tag) {
+      e.preventDefault();
+      const box = tag.closest(".cur-box"), ta = box.previousElementSibling;
+      const card = ta.closest(".passage-card, section, .panel, form");
+      const title = card && card.querySelector('input[name="p_title"], input[name="title"]');
+      if (!title) return;
+      const t = `[${tag.dataset.tag}]`;
+      if (!title.value.includes(t)) title.value = (title.value.trim() + " " + t).trim();
+      tag.textContent = "붙였어요 ✓";
+    }
   });
 })();

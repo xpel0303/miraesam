@@ -749,3 +749,11 @@ textarea.ocr-drop { outline: 3px dashed var(--brand); outline-offset: 2px; backg
 .drop-zone.on { border-color: var(--brand); background: var(--brand-soft); }
 .drop-zone input[type=file] { max-width: 100%; }
 .drop-zone .dz-hint { font-size: .85rem; color: var(--ink-3); margin-top: 6px; }
+
+/* 교과 연계 */
+.cur-box { margin: 6px 0 2px; }
+.cur-item { border-left: 4px solid #94A3B8; background: #F8FAFC; border-radius: 6px; padding: 6px 10px; margin: 4px 0; }
+.cur-item.hi { border-left-color: #059669; background: #ECFDF5; }
+.cur-g { display: inline-block; background: #1B2A5C; color: #fff; border-radius: 8px; padding: 0 6px; font-size: .75rem; }
+.cur-a { color: #6B7280; font-size: .8rem; }
+.cur-fit { display: inline-block; border: 1px solid currentColor; border-radius: 8px; padding: 0 5px; font-size: .72rem; color: #059669; }

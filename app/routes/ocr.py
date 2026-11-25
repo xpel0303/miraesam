@@ -1,7 +1,7 @@
 """PDF·사진 → 지문 글자 (지문 넣는 칸마다 붙는 '파일에서 지문 가져오기' 버튼)."""
 import asyncio
 
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 from .. import llm
@@ -84,3 +84,24 @@ async def ocr(files: list[UploadFile], teacher: Teacher = Depends(current_teache
     parts, nums = [parts[i] for i in order], [nums[i] for i in order]
     numbered = "\n\n".join((f"[{n}]\n" if n else "") + t for n, t in zip(nums, parts))
     return {"text": "\n\n".join(parts), "passages": parts, "numbers": nums, "numbered": numbered}
+
+
+@router.post("/api/curriculum")
+async def curriculum(request: Request, teacher: Teacher = Depends(current_teacher)):
+    """영어 지문 → 이어지는 사회·과학 교과 단원 (필요할 때만 누르는 버튼)."""
+    from .. import curriculum as cur
+    key = decrypt(teacher.gemini_key_enc)
+    if not key:
+        return JSONResponse({"error": "Gemini API 키가 없어요. 설정 화면에서 키를 먼저 넣어 주세요."}, status_code=400)
+    body = await request.json()
+    text = str(body.get("text") or "").strip()
+    if len(text.split()) < 15:
+        return JSONResponse({"error": "지문을 먼저 넣어 주세요."}, status_code=400)
+    try:
+        raw = await asyncio.to_thread(llm.generate, key, cur.prompt(text), system=cur.SYSTEM, json_mode=True,
+                                      model=teacher.gemini_model or DEFAULT_GEMINI_MODEL, temperature=0.2, max_tokens=2000)
+        return cur.clean(raw)
+    except llm.LLMError as e:
+        return JSONResponse({"error": str(e)}, status_code=502)
+    except (ValueError, TypeError):
+        return JSONResponse({"error": "답을 읽지 못했어요. 다시 눌러 주세요."}, status_code=502)
