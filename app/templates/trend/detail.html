@@ -1,45 +1,100 @@
 {% extends "base.html" %}
 {% block title %}{{ school.name }} 경향분석 · {{ APP_NAME }}{% endblock %}
 {% block main %}
+{% set C = cmp.colors %}
 <p class="small"><a href="/trend">학교 경향분석</a></p>
-<h1>{{ school.name }} {{ grade }}</h1>
-<p class="lead">기출 {{ papers|length }}회 · 평균 {{ cmp.avg.n }}문항 (객관식 {{ cmp.avg.mc }} · 서술형 {{ cmp.avg.sa }}) · 서술형 배점 비중 평균 {{ cmp.avg.sa_share }}%</p>
+<div class="tr-hero">
+  <div><h1>{{ school.name }} {{ grade }} 출제 경향</h1>
+    <p>기출 {{ papers|length }}회 분석 · {{ cmp.rows[0].name }}{% if cmp.rows|length > 1 %} ~ {{ cmp.rows[-1].name }}{% endif %}</p></div>
+  <a class="btn" href="/mock/new?template={{ papers[-1].id }}">📝 동형 모의고사 만들기</a>
+</div>
 
-<section class="panel">
-  <div class="panel-head"><h2>출제 스타일 메모</h2>
+<div class="tr-kpis">
+  <div class="k" style="background:#1B2A5C"><span>평균 문항</span><b>{{ cmp.avg.n }}</b></div>
+  <div class="k" style="background:{{ C['독해'] }}"><span>객관식</span><b>{{ cmp.avg.mc }}</b><small>문항</small></div>
+  <div class="k" style="background:{{ C['서술형'] }}"><span>서술형</span><b>{{ cmp.avg.sa }}</b><small>문항</small></div>
+  <div class="k" style="background:{{ C['언어형식'] }}"><span>서술형 배점 비중</span><b>{{ cmp.avg.sa_share }}%</b></div>
+  <div class="k" style="background:#059669"><span>지문</span><b>{{ cmp.avg.passages }}</b><small>개 · 평균 {{ cmp.avg.avg_words }}단어</small></div>
+</div>
+
+<section class="panel tr-memo">
+  <div class="panel-head"><h2>🧭 분석 노트</h2>
     {% if not busy %}<form method="post" action="/trend/{{ school.id }}/memo"><input type="hidden" name="grade" value="{{ grade }}">
-      <button class="btn {{ '' if not (row and row.memo) or stale else 'ghost' }} small" type="submit">{{ "메모 새로 쓰기" if row and row.memo else "메모 쓰기" }}</button></form>{% endif %}
+      <button class="btn {{ '' if not (row and row.memo) or stale else 'ghost' }} small" type="submit">{{ "노트 새로 쓰기" if row and row.memo else "AI 분석 노트 쓰기" }}</button></form>{% endif %}
   </div>
   {% if busy %}<div class="job" data-job-id="{{ job.id }}" data-reload></div>{% endif %}
   {% if row and row.memo %}
-    {% if stale %}<p class="small" style="color:var(--err);margin:0 0 8px">메모를 쓴 뒤로 기출이 바뀌었어요. '메모 새로 쓰기'를 누르면 새 기출까지 반영해요.</p>{% endif %}
-    {% for k in keys %}{% if row.memo[k] %}
-      <h3>{{ names[k] }}</h3>
-      {% if row.memo[k] is string %}<p style="margin:0 0 6px">{{ row.memo[k] }}</p>{% else %}<ul style="margin:0 0 6px">{% for x in row.memo[k] %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
-    {% endif %}{% endfor %}
+    {% if stale %}<p class="small" style="color:var(--err);margin:0 0 8px">노트를 쓴 뒤로 기출이 바뀌었어요. '노트 새로 쓰기'를 누르면 새 기출까지 반영해요.</p>{% endif %}
+    {% set icons = {"summary": "🎯", "vocab": "🔤", "grammar": "✏️", "reading": "📖", "writing": "📝", "strategy": "🚀"} %}
+    {% set tones = {"summary": "#1B2A5C", "vocab": "#7C3AED", "grammar": C['언어형식'], "reading": C['독해'], "writing": C['서술형'], "strategy": "#059669"} %}
+    {% if row.memo.summary %}
+      <div class="tr-sum"><span>🎯 한눈에 보는 출제 경향</span>
+        {% if row.memo.summary is string %}<p>{{ row.memo.summary }}</p>{% else %}<ul>{% for x in row.memo.summary %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}</div>
+    {% endif %}
+    <div class="tr-cards">
+    {% for k in keys if k != "summary" and row.memo[k] %}
+      <div class="tr-card {{ 'wide' if k == 'strategy' }}" style="--c:{{ tones[k] }}">
+        <h3>{{ icons[k] }} {{ names[k] }}</h3>
+        {% if row.memo[k] is string %}<p>{{ row.memo[k] }}</p>{% else %}<ul>{% for x in row.memo[k] %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+    {% endfor %}
+    </div>
     <p class="small muted" style="margin:8px 0 0">{{ row.updated_at|kst("%Y-%m-%d %H:%M") }} · 기출 {{ row.exam_ids|length }}회로 씀</p>
-  {% elif not busy %}<p class="muted small" style="margin:0">아직 메모가 없어요. 기출이 1회만 있어도 쓸 수 있지만, 2~3회 이상이면 경향이 훨씬 정확해요.</p>{% endif %}
+  {% elif not busy %}<p class="muted small" style="margin:0">아직 노트가 없어요. 기출이 1회만 있어도 쓸 수 있지만, 2~3회 이상이면 경향이 훨씬 정확해요.</p>{% endif %}
 </section>
 
+<div class="tr-grid">
+  <section class="panel">
+    <h2>📊 회차별 배점 구성</h2>
+    <div class="legend"><span><i style="background:{{ C['독해'] }}"></i>독해</span><span><i style="background:{{ C['언어형식'] }}"></i>어법·어휘</span><span><i style="background:{{ C['서술형'] }}"></i>서술형</span></div>
+    <div class="tr-stack">
+    {% for r in cmp.rows %}
+      <div class="row"><a class="nm" href="/exam/{{ r.id }}">{{ r.name }}</a>
+        <div class="bar">{% for k in ["독해", "언어형식", "서술형"] %}{% set v = r.area_pts[k] %}{% if v %}<i style="width:{{ 100 * v / cmp.max_total }}%;background:{{ C[k] }}" title="{{ k }} {{ fmt(v) }}점">{{ fmt(v) if v >= 8 }}</i>{% endif %}{% endfor %}</div>
+        <span class="v">{{ fmt(r.total) }}점</span></div>
+    {% endfor %}
+    </div>
+  </section>
+  <section class="panel">
+    <h2>📈 서술형 비중 변화</h2>
+    {% set n = cmp.rows|length %}
+    <svg viewBox="0 0 320 160" width="100%" height="170" role="img" aria-label="회차별 서술형 배점 비중">
+      {% for y in [0, 25, 50, 75, 100] %}<line x1="34" x2="310" y1="{{ 140 - y * 1.2 }}" y2="{{ 140 - y * 1.2 }}" stroke="#E5E7EB"/><text x="28" y="{{ 144 - y * 1.2 }}" font-size="9" text-anchor="end" fill="#6B7280">{{ y }}%</text>{% endfor %}
+      {% set pts = [] %}
+      {% for r in cmp.rows %}{% set x = 50 + (loop.index0 * (240 / (n - 1)) if n > 1 else 120) %}{% set _ = pts.append((x, 140 - r.sa_share * 1.2, r)) %}{% endfor %}
+      {% if n > 1 %}<polyline fill="none" stroke="{{ C['서술형'] }}" stroke-width="3" points="{% for x, y, r in pts %}{{ x }},{{ y }} {% endfor %}"/>{% endif %}
+      {% for x, y, r in pts %}
+        <circle cx="{{ x }}" cy="{{ y }}" r="5" fill="#fff" stroke="{{ C['서술형'] }}" stroke-width="3"/>
+        <text x="{{ x }}" y="{{ y - 9 }}" font-size="11" font-weight="800" text-anchor="middle" fill="{{ C['서술형'] }}">{{ r.sa_share }}%</text>
+        <text x="{{ x }}" y="156" font-size="9" text-anchor="middle" fill="#374151">{{ r.name }}</text>
+      {% endfor %}
+    </svg>
+  </section>
+</div>
+
 <section class="panel">
-  <h2>회차 비교</h2>
-  <div class="table-wrap"><table class="list">
-    <thead><tr><th>시험</th><th>문항</th><th>객관식</th><th>서술형</th><th>서술형 비중</th><th>지문 · 평균 길이</th><th></th></tr></thead>
-    <tbody>{% for r in cmp.rows %}
-      <tr><td class="wrap"><a href="/exam/{{ r.id }}">{{ r.name }}</a>{% if r.range %}<br><span class="small muted">{{ r.range }}</span>{% endif %}</td>
-        <td>{{ r.n }}</td><td>{{ r.mc }} · {{ fmt(r.mc_points) }}점</td><td>{{ r.sa }} · {{ fmt(r.sa_points) }}점</td><td>{{ r.sa_share }}%</td>
-        <td>{{ r.passages }}개 · {{ r.avg_words }}단어</td>
-        <td class="small"><a href="/mock/new?template={{ r.id }}">이 시험 본떠 만들기</a></td></tr>
+  <h2>🗺️ 유형별 문항 수 (진할수록 많이)</h2>
+  <div class="table-wrap"><table class="list tr-heat">
+    <thead><tr><th>유형</th>{% for r in cmp.rows %}<th class="c">{{ r.name }}</th>{% endfor %}<th class="c">평균</th><th style="width:28%">평균 그래프</th></tr></thead>
+    <tbody>{% for t in cmp.matrix %}{% set col = C[t.area] %}
+      <tr><td><span class="dot" style="background:{{ col }}"></span><b>{{ t.type }}</b></td>
+        {% for v in t.cells %}<td class="c" style="{% if v %}background:color-mix(in srgb, {{ col }} {{ (18 + 70 * v / cmp.peak)|round|int }}%, white);color:{{ '#fff' if v / cmp.peak > 0.55 else '#111' }};font-weight:700{% endif %}">{{ v or "" }}</td>{% endfor %}
+        <td class="c"><b>{{ t.avg }}</b></td>
+        <td><span class="hbar"><i style="width:{{ 100 * t.avg / cmp.peak }}%;background:{{ col }}"></i></span></td></tr>
     {% endfor %}</tbody>
   </table></div>
 </section>
 
 <section class="panel">
-  <h2>유형별 문항 수</h2>
+  <h2>회차 비교 표</h2>
   <div class="table-wrap"><table class="list">
-    <thead><tr><th>유형</th>{% for r in cmp.rows %}<th>{{ r.name }}</th>{% endfor %}<th>평균</th></tr></thead>
-    <tbody>{% for t in cmp.matrix %}
-      <tr><td>{{ t.type }}</td>{% for v in t.cells %}<td>{{ v or "" }}</td>{% endfor %}<td><b>{{ t.avg }}</b></td></tr>
+    <thead><tr><th>시험</th><th>문항</th><th>객관식</th><th>서술형</th><th>서술형 비중</th><th>지문 · 평균 길이</th><th></th></tr></thead>
+    <tbody>{% for r in cmp.rows %}
+      <tr><td class="wrap"><a href="/exam/{{ r.id }}">{{ r.name }}</a>{% if r.range %}<br><span class="small muted">{{ r.range }}</span>{% endif %}</td>
+        <td>{{ r.n }}</td><td>{{ r.mc }} · {{ fmt(r.mc_points) }}점</td><td>{{ r.sa }} · {{ fmt(r.sa_points) }}점</td>
+        <td><span class="hbar sm"><i style="width:{{ r.sa_share }}%;background:{{ C['서술형'] }}"></i></span> {{ r.sa_share }}%</td>
+        <td>{{ r.passages }}개 · {{ r.avg_words }}단어</td>
+        <td class="small"><a href="/mock/new?template={{ r.id }}">이 시험 본떠 만들기</a></td></tr>
     {% endfor %}</tbody>
   </table></div>
 </section>
@@ -50,7 +105,31 @@
   <ul style="margin:0">{% for x in mocks %}<li><a href="/mock/{{ x.id }}">{{ x.title }}</a> <span class="small muted">{{ x.created_at|kst("%Y-%m-%d") }}</span></li>{% endfor %}</ul>
 </section>
 {% endif %}
-<p><a class="btn" href="/mock/new?template={{ papers[-1].id }}">이 학교 동형 모의고사 만들기</a></p>
+<style>
+.tr-hero { display:flex; align-items:center; gap:16px; padding:18px 22px; border-radius:18px; color:#fff; margin:6px 0 14px;
+  background:linear-gradient(120deg,#1B2A5C 0%,#3B2F8F 55%,#7C3AED 100%); }
+.tr-hero > div { flex:1; } .tr-hero h1 { color:#fff; margin:0; font-size:1.5rem; } .tr-hero p { margin:4px 0 0; color:#E0E7FF; font-size:.9rem; }
+.tr-hero .btn { background:#FACC15; color:#1B2A5C; border:0; font-weight:800; }
+.tr-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:14px; }
+.tr-kpis .k { color:#fff; border-radius:14px; padding:12px 14px; }
+.tr-kpis span { display:block; font-size:.78rem; font-weight:700; opacity:.92; } .tr-kpis b { font-size:1.7rem; font-weight:800; } .tr-kpis small { font-size:.78rem; opacity:.92; margin-left:3px; }
+.tr-sum { background:linear-gradient(120deg,#EEF2FF,#F5F3FF); border:2px solid #C7D2FE; border-radius:14px; padding:12px 16px; margin-bottom:12px; }
+.tr-sum span { font-weight:800; color:#1B2A5C; } .tr-sum p, .tr-sum ul { margin:6px 0 0; font-size:1rem; line-height:1.6; }
+.tr-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:10px; }
+.tr-card { border:1.5px solid color-mix(in srgb, var(--c) 30%, white); border-top:5px solid var(--c); background:color-mix(in srgb, var(--c) 6%, white); border-radius:12px; padding:10px 14px; }
+.tr-card.wide { grid-column:1/-1; }
+.tr-card h3 { margin:0 0 6px; color:var(--c); font-size:1rem; } .tr-card ul { margin:0; padding-left:18px; } .tr-card li { margin:3px 0; } .tr-card p { margin:0; }
+.tr-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:14px; }
+.legend span { display:inline-block; margin-right:12px; font-size:.8rem; font-weight:700; } .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px; vertical-align:-1px; }
+.tr-stack .row { display:flex; align-items:center; gap:8px; margin:8px 0; }
+.tr-stack .nm { width:110px; font-size:.85rem; font-weight:700; } .tr-stack .v { width:48px; font-size:.82rem; text-align:right; font-weight:700; }
+.tr-stack .bar { flex:1; display:flex; height:22px; background:#F3F4F6; border-radius:6px; overflow:hidden; }
+.tr-stack .bar i { display:block; height:100%; color:#fff; font-style:normal; font-size:.72rem; font-weight:800; text-align:center; line-height:22px; }
+.tr-heat td.c, .tr-heat th.c { text-align:center; } .tr-heat td { padding:5px 8px; }
+.dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; }
+.hbar { display:inline-block; width:100%; height:12px; background:#F3F4F6; border-radius:6px; overflow:hidden; vertical-align:middle; }
+.hbar.sm { width:70px; height:9px; } .hbar i { display:block; height:100%; border-radius:6px; }
+</style>
 <script>
   document.addEventListener("job:done", (e) => { if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600); });
 </script>

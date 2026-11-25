@@ -30,13 +30,22 @@ def compare(papers: list) -> dict:
     for p in papers:
         qs = p.questions or []
         st = exam_spec.stats(qs)
-        rows.append({"id": p.id, "name": paper_name(p), "title": p.title, "range": (p.meta or {}).get("range", ""), **st})
+        ap = {"독해": 0.0, "언어형식": 0.0, "서술형": 0.0}
+        for q in qs:  # 영역별 배점 (서술형이면 서술형으로)
+            a = exam_spec.area(q)
+            ap["서술형" if "서술형" in a else ("언어형식" if "언어형식" in a else "독해")] += q.get("points") or 0
+        rows.append({"id": p.id, "name": paper_name(p), "title": p.title, "range": (p.meta or {}).get("range", ""), **st,
+                     "area_pts": {k: round(v, 1) for k, v in ap.items()}})
         for t in st["types"]:
             types.setdefault(t["type"], {})[p.id] = t["count"]
     order = [t for t in exam_spec.TYPE_ORDER if t in types] + sorted(t for t in types if t not in exam_spec.TYPE_ORDER)
     matrix = [{"type": t, "cells": [types[t].get(r["id"], 0) for r in rows], "avg": round(sum(types[t].values()) / len(rows), 1)} for t in order]
     avg = lambda k: round(sum(r[k] for r in rows) / len(rows), 1) if rows else 0
-    return {"rows": rows, "matrix": matrix,
+    peak = max([c for t in matrix for c in t["cells"]] or [1]) or 1
+    for t in matrix:
+        t["area"] = "서술형" if t["type"].startswith("서술형") else ("언어형식" if t["type"] in exam_spec.FORM_TYPES else "독해")
+    return {"rows": rows, "matrix": matrix, "peak": peak, "colors": exam_spec.AREA_COLORS,
+            "max_total": max([r["total"] or 0 for r in rows] or [1]) or 1,
             "avg": {k: avg(k) for k in ("n", "mc", "sa", "sa_share", "passages", "avg_words")}}
 
 
