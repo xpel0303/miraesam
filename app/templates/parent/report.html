@@ -9,11 +9,10 @@
 {% if token %}<link rel="manifest" href="/p/{{ token }}/manifest.webmanifest">{% endif %}
 <link rel="apple-touch-icon" href="/static/icons/icon-180.png">
 <link rel="stylesheet" href="/static/app.css">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap">
 {% include "parent/_style.html" %}
 <style>
 /* 월간 리포트: 아이보리 바탕 · 남색 + 금색 선 · 명조 제목 (고급 인쇄물 느낌) */
-:root { --gold: #B08D57; --ivory: #FAF8F3; --serif: "Nanum Myeongjo", "AppleMyungjo", "Batang", serif; }
+:root { --gold: #B08D57; --ivory: #FAF8F3; --serif: "NanumSquareRound", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
 body { background: #EFECE5; }
 .pw { max-width: 560px; }
 .sheet { background: var(--ivory); border-radius: 4px; box-shadow: 0 10px 40px rgba(30,30,40,.10); overflow: hidden; margin-bottom: 18px; }
@@ -23,19 +22,19 @@ body { background: #EFECE5; }
 .hero-logo { display: inline-block; background: #fff; border-radius: 6px; padding: 5px 9px; line-height: 0; }
 .hero-logo img { height: 26px; max-width: 120px; object-fit: contain; }
 .hero small { display: block; opacity: .8; font-size: .8rem; letter-spacing: .02em; }
-.hero h1 { font-family: var(--serif); font-weight: 800; font-size: 1.55rem; margin: 6px 0 0; color: #fff; letter-spacing: -.01em; line-height: 1.35; }
-.hero h1 em { font-style: normal; display: block; font-size: 1rem; font-weight: 700; color: #E8DCC2; margin-top: 2px; }
+.hero h1 { font-family: var(--title-font); font-weight: 400; font-size: 1.55rem; margin: 6px 0 0; color: #fff; letter-spacing: -.01em; line-height: 1.35; }
+.hero h1 em { font-style: normal; display: block; font-family: var(--serif); font-size: 1rem; font-weight: 700; color: #E8DCC2; margin-top: 2px; }
 .hero p { margin: 16px 0 0; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.18); font-family: var(--serif); font-size: 1.02rem; line-height: 1.7; }
-.grade { display: inline-block; border: 1px solid var(--gold); color: #E8DCC2; font-family: "Nanum Gothic", sans-serif; font-weight: 700; border-radius: 2px; padding: 1px 9px; font-size: .78rem; margin-right: 8px; vertical-align: 2px; letter-spacing: .05em; }
+.grade { display: inline-block; border: 1px solid var(--gold); color: #E8DCC2; font-family: "NanumSquareRound", sans-serif; font-weight: 700; border-radius: 2px; padding: 1px 9px; font-size: .78rem; margin-right: 8px; vertical-align: 2px; letter-spacing: .05em; }
 .tiles { display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; border-bottom: 1px solid #E7E2D6; }
 .tiles div { text-align: center; padding: 16px 2px 14px; border-right: 1px solid #EFEBE2; }
 .tiles div:last-child { border-right: 0; }
-.tiles b { display: block; font-family: var(--serif); font-size: 1.45rem; font-weight: 800; color: var(--pb); }
+.tiles b { display: block; font-family: var(--title-font); font-size: 1.45rem; font-weight: 400; color: var(--pb); }
 .tiles span { font-size: .72rem; color: #8B8578; letter-spacing: .05em; }
 .pc { background: transparent; border: 0; border-top: 1px solid #E7E2D6; border-radius: 0; padding: 20px 24px; margin: 0; }
-.pc h2 { font-family: var(--serif); font-size: 1.08rem; font-weight: 800; color: #1F2433; margin: 0 0 12px; }
+.pc h2 { font-family: var(--title-font); font-size: 1.12rem; font-weight: 400; color: #1F2433; margin: 0 0 12px; }
 .pc h2::before { content: ""; display: inline-block; width: 16px; height: 2px; background: var(--gold); vertical-align: middle; margin-right: 8px; }
-.pc h2 .small { font-family: "Nanum Gothic", sans-serif; }
+.pc h2 .small { font-family: "NanumSquareRound", sans-serif; }
 .tbl { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .tbl td, .tbl th { padding: 7px 4px; border-top: 1px solid #ECE7DC; text-align: left; }
 .tbl th { font-weight: 400; color: #9A9384; font-size: .76rem; border-top: 0; }
@@ -55,7 +54,7 @@ body { background: #EFECE5; }
 .cm { background: #fff; }
 .cm h3 { font-size: .78rem; letter-spacing: .12em; margin: 18px 0 6px; color: var(--gold); font-weight: 700; }
 .cm h3:first-of-type { margin-top: 0; }
-.cm p { margin: 0; white-space: pre-wrap; font-family: var(--serif); font-size: 1rem; line-height: 1.95; color: #2A2E3A; word-break: keep-all; }
+.cm p { margin: 0; white-space: pre-wrap; font-family: var(--serif); font-size: .98rem; line-height: 1.85; color: #2A2E3A; word-break: keep-all; }
 .cm p.sign { text-align: right; margin-top: 18px; font-family: var(--serif); font-size: .92rem; color: #555; }
 .sign b { color: #1F2433; }
 .foot { text-align: center; font-size: .75rem; color: #9A9384; letter-spacing: .1em; }
