@@ -742,3 +742,10 @@ dialog.picker::backdrop { background: rgba(31,39,64,.35); }
 .push-card .push-ic { font-size: 1.6rem; }
 .push-card.on { background: #f0f7f2; }
 .push-card.need { border: 2px solid #f0a020; background: #fff8e8; }
+
+/* 끌어다 놓기 */
+textarea.ocr-drop { outline: 3px dashed var(--brand); outline-offset: 2px; background: var(--brand-soft); }
+.drop-zone { border: 2px dashed var(--line); border-radius: var(--radius); padding: 14px; text-align: center; background: var(--surface); transition: background .15s, border-color .15s; }
+.drop-zone.on { border-color: var(--brand); background: var(--brand-soft); }
+.drop-zone input[type=file] { max-width: 100%; }
+.drop-zone .dz-hint { font-size: .85rem; color: var(--ink-3); margin-top: 6px; }

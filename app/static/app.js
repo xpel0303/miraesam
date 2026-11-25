@@ -91,19 +91,16 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
       ta.insertAdjacentHTML("beforebegin",
         '<div class="ocr-bar" style="display:flex;gap:8px;align-items:center;margin:0 0 4px">' +
         '<button type="button" class="btn ghost small ocr-btn" style="padding:3px 10px;font-size:12.5px">📄 PDF·사진에서 지문 가져오기</button>' +
-        '<span class="small muted ocr-msg"></span></div>');
+        '<span class="small muted ocr-msg">또는 PDF·사진을 아래 칸에 끌어다 놓거나 붙여넣기(Ctrl+V)</span></div>');
     });
   }
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".ocr-btn");
-    if (!btn) return;
-    const bar = btn.closest(".ocr-bar"), ta = bar.nextElementSibling, msg = bar.querySelector(".ocr-msg");
-    const inp = document.createElement("input");
-    inp.type = "file"; inp.multiple = true; inp.accept = "application/pdf,image/*";
-    inp.onchange = async () => {
-      if (!inp.files.length) return;
+  async function runOcr(files, bar) {
+      const btn = bar.querySelector(".ocr-btn"), ta = bar.nextElementSibling, msg = bar.querySelector(".ocr-msg");
+      files = Array.from(files || []).filter((f) => /pdf|image\//.test(f.type) || /\.(pdf|png|jpe?g|heic|webp)$/i.test(f.name || ""));
+      if (!files.length) return false;
+      if (btn.disabled) return true;
       const fd = new FormData();
-      for (const f of inp.files) fd.append("files", f);
+      for (const f of files) fd.append("files", f, f.name || "붙여넣은그림.png");
       btn.disabled = true; msg.style.color = ""; msg.textContent = "글자로 바꾸는 중… (쪽당 10~20초)";
       try {
         const r = await fetch("/api/ocr", { method: "POST", body: fd });
@@ -146,11 +143,41 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
       } catch (err) {
         msg.style.color = "var(--err)"; msg.textContent = err.message;
       } finally {
-        btn.disabled = false;
+        btn.disabled = false; ta.classList.remove("ocr-drop");
         document.querySelectorAll(".ocr-bar").forEach((b) => { if (b !== bar) { b.querySelector(".ocr-btn").disabled = false; b.querySelector(".ocr-msg").textContent = ""; } });
       }
-    };
+      return true;
+  }
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".ocr-btn");
+    if (!btn) return;
+    const bar = btn.closest(".ocr-bar");
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.multiple = true; inp.accept = "application/pdf,image/*";
+    inp.onchange = () => runOcr(inp.files, bar);
     inp.click();
+  });
+  // 지문 칸에 PDF·사진을 바로 끌어다 놓거나 붙여넣기(Ctrl+V) 해도 글자로 바꿔 넣음
+  const barOf = (ta) => (ta.previousElementSibling && ta.previousElementSibling.classList.contains("ocr-bar") ? ta.previousElementSibling : null);
+  const hasFiles = (dt) => dt && Array.from(dt.types || []).includes("Files");
+  document.addEventListener("dragover", (e) => {
+    const ta = e.target.closest && e.target.closest(SEL);
+    if (ta && hasFiles(e.dataTransfer)) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; ta.classList.add("ocr-drop"); }
+  });
+  document.addEventListener("dragleave", (e) => { const ta = e.target.closest && e.target.closest(SEL); if (ta) ta.classList.remove("ocr-drop"); });
+  document.addEventListener("drop", (e) => {
+    const ta = e.target.closest && e.target.closest(SEL);
+    if (!ta || !hasFiles(e.dataTransfer)) return;
+    e.preventDefault(); ta.classList.remove("ocr-drop");
+    const bar = barOf(ta); if (bar) runOcr(e.dataTransfer.files, bar);
+  });
+  document.addEventListener("paste", (e) => {
+    const ta = e.target.closest && e.target.closest(SEL);
+    if (!ta || !e.clipboardData) return;
+    const files = Array.from(e.clipboardData.files || []);
+    if (!files.length) return;  // 글자 붙여넣기는 그대로
+    e.preventDefault();
+    const bar = barOf(ta); if (bar) runOcr(files, bar);
   });
   attach(document);
   new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && attach(n)))).observe(document.body, { childList: true, subtree: true });
@@ -225,4 +252,48 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
   });
   attach(document);
   new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && attach(n)))).observe(document.body, { childList: true, subtree: true });
+})();
+
+
+// ---------------------------------------------------------------- 파일 올리는 칸: 끌어다 놓기·붙여넣기(Ctrl+V)
+// 시험지 올리기 등 input[type=file] 을 넓은 칸으로 감싸서, 파일을 끌어다 놓거나 캡처한 그림을 붙여넣어도 들어가게.
+(function () {
+  const inputs = Array.from(document.querySelectorAll('input[type="file"]')).filter((i) => !i.hidden && i.offsetParent !== null && !i.closest(".no-drop"));
+  if (!inputs.length) return;
+  const accepts = (inp, f) => {
+    const acc = (inp.accept || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
+    if (!acc.length) return true;
+    const n = (f.name || "").toLowerCase(), t = (f.type || "").toLowerCase();
+    return acc.some((a) => (a.startsWith(".") ? n.endsWith(a) : a.endsWith("/*") ? t.startsWith(a.slice(0, -1)) : t === a));
+  };
+  const put = (inp, files, add) => {
+    files = Array.from(files).filter((f) => accepts(inp, f));
+    if (!files.length) return false;
+    const dt = new DataTransfer();
+    if (add && inp.multiple) Array.from(inp.files || []).forEach((f) => dt.items.add(f));
+    (inp.multiple ? files : files.slice(0, 1)).forEach((f, k) => dt.items.add(f.name ? f : new File([f], `붙여넣은그림-${Date.now()}-${k}.png`, { type: f.type || "image/png" })));
+    inp.files = dt.files;
+    inp.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  };
+  inputs.forEach((inp) => {
+    const zone = document.createElement("div");
+    zone.className = "drop-zone";
+    inp.parentNode.insertBefore(zone, inp);
+    zone.appendChild(inp);
+    zone.insertAdjacentHTML("beforeend", '<div class="dz-hint">📥 파일을 여기로 끌어다 놓거나, 캡처한 그림을 <b>Ctrl+V</b>로 붙여넣어도 돼요</div>');
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("on"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("on"));
+    zone.addEventListener("drop", (e) => { e.preventDefault(); zone.classList.remove("on"); put(inp, e.dataTransfer.files, true); });
+  });
+  // 붙여넣기: 글 쓰는 칸이 아닌 곳에서 Ctrl+V 하면 화면의 (첫) 파일 칸에 추가
+  document.addEventListener("paste", (e) => {
+    if (e.defaultPrevented || !e.clipboardData) return;
+    const t = e.target;
+    if (t && (t.closest("textarea") || (t.closest("input") && t.type !== "file") || t.isContentEditable)) return;
+    const files = Array.from(e.clipboardData.files || []);
+    if (!files.length) return;
+    const inp = inputs.find((i) => files.some((f) => accepts(i, f)));
+    if (inp && put(inp, files, true)) { e.preventDefault(); inp.closest(".drop-zone").scrollIntoView({ block: "center", behavior: "smooth" }); }
+  });
 })();
