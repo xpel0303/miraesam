@@ -259,7 +259,7 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
 // ---------------------------------------------------------------- 파일 올리는 칸: 끌어다 놓기·붙여넣기(Ctrl+V)
 // 시험지 올리기 등 input[type=file] 을 넓은 칸으로 감싸서, 파일을 끌어다 놓거나 캡처한 그림을 붙여넣어도 들어가게.
 (function () {
-  const inputs = Array.from(document.querySelectorAll('input[type="file"]')).filter((i) => !i.hidden && i.offsetParent !== null && !i.closest(".no-drop"));
+  const inputs = Array.from(document.querySelectorAll('input[type="file"]')).filter((i) => !i.hidden && getComputedStyle(i).display !== "none" && !i.closest(".no-drop, [hidden]"));
   if (!inputs.length) return;
   const accepts = (inp, f) => {
     const acc = (inp.accept || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);

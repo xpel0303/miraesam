@@ -12,10 +12,10 @@
 </div>
 <div class="field">
   <label for="b-units">목차 <span class="hint" style="display:inline">한 줄에 단원 하나 · 순서대로</span></label>
-  <textarea id="b-units" name="units" rows="8" placeholder="1강 글의 목적&#10;2강 심경·분위기&#10;3강 주장&#10;…">{{ (b.units or [])|join('\n') if b else '' }}</textarea>
+  <textarea id="b-units" name="units" rows="8" placeholder="1강 글의 목적&#10;2강 심경·분위기&#10;3강 주장&#10;…&#10;&#10;(목차 사진·PDF를 여기에 끌어다 놓거나 Ctrl+V 로 붙여넣어도 돼요)">{{ (b.units or [])|join('\n') if b else '' }}</textarea>
   <div class="actions" style="margin-top:6px">
     <label class="btn ghost small" style="margin:0">📷 목차 사진으로 채우기 (AI)<input type="file" id="toc-file" accept="image/*,application/pdf" multiple hidden></label>
-    <span class="small muted" id="toc-msg">목차 쪽을 찍어 올리면 AI가 단원 목록으로 바꿔 줘요. 사진은 저장하지 않아요.</span>
+    <span class="small muted" id="toc-msg">목차 사진·PDF를 위 칸에 <b>끌어다 놓거나 Ctrl+V</b>로 붙여넣어도 AI가 단원 목록으로 바꿔 줘요. 사진은 저장하지 않아요.</span>
   </div>
 </div>
 <div class="row">
@@ -34,9 +34,10 @@
 <script>
 (() => {
   const f = document.getElementById("toc-file"), msg = document.getElementById("toc-msg"), ta = document.getElementById("b-units"), title = document.getElementById("b-title");
-  f.addEventListener("change", async () => {
-    if (!f.files.length) return;
-    const fd = new FormData(); [...f.files].forEach((x) => fd.append("files", x));
+  async function readToc(files) {
+    files = [...files].filter((x) => /^image\//.test(x.type) || /pdf/.test(x.type) || /\.(pdf|png|jpe?g|heic|webp)$/i.test(x.name || ""));
+    if (!files.length) return;
+    const fd = new FormData(); files.forEach((x, k) => fd.append("files", x, x.name || `목차${k + 1}.png`));
     msg.textContent = "AI가 목차를 읽는 중이에요… (10~30초)";
     try {
       const r = await fetch("/care/book-toc", { method: "POST", body: fd }); const j = await r.json();
@@ -46,7 +47,13 @@
       if (!title.value.trim() && j.title) title.value = j.title;
       msg.textContent = `✓ 단원 ${j.units.length}개를 넣었어요. 틀린 곳은 고친 뒤 저장해 주세요.`;
     } catch (e) { msg.textContent = "⚠️ 연결이 끊겼어요. 다시 해 주세요."; }
-    f.value = "";
-  });
+  }
+  f.addEventListener("change", async () => { await readToc(f.files); f.value = ""; });
+  // 목차 칸에 끌어다 놓기 · 붙여넣기(그림이면 AI로, 글자면 그대로)
+  const hasFiles = (dt) => dt && [...(dt.types || [])].includes("Files");
+  ta.addEventListener("dragover", (e) => { if (hasFiles(e.dataTransfer)) { e.preventDefault(); ta.classList.add("ocr-drop"); } });
+  ta.addEventListener("dragleave", () => ta.classList.remove("ocr-drop"));
+  ta.addEventListener("drop", (e) => { if (!hasFiles(e.dataTransfer)) return; e.preventDefault(); ta.classList.remove("ocr-drop"); readToc(e.dataTransfer.files); });
+  ta.addEventListener("paste", (e) => { const fl = [...((e.clipboardData && e.clipboardData.files) || [])]; if (fl.length) { e.preventDefault(); readToc(fl); } });
 })();
 </script>
