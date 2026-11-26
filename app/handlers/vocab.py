@@ -44,14 +44,30 @@ def build(ctx: JobContext) -> dict:
         names = spec.passage_names(ps)
         have = {w.get("src") or "" for w in words if w.get("word")}
         # 아직 단어가 없는 지문만 뽑기 — 중간에 오류·재시작으로 다시 돌 때도 앞 지문만 남고 끝나지 않게
+        failed: list[str] = []
         todo_ps = [(n, p) for n, p in enumerate(ps) if names[n] not in have] if (not words or ctx.payload.get("count") or ctx.payload.get("missing")) else []
         if todo_ps:
             count = int(ctx.payload.get("count") or 0) or spec.per_passage_count(words) or 10
             seen = {w["word"].lower() for w in words if w.get("word")}
             for i, (n, p) in enumerate(todo_ps, 1):  # 지문마다 따로 뽑고, 앞 지문에 나온 단어는 빼기
                 ctx.step(f"{names[n]}에서 단어 {count}개 고르는 중 ({i}/{len(todo_ps)})", int(10 + 80 * (i - 1) / max(1, len(todo_ps))))
-                got = _ask(key, model, spec.extract_prompt(p["text"], count + 3, level), count + 3)
+                got, err = [], None
+                for _try in range(3):  # 한 지문이 실패해도(빈 답·끊김) 다시 묻고, 그래도 안 되면 다음 지문으로
+                    try:
+                        got = _ask(key, model, spec.extract_prompt(p["text"], count + 3, level), count + 3)
+                    except llm.LLMError as e:
+                        err = e
+                        if "API 키" in str(e) or "모델을 찾을 수" in str(e):
+                            raise
+                        continue
+                    if [w for w in got if w["word"].lower() not in seen]:
+                        break
                 new = [{**w, "src": names[n]} for w in got if w["word"].lower() not in seen][:count]
+                if not new:
+                    failed.append(names[n])
+                    if err:
+                        ctx.step(f"{names[n]} 단어를 못 뽑아서 다음 지문으로 넘어가요 ({err})", int(10 + 80 * i / max(1, len(todo_ps))))
+                    continue
                 seen |= {w["word"].lower() for w in new}
                 words = spec.order_by_passage(words + new, names)
                 _set(list_id, words=[dict(w) for w in words])  # 지문마다 저장
@@ -76,7 +92,12 @@ def build(ctx: JobContext) -> dict:
         if not words:
             raise llm.LLMError("단어를 하나도 받지 못했습니다.")
         missing = [w["word"] for w in words if not w.get("meaning")]
-        _set(list_id, words=words, status="done", error=(f"뜻을 채우지 못한 단어: {', '.join(missing[:8])}" if missing else None))
+        msgs = []
+        if failed:
+            msgs.append(f"단어를 못 뽑은 지문: {', '.join(failed)} — '빠진 지문 단어 뽑기'를 눌러 주세요")
+        if missing:
+            msgs.append(f"뜻을 채우지 못한 단어: {', '.join(missing[:8])}")
+        _set(list_id, words=words, status="done", error=(" / ".join(msgs) or None))
         return {"list_id": list_id, "count": len(words)}
     except llm.LLMError as e:
         _set(list_id, status="failed", error=str(e), words=words)
