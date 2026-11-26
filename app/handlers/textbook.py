@@ -58,10 +58,11 @@ def _answers(s: TextbookSet, ps: list[dict]) -> dict:
             add("s2", " / ".join(r["ko_blanks"]))
             add("s3", " / ".join(x["t"] for x in spec.marked(r["en"], r["en_blanks"]) if x["hit"]))
             add("s4", r["ko"])
-            add("s5", " / ".join(x["t"] for x in spec.marked(r["en"], [v["text"] for v in r["verbs"]]) if x["hit"]))
             add("s6", " / ".join(x["ans"] for x in spec.grammar_line(r["en"], r["grammar"]) if x.get("hit")))
             add("s8", r["en"])
             add("s9", r["en"])
+        if p.get("story"):
+            ans["s5"].append({"no": pi, "t": p["story"]["answer"], "pi": pi})
         ans["s7"].append({"no": pi, "t": " / ".join(f"{o['wrong']} → {o['text']}" for o in p["odd"]), "pi": pi})
     return ans
 
@@ -80,6 +81,8 @@ def render_textbook_pdf(ctx: JobContext, set_id: int) -> dict:
         for r in p["rows"]:
             k += 1
             r["no"] = k
+    for pi, p in enumerate(ps, 1):  # 이야기 순서배열은 문단마다 (AI 없이)
+        p["story"] = spec.story_order(p["rows"], seed=set_id * 1000 + pi)
     # Check(s10) 줄은 번호가 이어지게 미리 만듦
     no, check_ans, check_pi = 1, [], []
     for pi, p in enumerate(ps, 1):

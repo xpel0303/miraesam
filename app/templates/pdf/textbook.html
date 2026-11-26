@@ -4,19 +4,23 @@
   @font-face { font-family: "NanumSquareRound"; font-weight: 400; src: url("{{ font_dir }}/NanumSquareRoundR.woff2") format("woff2"); }
   @font-face { font-family: "NanumSquareRound"; font-weight: 700; src: url("{{ font_dir }}/NanumSquareRoundB.woff2") format("woff2"); }
   @font-face { font-family: "NanumSquareRound"; font-weight: 800; src: url("{{ font_dir }}/NanumSquareRoundEB.woff2") format("woff2"); }
+  @font-face { font-family: "Jua"; src: url("{{ font_dir }}/jua-korean.woff2") format("woff2"); }
+  @font-face { font-family: "Jua"; src: url("{{ font_dir }}/jua-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
   html { font-family: "NanumSquareRound", "Nanum Gothic", sans-serif; font-size: 9.6pt; }
-  :root { --gr: #1f8a5b; --gr-bg: #e7f4ec; --hl: #c0392b; --hl2: #2a5bd7; }
+  :root { --gr: #1B2A5C; --gr-bg: #EEF1F8; --hl: #1B2A5C; --hl2: #B5651D; --tag: #F4F6FA; }
+  .pdf-header { display: none; }
   .sec { break-before: page; }
   .sec.first { break-before: auto; }
-  .bar { display: flex; align-items: center; gap: 8pt; border-bottom: 1.2pt solid var(--gr); padding-bottom: 5pt; margin-bottom: 8pt; }
-  .bar .lsn { border: 1pt solid var(--gr); color: var(--gr); border-radius: 10pt; padding: 1pt 9pt; font-weight: 800; font-size: 10pt; }
-  .bar .nm { background: var(--gr); color: #fff; border-radius: 10pt; padding: 2pt 12pt; font-weight: 800; font-size: 11.5pt; }
-  .bar .wb { background: #f6e9a8; border-radius: 8pt; padding: 1pt 8pt; font-size: 8.5pt; font-weight: 700; }
+  .bar { display: flex; align-items: center; gap: 8pt; border-bottom: 2pt solid var(--gr); padding-bottom: 5pt; margin-bottom: 8pt; }
+  .bar .lsn { color: var(--ink-2); font-weight: 800; font-size: 9pt; }
+  .bar .nm { font-family: Jua; color: var(--gr); font-size: 17pt; line-height: 1.1; }
+  .bar .wb { background: var(--tag); border: 0.6pt solid #c9d0e2; color: var(--gr); border-radius: 4pt; padding: 1pt 7pt; font-size: 8.5pt; font-weight: 700; }
+  .bar img { height: 20pt; }
   .bar .bk { margin-left: auto; font-size: 8.5pt; font-weight: 700; color: var(--ink-2); }
   .ins { font-size: 9pt; font-weight: 700; margin: 0 0 9pt; }
   .ins:before { content: "◗ "; color: var(--gr); }
-  .ph { background: var(--gr-bg); border-radius: 5pt; padding: 3pt 8pt; margin: 10pt 0 6pt; font-weight: 800; font-size: 9.5pt; break-after: avoid; }
-  .ph .k { display: inline-block; background: var(--gr); color: #fff; border-radius: 3pt; padding: 0 5pt; margin-right: 6pt; }
+  .ph { background: var(--gr-bg); border-radius: 5pt; padding: 3pt 8pt; margin: 10pt 0 6pt; font-family: Jua; font-size: 11pt; color: var(--gr); break-after: avoid; }
+  .ph .k { display: inline-block; background: var(--gr); color: #fff; border-radius: 3pt; padding: 0 6pt; margin-right: 6pt; }
   table.two { width: 100%; border-collapse: collapse; table-layout: fixed; }
   table.two td { border: 0; border-bottom: 0.4pt dotted var(--line); padding: 3.5pt 5pt; vertical-align: top; line-height: 1.6; }
   table.two td.e { width: 57%; } table.two td.k { width: 43%; font-size: 8.8pt; color: var(--ink-2); }
@@ -40,22 +44,29 @@
   table.chk td.k { width: 36%; font-size: 8.3pt; color: var(--ink-2); line-height: 1.7; }
   sup.n { color: var(--gr); font-weight: 800; font-size: 6.5pt; }
   .key { columns: 2; column-gap: 14pt; font-size: 8.4pt; line-height: 1.55; }
-  .key h3 { font-size: 9.5pt; color: var(--gr); margin: 6pt 0 3pt; break-after: avoid; }
+  .key h3 { font-family: Jua; font-weight: 400; font-size: 11pt; color: var(--gr); margin: 6pt 0 3pt; break-after: avoid; }
   .key div { break-inside: avoid; }
   .key h3.kp { color: var(--ink); border-bottom: 0.8pt solid var(--gr); padding-bottom: 1pt; margin-top: 8pt; }
   .key .kh { font-weight: 800; color: var(--gr); margin: 3pt 0 1pt; }
-  .pban { display: flex; align-items: center; gap: 8pt; background: var(--gr); color: #fff; border-radius: 8pt; padding: 5pt 10pt; font-weight: 800; font-size: 12pt; margin-bottom: 8pt; }
-  .pban .k { background: #fff; color: var(--gr); border-radius: 50%; width: 16pt; height: 16pt; line-height: 16pt; text-align: center; font-size: 10pt; }
-  .pban .bk { margin-left: auto; font-size: 8.5pt; font-weight: 700; opacity: .9; }
+  .pban { display: flex; align-items: center; gap: 8pt; border-bottom: 2pt solid var(--gr); color: var(--gr); padding: 0 0 6pt; font-family: Jua; font-size: 16pt; margin-bottom: 8pt; }
+  .pban img { height: 20pt; }
+  .pban .k { background: var(--gr); color: #fff; border-radius: 4pt; padding: 0 7pt; font-size: 12pt; }
+  .pban .bk { margin-left: auto; font-family: NanumSquareRound; font-size: 8.5pt; font-weight: 700; color: var(--ink-2); }
   .sub { margin: 0 0 10pt; }
   .sbar { display: flex; align-items: center; gap: 6pt; border-bottom: 1pt solid var(--gr); padding-bottom: 3pt; margin: 10pt 0 6pt; break-after: avoid; }
-  .sbar .wb { background: #f6e9a8; border-radius: 8pt; padding: 1pt 8pt; font-size: 8.5pt; font-weight: 700; }
-  .sbar .nm { color: var(--gr); font-weight: 800; font-size: 10.5pt; }
+  .sbar .wb { background: var(--gr); color: #fff; font-family: Jua; font-weight: 400; border-radius: 4pt; padding: 1pt 7pt; font-size: 9.5pt; }
+  .sbar .nm { color: var(--gr); font-family: Jua; font-size: 12pt; }
   .sub .ins { break-after: avoid; }
+  @page { @bottom-right { content: "미래샘 영어연구소"; font-family: NanumSquareRound; font-weight: 700; font-size: 8pt; color: #1B2A5C; } }
+  .story { border: 0.7pt solid #aab2c8; border-radius: 4pt; padding: 6pt 9pt; line-height: 1.7; margin: 0 0 6pt; }
+  .story .g { background: var(--gr-bg); border-radius: 3pt; padding: 4pt 7pt; margin-bottom: 5pt; }
+  .story p { margin: 0 0 4pt; } .story b { color: var(--gr); }
+  .sans { margin: 2pt 0 12pt; font-weight: 700; }
+  .sans span { display: inline-block; width: 34pt; border-bottom: 0.7pt solid var(--ink); margin: 0 3pt; }
 {% endblock %}
 
 {% macro bar(k, name) %}
-<div class="bar"><span class="lsn">Lesson {{ s.options.lesson or "" }}</span><span class="nm">{{ name }}</span><span class="wb">워크북 {{ k }}</span><span class="bk">{{ s.options.book or s.title }}</span></div>
+<div class="bar">{% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% else %}<img src="static/logo-word.png" alt="미래샘">{% endif %}<span class="nm">{{ name }}</span><span class="lsn">Lesson {{ s.options.lesson or "" }}</span><span class="wb">워크북 {{ k }}</span><span class="bk">{{ s.options.book or s.title }}</span></div>
 {% endmacro %}
 {% macro mk(parts, cls="hit") %}{% for x in parts %}{% if x.hit %}<span class="{{ cls }}">{{ x.t }}</span>{% else %}{{ x.t }}{% endif %}{% endfor %}{% endmacro %}
 {% macro blanks(parts) %}{% for x in parts %}{% if x.hit %}<span class="bl"></span>{% else %}{{ x.t }}{% endif %}{% endfor %}{% endmacro %}
@@ -71,7 +82,11 @@
     {% elif key == "s4" %}
       {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.en }}</div><div class="ln"></div><div class="ln"></div></div>{% endfor %}
     {% elif key == "s5" %}
-      {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.ko }}</div><div class="a">{{ mk(spec.verb_line(r.en, r.verbs), "ch") }}</div></div>{% endfor %}
+      {% if p.story %}
+      <div class="story">{% if p.story.given %}<div class="g">{{ p.story.given }}</div>{% endif %}
+        {% for x in p.story.parts %}<p><b>({{ x.label }})</b> {{ x.text }}</p>{% endfor %}</div>
+      <div class="sans">{% if p.story.given %}주어진 글 →{% endif %}{% for x in p.story.parts %}<span></span>{% if not loop.last %}→{% endif %}{% endfor %}</div>
+      {% else %}<p class="small muted">문장이 너무 적어 이 문단은 빠졌어요.</p>{% endif %}
     {% elif key == "s6" %}
       {% for r in p.rows %}<div class="it"><div class="q"><b class="no">{{ r.no }}.</b>{{ r.ko }}</div><div class="a">{{ mk(spec.grammar_line(r.en, r.grammar), "ch") }}</div></div>{% endfor %}
     {% elif key == "s7" %}
@@ -98,7 +113,7 @@
 {# 지문별: 지문 하나마다 새 쪽 → 그 지문의 워크북 1~10단계를 이어서 #}
 {% for p in passages %}{% set pi = loop.index %}
 <div class="sec{% if loop.first %} first{% endif %}">
-  <div class="pban"><span class="k">{{ pi }}</span>{{ p.title or ("문단 " ~ pi) }}<span class="bk">Lesson {{ s.options.lesson or "" }} · {{ s.options.book or s.title }}</span></div>
+  <div class="pban">{% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% else %}<img src="static/logo-word.png" alt="미래샘">{% endif %}<span class="k">{{ pi }}</span>{{ p.title or ("문단 " ~ pi) }}<span class="bk">Lesson {{ s.options.lesson or "" }} · {{ s.options.book or s.title }}</span></div>
   {% for key, name, ins in sections %}{% set wk = spec.SECTION_KEYS.index(key) + 1 %}
   <div class="sub">
     <div class="sbar"><span class="wb">워크북 {{ wk }}</span><span class="nm">{{ name }}</span></div>

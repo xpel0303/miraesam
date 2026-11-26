@@ -4,7 +4,7 @@
   2 빈칸 연습(우리말) 영문 보고 해석의 빈칸 채우기
   3 빈칸 연습(영문)   해석 보고 영문의 빈칸 채우기
   4 해석 연습        영문만, 해석 쓰기
-  5 동사형 연습      (동사원형) 알맞게 고쳐 쓰기
+  5 이야기 순서배열   문단을 3~5덩어리로 나눠 섞고 글의 순서 맞추기 (코드가 만듦)
   6 어법 선택형      [맞는 것 / 틀린 것] 고르기
   7 어색한 곳 찾기    문단마다 문맥상 어색한 낱말 3개 찾아 고치기
   8 순서배열         의미 덩어리를 섞어 주고 배열
@@ -26,7 +26,7 @@ SECTIONS = [
     ("s2", "빈칸 연습 (우리말)", "영문을 보고 우리말 해석을 완성하시오."),
     ("s3", "빈칸 연습 (영문)", "우리말 해석을 보고 영문을 완성하시오."),
     ("s4", "해석 연습", "영어 문장을 읽고 우리말 해석을 쓰시오."),
-    ("s5", "동사형 연습", "괄호 안에 주어진 단어를 알맞게 고쳐 쓰세요."),
+    ("s5", "이야기 순서배열", "주어진 글 다음에 이어질 내용을 글의 흐름에 맞게 순서대로 배열하시오."),
     ("s6", "어법 선택형 연습", "괄호 안에서 어법상 알맞은 것을 골라 보세요."),
     ("s7", "어색한 곳 찾기 연습", "다음 글에서 문맥상 어색한 낱말 세 개를 찾아 쓰고, 알맞은 표현으로 고쳐 쓰시오."),
     ("s8", "순서배열 연습", "다음 우리말과 같은 뜻이 되도록 주어진 단어 및 어구를 알맞게 배열해 보세요."),
@@ -36,7 +36,7 @@ SECTIONS = [
 SECTION_KEYS = [k for k, _, _ in SECTIONS]
 
 SYSTEM_PROMPT = """당신은 한국 고등학교 교과서 본문 워크북(본문 해석지·빈칸·어법·배열·영작 연습지)을 만드는 교재 저자입니다. JSON 객체 하나로만 답합니다.
-- 영어 표시(blank, verbs.text, grammar.text, odd.text, chunks)는 문장에 있는 글자를 하나도 바꾸지 않고 그대로 옮깁니다.
+- 영어 표시(blank, grammar.text, odd.text, chunks)는 문장에 있는 글자를 하나도 바꾸지 않고 그대로 옮깁니다.
 - 해석은 자연스러운 한국어로, 문장마다 따로."""
 
 
@@ -49,7 +49,6 @@ def prompt(sentences: list[tuple[int, str]], with_odd: bool, level: str = "", fi
              '    "ko": "이 문장의 자연스러운 우리말 해석",',
              '    "en_blanks": ["시험에 잘 나오는 핵심 어휘·어구 1~3개 (문장 글자 그대로, 1~3단어씩, 문장 순서대로)"],',
              '    "ko_blanks": ["위 해석(ko)에서 빈칸으로 만들 핵심 낱말 1~3개 (ko 글자 그대로, 조사는 빼고)"],',
-             '    "verbs": [{"text": "문장 속 동사 부분 그대로 (예: is also being produced)", "base": "괄호에 줄 원형 (예: also, produce)"}],  // 문장의 동사·준동사 거의 전부',
              '    "grammar": [{"text": "문장 속 어법 포인트 부분 그대로 (1~3단어)", "wrong": "그럴듯한 틀린 형태"}],  // 1~3개: 수일치·시제·태·분사·to부정사/동명사·관계사·접속사·형용사/부사·대명사',
              '    "chunks": ["순서배열용 의미 덩어리 (1~4단어). 덩어리를 띄어쓰기로 이으면 문장과 글자가 똑같아야 함"],',
              '    "keywords": ["영작 연습 힌트: 문장의 내용어를 원형으로, 문장에 나오는 순서대로 (예: planet, become, warmer)"]',
@@ -60,8 +59,7 @@ def prompt(sentences: list[tuple[int, str]], with_odd: bool, level: str = "", fi
     lines += ["}"]
     if target:
         lines += ["", f"목표어법: {target}",
-                  "- grammar(어법 포인트)는 문장에 목표어법이 쓰인 곳이 있으면 그 부분을 먼저 고르세요 (없는 문장은 평소대로).",
-                  "- verbs도 목표어법과 관련된 동사·준동사(분사, to부정사, 동명사, 수동태 등)는 빠뜨리지 마세요."]
+                  "- grammar(어법 포인트)는 문장에 목표어법이 쓰인 곳이 있으면 그 부분을 먼저 고르세요 (없는 문장은 평소대로)."]
     lines += ["", "본문 (문장 번호):"]
     lines += [f"[{n}] {s}" for n, s in sentences]
     if fix:
@@ -284,3 +282,29 @@ def check_line(row: dict, odd: dict | None, no: int, answers: list[str]) -> tupl
     if cur < len(en):
         out.append({"t": en[cur:], "hit": False})
     return out, no
+
+
+LABELS = "ABCDE"
+
+
+def story_order(rows: list[dict], seed: int = 0) -> dict | None:
+    """이야기 순서배열: 문단 문장을 이어진 덩어리 3~5개로 나눔. 덩어리가 4개 이상이면 첫 덩어리는 '주어진 글'.
+    → {given, parts: [{label, text}] (섞인 순서), answer: "(B)-(A)-(C)"}"""
+    ens = [r["en"] for r in rows]
+    n = len(ens)
+    if n < 3:
+        return None
+    m = min(5, n)
+    bounds = [round(i * n / m) for i in range(m + 1)]
+    groups = [" ".join(ens[bounds[i]:bounds[i + 1]]) for i in range(m)]
+    given = groups.pop(0) if m >= 4 else ""
+    idx = list(range(len(groups)))
+    rng = random.Random(seed or n)
+    shown = idx[:]
+    for _ in range(20):
+        rng.shuffle(shown)
+        if shown != idx:
+            break
+    label = {g: LABELS[k] for k, g in enumerate(shown)}  # 원래 g번째 덩어리 → 보이는 이름
+    return {"given": given, "parts": [{"label": label[g], "text": groups[g]} for g in shown],
+            "answer": "-".join(f"({label[g]})" for g in idx)}
