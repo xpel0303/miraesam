@@ -7,7 +7,7 @@ AI 답은 본문과 맞는지 검사해서(단어가 본문에 있나, 빈칸 �
 import random
 import re
 
-MAX_PASSAGES = 10
+MAX_PASSAGES = 50
 LEVELS = ["", "중3", "고1", "고2", "고3"]
 CIRCLED = "①②③④⑤"
 

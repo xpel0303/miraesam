@@ -7,8 +7,9 @@
 @font-face { font-family: "Jua"; src: url("{{ font_dir }}/jua-korean.woff2"); }
 @font-face { font-family: "Jua"; src: url("{{ font_dir }}/jua-latin.woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
 @page { size: A4; margin: 13mm 13mm 14mm;
-  @bottom-center { content: counter(page) " / " counter(pages); font-family: NSR; font-size: 8pt; color: #777; }
+  @bottom-center { content: {% if chunked %}counter(page){% else %}counter(page) " / " counter(pages){% endif %}; font-family: NSR; font-size: 8pt; color: #777; }
   @bottom-right { content: "미래샘 영어연구소"; font-family: NSR; font-weight: 700; font-size: 8pt; color: #1B2A5C; } }
+{% if chunked %}@page :first { counter-reset: page {{ page_offset + 1 }}; }{% endif %}
 * { box-sizing: border-box; }
 html { font-family: NSR, sans-serif; font-size: 9.6pt; line-height: 1.55; color: #1a1d29; }
 body { margin: 0; }

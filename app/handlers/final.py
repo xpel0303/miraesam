@@ -31,8 +31,8 @@ def render_final_pdf(ctx: JobContext, set_id: int) -> dict:
     items = [{"title": p.get("title") or f"지문 {i + 1}", "d": p["data"], "pts": spec.points(p["data"], stages)}
              for i, p in enumerate(s.passages) if p.get("status") == "done" and p.get("data")]
     base = {"academy": academy, "s": s, "items": items, "stages": stages, "spec": spec}
-    test = render_pdf("pdf/final.html", {**base, "doc_title": s.title, "part": "test"})
-    key = render_pdf("pdf/final.html", {**base, "doc_title": f"{s.title} · 정답", "part": "key"})
+    test = render_pdf("pdf/final.html", {**base, "doc_title": s.title, "part": "test"}, chunk_key="items", chunk=8)
+    key = render_pdf("pdf/final.html", {**base, "doc_title": f"{s.title} · 정답", "part": "key"}, chunk_key="items", chunk=8)
     fid = ctx.save_file(f"{s.title}_본문숙지테스트.pdf", "application/pdf", test)
     kid = ctx.save_file(f"{s.title}_본문숙지테스트_정답.pdf", "application/pdf", key)
     with session_scope() as db:
