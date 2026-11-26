@@ -54,7 +54,7 @@ def manifest(s: str = ""):
         "short_name": "미래샘 숙제" if code else "미래샘 교사",
         "id": f"/s/{code}" if code else "/",
         "start_url": f"/s/{code}" if code else "/",
-        "scope": "/",
+        "scope": f"/s/{code}" if code else "/",  # 학생 앱은 그 학생 화면만 — 선생님 앱(/)이 깔린 폰에서도 따로 설치되게
         "display": "standalone",
         "background_color": "#FFF4E6",
         "theme_color": "#1B2A5C",
