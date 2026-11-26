@@ -1,0 +1,31 @@
+{# 어법 문제 한 문항 (PDF 시험지·학생 숙제 화면이 같이 씀) #}
+{% macro gq(q, n, stems, circled, letters) %}
+  <div class="q">
+  {% if q.type == "paren" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.paren }}</div>
+    <div class="box">{{ q.before }}(<span class="opt">{{ q.options[0] }}</span> / <span class="opt">{{ q.options[1] }}</span>){{ q.after }}</div>
+  {% elif q.type == "blank" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.blank }}</div>
+    <div class="box">{{ q.sentence }}</div>
+    <div class="ch">{% for c in q.choices %}<div>{{ circled[loop.index0] }} {{ c }}</div>{% endfor %}</div>
+  {% elif q.type == "pick" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.pick_right if q.ask == "right" else stems.pick_wrong }}</div>
+    <div class="ch">{% for c in q.choices %}<div>{{ circled[loop.index0] }} {{ c }}</div>{% endfor %}</div>
+  {% elif q.type == "arrange" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.arrange }}</div>
+    <div>{{ q.ko }}</div>
+    <div class="bank">({{ q.given|join(" / ") }})</div>
+    {% if q.condition %}<div class="cond">조건: {{ q.condition }}</div>{% endif %}
+    <div class="ln"></div>
+  {% elif q.type == "transform" %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems.transform }}</div>
+    <div class="box">{{ q.original }}</div>
+    <div class="cond">→ {{ q.instruction }}</div>
+    <div class="ln"></div><div class="ln"></div>
+  {% else %}
+    <div class="stem"><span class="n">{{ n }}.</span>{{ stems[q.type] }}</div>
+    <div class="box ps">{% for pc in q.pieces %}{% if pc.mark is none %}{{ pc.text }}{% else %}<span class="mk">{{ (circled if q.type == "under5" else letters)[pc.mark] }}</span><span class="u">{{ pc.text }}</span>{% endif %}{% endfor %}</div>
+    {% if q.type == "count" %}<div class="ch">{% for k in range(5) %}<div>{{ circled[k] }} {{ k + 1 }}개</div>{% endfor %}</div>{% endif %}
+  {% endif %}
+  </div>
+{% endmacro %}

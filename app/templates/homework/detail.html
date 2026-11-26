@@ -74,6 +74,9 @@
     <div class="field"><label>반</label><div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 0 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.name }}</label>{% endfor %}</div>
       {% include "homework/_pick_students.html" %}</div>
     <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" {% if h.options.reveal %}checked{% endif %}> 제출하면 틀린 문제의 정답·해설 보여 주기</label>
+    {% set qn = namespace(has=False, on=False) %}{% for t in h.tasks if t.kind == "omr" and (t.source or "")[:8] in ("variant:", "grammar:") %}{% set qn.has = True %}{% if t["items"]|selectattr("q")|list %}{% set qn.on = True %}{% endif %}{% endfor %}
+    {% if qn.has %}<input type="hidden" name="has_qtoggle" value="1"><br>
+    <label style="font-weight:400"><input type="checkbox" name="show_q" value="1" {% if qn.on %}checked{% endif %}> 변형문제·어법 문제를 학생 화면에 <b>문제도 보여 주기</b></label>{% endif %}
     <label style="font-weight:400"><input type="checkbox" name="active" value="1" {% if h.active %}checked{% endif %}> 학생 화면에 보이기 (끄면 숙제 닫기)</label>
     <button class="btn small" type="submit" style="margin-top:8px">저장</button>
     <p class="small muted" style="margin:8px 0 0">할 일 목록은 학생 기록이 꼬이지 않도록 바꿀 수 없어요. 바꾸려면 새 숙제를 내 주세요.</p>

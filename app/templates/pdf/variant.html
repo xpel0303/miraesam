@@ -32,6 +32,7 @@
   .ans .why { color: var(--ink-2); }
 {% endblock %}
 
+{% from "pdf/_variant_q.html" import vq %}
 {% macro choices(list) %}<div class="ch">{% for c in list %}<div>{{ circled[loop.index0] }} {{ c }}</div>{% endfor %}</div>{% endmacro %}
 
 {% block body %}
@@ -42,44 +43,8 @@
 
 <div class="cols">
 {% for q in qs %}
-  {% set n = loop.index %}{% set t = q.type %}
-  <div class="q">
-    {% if q.view %}{% set v = q.view %}
-    <div class="stem"><span class="n">{{ n }}.</span>{{ v.stem }} <span class="src">[지문 {{ q.p + 1 }}{% if q.ptitle %} · {{ q.ptitle }}{% endif %}]</span></div>
-    {% if v.passage %}<div class="box">{{ rich(v.passage) }}</div>{% endif %}
-    {% if v.box %}<div class="sum">{% if v.box_title %}<div style="text-align:center;font-weight:700;font-size:8.5pt">{{ v.box_title }}</div>{% endif %}{{ v.box }}</div>{% endif %}
-    {% if v.choices %}{{ choices(v.choices) }}{% endif %}
-    {% for _ in range(v.lines) %}<div class="wline"></div>{% endfor %}
-    {% if v.kind == "sa" and q.type == "sa_grammar" %}<div class="small" style="font-size:8.5pt">기호: ______ → __________ &nbsp; 기호: ______ → __________</div>{% endif %}
-  </div>
-  {% else %}
-    <div class="stem"><span class="n">{{ n }}.</span>{{ stems["match_" ~ q.ask] if t == "match" else stems[t] }}
-      <span class="src">[지문 {{ q.p + 1 }}{% if q.ptitle %} · {{ q.ptitle }}{% endif %}]</span></div>
-    {% set text = vs.passages[q.p].text %}
-    {% if t in ("topic", "title", "gist", "match") %}
-      <div class="box">{{ text }}</div>{{ choices(q.choices) }}
-    {% elif t == "blank" %}
-      <div class="box">{{ q.before }}<span class="blank">&nbsp;</span>{{ q.after }}</div>{{ choices(q.choices) }}
-    {% elif t == "order" %}
-      <div class="box">{{ q.intro }}</div>
-      {% for k in "ABC" %}<div class="part"><b>({{ k }})</b>{{ q.parts[k] }}</div>{% endfor %}
-      {{ choices(orders) }}
-    {% elif t == "insert" %}
-      <div class="given">{{ q.given }}</div>
-      <div class="box">{% for s in q.sentences %}{{ s }} {% if loop.index0 in q.gaps %}<span class="gap">( {{ circled[q.gaps.index(loop.index0)] }} )</span> {% endif %}{% endfor %}</div>
-    {% elif t == "irrelevant" %}
-      <div class="box">{{ q.lead }} {% for s in q.numbered %}<b>{{ circled[loop.index0] }}</b> {{ s }} {% endfor %}{{ q.tail }}</div>
-    {% elif t == "summary" %}
-      <div class="box">{{ text }}</div>
-      <div class="down">↓</div>
-      <div class="sum">{{ q.summary }}</div>
-      <table class="pairs"><tr><th></th><th>(A)</th><th></th><th>(B)</th></tr>
-        {% for a, b in q.choices %}<tr><td>{{ circled[loop.index0] }}</td><td>{{ a }}</td><td>……</td><td>{{ b }}</td></tr>{% endfor %}</table>
-    {% elif t == "vocab" %}
-      <div class="box">{% for pc in q.pieces %}{% if pc.mark is none %}{{ pc.text }}{% else %}<span class="mk">{{ circled[pc.mark] }}</span><span class="u">{{ pc.text }}</span>{% endif %}{% endfor %}</div>
-    {% endif %}
-  </div>
-  {% endif %}
+  {% set n = loop.index %}
+  {{ vq(q, n, vs, stems, circled, orders, rich) }}
 {% endfor %}
 </div>
 

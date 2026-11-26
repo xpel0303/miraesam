@@ -271,3 +271,51 @@ def for_student(h, sid: int) -> bool:
     """반 안에서 학생을 골라 낸 숙제면 그 학생만 (options.students 가 비어 있으면 반 전체)."""
     ids = (h.options or {}).get("students") or []
     return not ids or sid in ids
+
+
+def _q_env():
+    from ..web import templates
+    return templates.env
+
+
+def variant_questions(vs) -> dict[int, dict]:
+    """학생 화면에 보일 변형문제 (번호 → {html}). PDF 시험지와 같은 틀(pdf/_variant_q.html)로 그림. 정답은 넣지 않음."""
+    from ..grammar.spec import place_marks
+    from ..variant import spec as vspec
+    from ..variant.spec import CIRCLED, LETTERS  # noqa: F401
+    tpl = _q_env().from_string('{% from "pdf/_variant_q.html" import vq %}{{ vq(q, n, vs, stems, circled, orders, rich) }}')
+    out = {}
+    for i, q0 in enumerate(vs.questions or []):
+        q = dict(q0)
+        try:
+            if q["type"] == "vocab":
+                q["pieces"] = place_marks(q["passage"], q["marks"])
+            q["ptitle"] = vs.passages[q["p"]].get("title", "")
+            q["view"] = vspec.view(q, vs.passages[q["p"]]["text"])
+            out[i + 1] = {"html": tpl.render(q=q, n=i + 1, vs=vs, stems=vspec.STEMS, circled=CIRCLED, orders=vspec.ORDER_CHOICES, rich=vspec.rich)}
+        except Exception:  # 옛 형식 문항 등은 번호만 (종이로)
+            continue
+    return out
+
+
+def grammar_questions(gs) -> dict[int, dict]:
+    """학생 화면에 보일 어법 문제 (번호 → {html}). PDF와 같은 틀(pdf/_grammar_q.html)."""
+    from ..grammar import spec as gspec
+    tpl = _q_env().from_string('{% from "pdf/_grammar_q.html" import gq %}{{ gq(q, n, stems, circled, letters) }}')
+    out = {}
+    for i, q0 in enumerate(gs.questions or []):
+        q = dict(q0)
+        try:
+            if q["type"] in gspec.PASSAGE_TYPES:
+                q["pieces"] = gspec.place_marks(q["passage"], q["marks"])
+            out[i + 1] = {"html": tpl.render(q=q, n=i + 1, stems=gspec.STEMS, circled=gspec.CIRCLED, letters=gspec.LETTERS)}
+        except Exception:
+            continue
+    return out
+
+
+def with_questions(task: dict, qmap: dict[int, dict]) -> dict:
+    for it in task.get("items") or []:
+        if it["n"] in qmap:
+            it["q"] = qmap[it["n"]]
+    return task

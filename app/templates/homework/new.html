@@ -17,7 +17,8 @@
       {% if classes %}{% set picked = [] %}{% include "homework/_pick_students.html" %}{% endif %}
     </div>
     <div class="field"><label for="memo">안내 문구 <span class="hint">선택. 학생 화면 맨 위와 카톡 문구에 들어가요.</span></label><input type="text" id="memo" name="memo" value="{{ form.memo or '' }}"></div>
-    <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" {% if form.reveal %}checked{% endif %}> 제출하면 틀린 문제의 정답·해설 보여 주기</label>
+    <label style="font-weight:400"><input type="checkbox" name="reveal" value="1" {% if form.reveal %}checked{% endif %}> 제출하면 틀린 문제의 정답·해설 보여 주기</label><br>
+    <label style="font-weight:400"><input type="checkbox" name="show_q" value="1" {% if form.show_q %}checked{% endif %}> 변형문제·어법 문제는 학생 화면에 <b>문제도 보여 주기</b> <span class="small muted">(끄면 종이에 풀고 답만 입력)</span></label>
   </section>
 
   <section class="panel">

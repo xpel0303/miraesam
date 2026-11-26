@@ -1,9 +1,11 @@
+import copy
 """숙제 (선생님 화면): 숙제 내기 → 반 학생 진행 표 → 카톡 안내·독촉 문구 복사."""
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import func, delete, select
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
@@ -136,9 +138,13 @@ def _build_tasks(db: Session, aid: int, f) -> tuple[list[dict], list[str]]:
                     errors.append(f"할 일 {n}: 이 워크북에 OX 문항이 없어요.")
                     continue
             elif kind == "variant":
-                t = spec.task_omr(f"변형문제 답 입력 · {obj.title}", f"variant:{obj.id}", spec.variant_key(obj), g(passes, "0"))
+                t = spec.task_omr(f"변형문제 · {obj.title}", f"variant:{obj.id}", spec.variant_key(obj), g(passes, "0"))
+                if f.get("show_q") == "1":
+                    spec.with_questions(t, spec.variant_questions(obj))
             else:
-                t = spec.task_omr(f"어법 문제 답 입력 · {obj.title}", f"grammar:{obj.id}", spec.grammar_key(obj), g(passes, "0"))
+                t = spec.task_omr(f"어법 문제 · {obj.title}", f"grammar:{obj.id}", spec.grammar_key(obj), g(passes, "0"))
+                if f.get("show_q") == "1":
+                    spec.with_questions(t, spec.grammar_questions(obj))
             tasks.append(t)
         else:
             errors.append(f"할 일 {n}: 종류를 다시 골라 주세요.")
@@ -184,7 +190,7 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
-    return render(request, "homework/new.html", {"teacher": teacher, "form": {"reveal": True}, "classes": _classes(db, teacher), "roster": roster(db, teacher.academy_id),
+    return render(request, "homework/new.html", {"teacher": teacher, "form": {"reveal": True, "show_q": True}, "classes": _classes(db, teacher), "roster": roster(db, teacher.academy_id),
                                                  "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "stage_sets": spec.STAGE_SETS, "ox_levels": spec.OX_LEVELS,
                                                  "max": spec.MAX_TASKS, "active": "care"})
 
@@ -200,7 +206,7 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
     if not class_ids:
         errors.append("숙제를 낼 반을 골라 주세요.")
     if errors:
-        form = {"title": title, "due": f.get("due"), "memo": f.get("memo"), "reveal": f.get("reveal") == "1", "class_ids": {int(x) for x in class_ids}}
+        form = {"title": title, "due": f.get("due"), "memo": f.get("memo"), "reveal": f.get("reveal") == "1", "show_q": f.get("show_q") == "1", "class_ids": {int(x) for x in class_ids}}
         return render(request, "homework/new.html", {"teacher": teacher, "form": form, "errors": errors, "classes": _classes(db, teacher), "roster": roster(db, teacher.academy_id),
                                                      "src": _sources(db, teacher.academy_id), "modes": QUIZ_MODES, "stage_sets": spec.STAGE_SETS, "ox_levels": spec.OX_LEVELS,
                                                      "max": spec.MAX_TASKS, "active": "care"}, 400)
@@ -286,6 +292,20 @@ async def edit(hid: int, request: Request, teacher: Teacher = Depends(current_te
     h.memo = str(f.get("memo", "")).strip()[:1000]
     h.active = f.get("active") == "1"
     h.options = {**(h.options or {}), "reveal": f.get("reveal") == "1"}
+    if f.get("has_qtoggle") == "1":  # 변형·어법 숙제: 학생 화면에 문제 보여 주기 켜고 끄기
+        show = f.get("show_q") == "1"
+        tasks = copy.deepcopy(h.tasks or [])
+        for t in tasks:
+            kind, _, ref = str(t.get("source") or "").partition(":")
+            if t.get("kind") != "omr" or kind not in ("variant", "grammar") or not ref.isdigit():
+                continue
+            for it in t.get("items") or []:
+                it.pop("q", None)
+            obj = db.get(VariantSet if kind == "variant" else GrammarSet, int(ref)) if show else None
+            if obj is not None and obj.academy_id == h.academy_id:
+                spec.with_questions(t, spec.variant_questions(obj) if kind == "variant" else spec.grammar_questions(obj))
+        h.tasks = tasks
+        flag_modified(h, "tasks")
     _set_classes(db, h, teacher, f.getlist("class_id"))
     db.flush()
     _set_students(db, h, f)

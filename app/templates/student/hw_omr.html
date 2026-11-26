@@ -1,13 +1,31 @@
 {% extends "student/_base.html" %}
 {% block title %}{{ t.title }} · {{ APP_NAME }}{% endblock %}
 {% block body %}
+<style>
+  .sqh { margin: 18px 0 6px; line-height: 1.7; font-size: 15px; }
+  .sqh .stem { font-weight: 700; margin-bottom: 4px; }
+  .sqh .n { color: var(--brand, #1B2A5C); font-weight: 800; margin-right: 4px; }
+  .sqh .src { font-size: 12px; color: #888; font-weight: 400; }
+  .sqh .box, .sqh .sum { border: 1px solid var(--line, #dde); border-radius: 10px; padding: 10px 12px; margin: 6px 0; background: #fff; }
+  .sqh .given { border: 1.5px solid #555; border-radius: 8px; padding: 8px 12px; margin: 6px 0; background: #fff; }
+  .sqh .part { margin: 6px 0 0; } .sqh .down { text-align: center; color: #999; }
+  .sqh .blank { display: inline-block; min-width: 90px; border-bottom: 1.5px solid #333; }
+  .sqh .gap { font-weight: 700; white-space: nowrap; }
+  .sqh .u { text-decoration: underline; text-underline-offset: 3px; } .sqh .mk { font-weight: 700; font-size: 13px; margin-right: 1px; }
+  .sqh .ch { margin: 6px 0 0; } .sqh .ch div { padding-left: 18px; text-indent: -18px; margin: 2px 0; }
+  .sqh .opt, .sqh .bank { font-weight: 700; } .sqh .cond { font-size: 13px; color: #666; }
+  .sqh .wline, .sqh .ln { display: none; }
+  .sqh table.pairs { font-size: 14px; } .sqh table.pairs td, .sqh table.pairs th { padding: 2px 6px; border: 0; }
+</style>
 <p class="small muted" style="margin:0"><a href="/s/{{ code }}/hw/{{ h.id }}">{{ h.title }}</a></p>
 <h1 style="font-size:1.25rem">{{ t.title }}</h1>
-<p class="small muted">{% if qs %}문제를 읽고 답을 눌러 주세요.{% else %}종이에 푼 답을 번호대로 눌러 주세요. 문항 번호는 시험지 번호와 같아요.{% endif %}{% if txt %} 영어로 쓰는 문항은 칸에 직접 적어요. (대소문자·마침표는 달라도 괜찮아요)<br>※ 쓰는 문항은 자동 채점이라, 맞게 썼는데 틀리면 선생님께 말씀드려 주세요.{% endif %}</p>
+<p class="small muted">{% if qs %}문제를 읽고 답을 눌러 주세요. 화면에 없는 번호는 종이 시험지로 풀어요.{% else %}종이에 푼 답을 번호대로 눌러 주세요. 문항 번호는 시험지 번호와 같아요.{% endif %}{% if txt %} 영어로 쓰는 문항은 칸에 직접 적어요. (대소문자·마침표는 달라도 괜찮아요)<br>※ 쓰는 문항은 자동 채점이라, 맞게 썼는데 틀리면 선생님께 말씀드려 주세요.{% endif %}</p>
 <form method="post" action="/s/{{ code }}/hw/{{ h.id }}/{{ i }}" id="omr">
   {% for n in nums %}
     {% set q = qs.get(n) if qs else None %}
-    {% if q %}
+    {% if q and q.html %}
+    <div class="sqh">{{ q.html|safe }}</div>
+    {% elif q %}
     <div class="sq" style="margin:14px 0 6px;line-height:1.65">
       {% if q.head %}<p style="margin:0 0 4px;font-weight:700"><span class="en" style="display:inline">{{ n }}.</span> {{ q.head|bt }}</p>{% endif %}
       {% if q.passage %}<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:4px 0;white-space:pre-line;background:#fff">{{ q.passage|bt }}</div>{% endif %}
