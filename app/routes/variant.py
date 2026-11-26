@@ -75,8 +75,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         errors.append("만들 유형을 하나 이상 골라 주세요.")
     for i, p in enumerate(passages, 1):
         n = len(split_sentences(p["text"]))
-        if len(p["text"]) > 4000:
-            errors.append(f"지문 {i}이 너무 깁니다 (4000자까지).")
+        if len(p["text"]) > 6000:
+            errors.append(f"지문 {i}이 너무 깁니다 (6000자까지).")
         short = [spec.TYPES[t] for t in ("order", "insert", "irrelevant") if t in types and n < spec.MIN_SENTENCES[t]]
         if short and n < 4 and f.get("mode") != "mix":
             errors.append(f"지문 {i}은 {n}문장이라 {', '.join(short)} 문제를 만들기엔 짧아요.")

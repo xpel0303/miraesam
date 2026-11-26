@@ -351,7 +351,17 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
   const read = (card) => { const o = {}; FIELDS(card).forEach((e) => { o[e.name] = e.value; }); return o; };
   const cards = () => Array.from(document.querySelectorAll(".passage-card"));
   function writeAll(list) {
-    const add = document.getElementById("add-passage");
+    const add = document.getElementById("add-passage"), y = window.scrollY, f = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function () {};  // '지문 추가'가 맨 아래 새 칸으로 화면을 끌고 가지 않게
+    try { _write(list, add); } finally { HTMLElement.prototype.focus = f; window.scrollTo(0, y); }
+  }
+  function flash(from, n) {  // 나눠서 새로 생긴(바뀐) 지문 칸을 잠깐 표시
+    cards().slice(from, from + n).forEach((c) => {
+      c.style.transition = "box-shadow .3s"; c.style.boxShadow = "0 0 0 3px #f2b84b";
+      setTimeout(() => { c.style.boxShadow = ""; }, 1800);
+    });
+  }
+  function _write(list, add) {
     while (cards().length < list.length) { if (add.disabled) break; add.click(); }
     while (cards().length > list.length) { const r = cards().at(-1).querySelector("[data-remove]"); if (!r) break; r.click(); }
     cards().forEach((c, i) => { const v = list[i] || {}; FIELDS(c).forEach((e) => { e.value = v[e.name] ?? ""; e.dispatchEvent(new Event("input", { bubbles: true })); }); });
@@ -398,12 +408,15 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
       list.splice(i, 2, { ...cur, p_text: [cur.p_text.trim(), nx.p_text.trim()].filter(Boolean).join("\n\n"), p_title: title || nx.p_title });
       writeAll(list); attach();
       cards()[i].querySelector(".split-msg").textContent = "아래 지문을 합쳤어요.";
+      flash(i, 1);
       return;
     }
     if (list.length - 1 + parts.length > MAX) { msg.textContent = `지문은 ${MAX}개까지라 다 나눌 수 없어요.`; return; }
     list.splice(i, 1, ...parts.map((t, k) => piece(t, k + 1)));
     writeAll(list); attach();
-    cards()[i].querySelector(".split-msg").textContent = `${parts.length}개로 나눴어요.`;
+    cards()[i].querySelector(".split-msg").textContent = `${parts.length}개로 나눴어요. 바로 아래 칸들에 들어갔어요.`;
+    flash(i, parts.length);
+    const below = cards()[i + 1]; if (below) below.scrollIntoView({ behavior: "smooth", block: "center" });
   });
   document.addEventListener("DOMContentLoaded", attach);
   document.addEventListener("click", (e) => { if (e.target.closest("#add-passage")) setTimeout(attach, 0); });

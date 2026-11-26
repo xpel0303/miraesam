@@ -75,8 +75,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         errors.append("만들 문제가 없어요. 유형별 문항 수를 정하거나, 지문을 넣고 지문형 문제를 골라 주세요.")
     if not target and not passages:
         errors.append("목표어법을 쓰거나 지문을 넣어 주세요.")
-    if any(len(p) > 4000 for p in passages):
-        errors.append("지문은 하나에 4000자까지예요.")
+    if any(len(p) > 6000 for p in passages):
+        errors.append("지문은 하나에 6000자까지예요.")
     if not teacher.gemini_key_enc:
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 먼저 넣어 주세요.")
     if errors:

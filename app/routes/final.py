@@ -67,8 +67,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         x = " ".join(str(x).split())
         if not x:
             continue
-        if len(x) > 4000:
-            errors.append(f"지문 {i + 1}이 너무 깁니다 (4000자까지).")
+        if len(x) > 6000:
+            errors.append(f"지문 {i + 1}이 너무 깁니다 (6000자까지).")
         elif len(spec.split_sentences(x)) < 3:
             errors.append(f"지문 {i + 1}이 너무 짧아요 (세 문장 이상).")
         passages.append({"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "text": x, "status": "waiting"})

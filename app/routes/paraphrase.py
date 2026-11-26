@@ -67,8 +67,8 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         x = " ".join(str(x).split())
         if not x:
             continue
-        if len(x) > 4000:
-            errors.append(f"지문 {i + 1}이 너무 깁니다 (4000자까지).")
+        if len(x) > 6000:
+            errors.append(f"지문 {i + 1}이 너무 깁니다 (6000자까지).")
         passages.append({"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "text": x, "strength": strength, "status": "waiting"})
     if not passages:
         errors.append("지문을 하나 이상 넣어 주세요.")
