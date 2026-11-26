@@ -21,6 +21,7 @@
   table.kt { border-collapse: collapse; }
   table.kt td { border: 0; vertical-align: top; padding: 0 34pt 0 0; font-size: 10pt; line-height: 1.85; }
   table.kt .kh { font-size: 11pt; font-weight: 700; color: var(--ink-3); padding: 0 0 6pt 6pt; display: block; }
+  table.kt .an-no { font-weight: 800; color: var(--brand); font-size: 11pt; }
   table.kt .src { font-weight: 800; color: var(--brand); }
 {% endblock %}
 
@@ -88,7 +89,7 @@
   {% for g in blocks %}
   {% if g.src %}<div class="gh">{{ g.src }}</div>{% endif %}
   <table class="kt"><tr>
-    <td>{% if g.mc %}<span class="kh">객관식 정답</span>{% for q in g.mc %}{{ loop.index }}번: {{ q.answer }}<br>{% endfor %}{% endif %}</td>
+    <td>{% if g.mc %}<span class="kh">객관식 정답</span>{% for q in g.mc %}{{ loop.index }}번: <b class="an-no">{{ circled[q.ans_no - 1] if q.ans_no else "" }}</b> {{ q.answer }}<br>{% endfor %}{% endif %}</td>
     <td>{% if g.sa %}<span class="kh">주관식 정답</span>{% for q in g.sa %}{{ loop.index }}번: {{ q.answer }}<br>{% endfor %}{% endif %}</td>
   </tr></table>
   {% endfor %}
