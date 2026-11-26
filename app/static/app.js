@@ -343,3 +343,69 @@ document.querySelectorAll(".job[data-job-id]").forEach(watchJob);
     }
   });
 })();
+
+// 지문 나누기·합치기: 지문 카드(.passage-card)가 있고 '지문 추가' 버튼이 있는 화면에서.
+// 카드 내용을 목록으로 모아 고친 뒤, 카드 수를 '지문 추가'/'이 지문 빼기' 버튼으로 맞추고 다시 채움 (화면마다 번호 매기기는 그 화면 코드가 함).
+(function () {
+  const FIELDS = (card) => Array.from(card.querySelectorAll('input[name^="p_"], textarea[name^="p_"], select[name^="p_"]'));
+  const read = (card) => { const o = {}; FIELDS(card).forEach((e) => { o[e.name] = e.value; }); return o; };
+  const cards = () => Array.from(document.querySelectorAll(".passage-card"));
+  function writeAll(list) {
+    const add = document.getElementById("add-passage");
+    while (cards().length < list.length) { if (add.disabled) break; add.click(); }
+    while (cards().length > list.length) { const r = cards().at(-1).querySelector("[data-remove]"); if (!r) break; r.click(); }
+    cards().forEach((c, i) => { const v = list[i] || {}; FIELDS(c).forEach((e) => { e.value = v[e.name] ?? ""; e.dispatchEvent(new Event("input", { bubbles: true })); }); });
+  }
+  function paragraphs(t) {
+    t = t.replace(/\r/g, "").trim();
+    let ps = t.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
+    if (ps.length < 2) ps = t.split(/\n/).map((x) => x.trim()).filter(Boolean);
+    return ps;
+  }
+  function attach() {
+    if (!document.getElementById("add-passage")) return;
+    cards().forEach((card) => {
+      const ta = card.querySelector('textarea[name="p_text"]');
+      if (!ta || card.querySelector(".split-bar")) return;
+      ta.insertAdjacentHTML("afterend",
+        '<div class="split-bar" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 0">' +
+        '<button type="button" class="btn ghost small" data-split="para" style="padding:3px 10px;font-size:12.5px" title="빈 줄(또는 줄바꿈)마다 지문을 나눠요">✂️ 단락별로 나누기</button>' +
+        '<button type="button" class="btn ghost small" data-split="caret" style="padding:3px 10px;font-size:12.5px" title="글 안을 한 번 클릭해 커서를 둔 다음 누르세요">✂️ 커서 위치에서 나누기</button>' +
+        '<button type="button" class="btn ghost small" data-split="merge" style="padding:3px 10px;font-size:12.5px" title="바로 아래 지문을 이 지문 뒤에 붙여요">🔗 아래 지문과 합치기</button>' +
+        '<span class="small muted split-msg"></span></div>');
+    });
+  }
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-split]");
+    if (!btn) return;
+    document.querySelectorAll(".split-msg").forEach((m) => { m.textContent = ""; });
+    const card = btn.closest(".passage-card"), all = cards(), i = all.indexOf(card), msg = card.querySelector(".split-msg");
+    const ta = card.querySelector('textarea[name="p_text"]'), list = all.map(read), cur = list[i];
+    const MAX = Number((document.getElementById("count-note")?.textContent.match(/\/\s*(\d+)/) || [])[1]) || 99;
+    const title = cur.p_title || "";
+    const piece = (text, k) => ({ ...cur, p_text: text, p_title: title ? `${title} (${k})` : "" });
+    let parts = null;
+    if (btn.dataset.split === "para") {
+      parts = paragraphs(ta.value);
+      if (parts.length < 2) { msg.textContent = "나눌 단락(빈 줄)이 없어요. 커서를 두고 '커서 위치에서 나누기'를 써 보세요."; return; }
+    } else if (btn.dataset.split === "caret") {
+      const at = ta.selectionStart || 0, a = ta.value.slice(0, at).trim(), b = ta.value.slice(at).trim();
+      if (!a || !b) { msg.textContent = "나눌 곳을 글 안에서 한 번 클릭한 다음 눌러 주세요."; return; }
+      parts = [a, b];
+    } else {
+      if (i === all.length - 1) { msg.textContent = "아래에 합칠 지문이 없어요."; return; }
+      const nx = list[i + 1];
+      list.splice(i, 2, { ...cur, p_text: [cur.p_text.trim(), nx.p_text.trim()].filter(Boolean).join("\n\n"), p_title: title || nx.p_title });
+      writeAll(list); attach();
+      cards()[i].querySelector(".split-msg").textContent = "아래 지문을 합쳤어요.";
+      return;
+    }
+    if (list.length - 1 + parts.length > MAX) { msg.textContent = `지문은 ${MAX}개까지라 다 나눌 수 없어요.`; return; }
+    list.splice(i, 1, ...parts.map((t, k) => piece(t, k + 1)));
+    writeAll(list); attach();
+    cards()[i].querySelector(".split-msg").textContent = `${parts.length}개로 나눴어요.`;
+  });
+  document.addEventListener("DOMContentLoaded", attach);
+  document.addEventListener("click", (e) => { if (e.target.closest("#add-passage")) setTimeout(attach, 0); });
+  if (document.readyState !== "loading") attach();
+})();
