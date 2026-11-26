@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ s.title }} · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/final">직전대비</a></p>
+<h1>{{ s.title }}</h1>
+<p class="lead">본문 숙지 확인 테스트 · 지문 {{ s.passages|length }}개{% if s.options.level %} · {{ s.options.level }}{% endif %} · {{ s.teacher.name if s.teacher else "" }} · {{ s.created_at|kst("%Y-%m-%d") }}</p>
+
+{% if busy %}<div class="job" data-job-id="{{ job.id }}" data-reload></div>
+{% elif job and job.status == "failed" %}<div class="flash error" role="alert">{{ job.error }}</div>{% endif %}
+
+<section class="panel">
+  <div class="panel-head"><h2>시험지 · 정답지</h2>
+    {% if not busy and not all_done %}<form method="post" action="/final/{{ s.id }}/retry"><button class="btn small" type="submit">못 만든 지문 이어서 만들기</button></form>{% endif %}</div>
+  {% if s.file_id %}<div class="actions"><a class="btn" href="/files/{{ s.file_id }}" target="_blank" rel="noopener">시험지 PDF</a>{% if s.options.key_file_id %}<a class="btn" href="/files/{{ s.options.key_file_id }}" target="_blank" rel="noopener">정답·해설 PDF</a>{% endif %}</div>
+  {% elif busy %}<p class="muted small" style="margin:0">다 만들면 여기에 PDF가 생겨요. 지문 하나에 30초~1분쯤 걸려요.</p>{% else %}<p class="muted small" style="margin:0">아직 PDF가 없어요.</p>{% endif %}
+  {% if any_done and not busy %}
+  <form method="post" action="/final/{{ s.id }}/stages" style="margin-top:14px">
+    <p class="small" style="margin:0 0 6px"><b>넣을 단계 바꾸기</b> <span class="muted">— 재시험용으로 한 단계만 뽑을 때도 써요. AI는 다시 안 돌아요.</span></p>
+    <div class="chips">{% for k, st in spec.STAGES.items() %}<label class="chip"><input type="checkbox" name="stages" value="{{ k }}" {% if k in stages %}checked{% endif %}> {{ st.no }} {{ st.name }}</label>{% endfor %}
+      <button class="btn ghost small" type="submit">PDF 다시 만들기</button></div>
+  </form>{% endif %}
+</section>
+
+{% for p in s.passages %}{% set idx = loop.index0 %}{% set d = p.data %}
+<section class="panel" id="p{{ idx }}">
+  <div class="panel-head"><h2>{{ p.title or "지문 " ~ loop.index }}</h2>
+    <span class="tag">{% if p.status == "done" %}{{ pts[idx].values()|sum }}점 만점{% elif p.status == "failed" %}실패{% else %}만드는 중{% endif %}</span></div>
+  {% if p.status == "failed" and p.error %}<div class="flash error">{{ p.error }}</div>{% endif %}
+  {% if p.warnings %}<div class="flash small">{{ p.warnings|join(" / ") }}</div>{% endif %}
+  {% if p.status == "done" and d %}
+  <div class="table-wrap"><table class="list small">
+    <thead><tr><th>단계</th><th>문항</th><th>배점</th><th>미리 보기</th></tr></thead>
+    <tbody>
+      <tr><td>1 단어</td><td>{{ d.vocab|length }}</td><td>{{ pts[idx].vocab or "-" }}</td><td class="wrap">{{ d.vocab|map(attribute="word")|join(", ") }}</td></tr>
+      <tr><td>2 내용</td><td>{{ d.ox|length + (1 if d.topic else 0) }}</td><td>{{ pts[idx].content or "-" }}</td><td class="wrap">OX {{ d.ox|length }}개{% if d.topic %} + 주제{% endif %}{% if d.topic_ko %} · 주제: {{ d.topic_ko }}{% endif %}</td></tr>
+      <tr><td>3 핵심 표현</td><td>{{ d.blanks|length }}</td><td>{{ pts[idx].phrase or "-" }}</td><td class="wrap">{{ d.blanks|map(attribute="answer")|join(", ") }}</td></tr>
+      <tr><td>4 문장 구조</td><td>{{ d.fix|length + d.arrange|length + (1 if d.compose else 0) }}</td><td>{{ pts[idx].struct or "-" }}</td><td class="wrap">{% for f in d.fix %}{{ f.error }}→{{ f.fix }}{% if not loop.last %}, {% endif %}{% endfor %}{% if d.arrange %} · 배열 {{ d.arrange|length }}{% endif %}{% if d.compose %} · 영작 1{% endif %}</td></tr>
+      <tr><td>5 글 전체</td><td>{{ (1 if d.order else 0) + (1 if d.insert else 0) }}</td><td>{{ pts[idx].whole or "-" }}</td><td class="wrap">{% if d.order %}순서 정답 {{ spec.ORDER_CHOICES[d.order.answer - 1] }}{% endif %}{% if d.insert %} · 문장 넣기 정답 {{ "①②③④⑤"[d.insert.answer - 1] }}{% endif %}{% if not d.order and not d.insert %}지문이 짧아 빠짐{% endif %}</td></tr>
+    </tbody></table></div>
+  {% endif %}
+  {% if not busy and p.status in ("done", "failed") %}
+  <form method="post" action="/final/{{ s.id }}/regenerate/{{ idx }}" style="margin-top:10px" onsubmit="return confirm('이 지문 문제를 새로 만들까요?')"><button class="btn ghost small" type="submit">이 지문 문제 새로 만들기</button></form>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if not busy %}<form method="post" action="/final/{{ s.id }}/delete" onsubmit="return confirm('지울까요?')"><button class="btn danger small" type="submit">지우기</button></form>{% endif %}
+<style>.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:600;font-size:14px}.chip input{width:auto;margin:0}</style>
+<script>
+  document.addEventListener("job:done", (e) => { if (e.target.matches("[data-reload]")) setTimeout(() => location.reload(), 600); });
+  const watch = document.querySelector("[data-reload]");
+  if (watch) new MutationObserver(() => { if (watch.classList.contains("failed")) setTimeout(() => location.reload(), 1500); }).observe(watch, { attributes: true, attributeFilter: ["class"] });
+</script>
+{% endblock %}

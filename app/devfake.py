@@ -112,6 +112,8 @@ def fake_generate(prompt: str, *, system: str | None = None, json_mode: bool = F
         ids = ["u59", "u55"] if any(w in t for w in ("energy", "climate", "carbon", "ecosystem")) else ["u44", "u48"]
         return json.dumps({"topic": "가짜 주제", "links": [{"id": i, "fit": "높음" if k == 0 else "보통", "reason": "지문의 내용이 이 단원 개념과 이어져요 (가짜 답).",
                                                          "terms": ["지속가능성"]} for k, i in enumerate(ids)]}, ensure_ascii=False)
+    if system and "직전대비" in system:
+        return _final(prompt)
     if system and "영어 단어장" in system:
         return _vocab(prompt)
     if system and "어법 문제를 출제" in system:
@@ -403,3 +405,37 @@ def _textbook(prompt: str) -> dict:
     if '"odd"' in prompt:
         out["odd"] = odd
     return out
+
+
+def _final(prompt: str) -> dict:
+    """직전대비 가짜 답: 본문 [번호] 문장에서 바로 뽑음."""
+    sents = re.findall(r"^\[(\d+)\] (.+)$", prompt, re.M)
+    ss = [t for _, t in sents]
+    words = []
+    for t in ss:
+        for w in re.findall(r"[A-Za-z]{7,}", t):
+            if w.lower() not in [x.lower() for x in words]:
+                words.append(w)
+    blanks = []
+    for i, t in enumerate(ss, 1):
+        w = max(re.findall(r"[A-Za-z]{4,}", t) or ["the"], key=len)
+        blanks.append({"n": i, "answer": w})
+    fix = []
+    for i, t in enumerate(ss[1:], 2):
+        m = re.search(r"\b(is|are|was|were|has|have)\b", t)
+        if m and len(fix) < 3:
+            sw = {"is": "are", "are": "is", "was": "were", "were": "was", "has": "have", "have": "has"}[m[1]]
+            fix.append({"n": i, "wrong": t[:m.start()] + sw + t[m.end():], "error": sw, "fix": m[1], "why": "[가짜] 주어와 수 일치"})
+    arrange = []
+    for i, t in enumerate(ss, 1):
+        ws = t.rstrip(".").split()
+        if 8 <= len(ws) <= 16 and len(arrange) < 2:
+            k = len(ws) // 4
+            arrange.append({"n": i, "ko": f"[가짜] {i}번 문장 해석", "chunks": [" ".join(ws[j * k:(j + 1) * k if j < 3 else None]) for j in range(4)]})
+    return {"topic_ko": "[가짜] 글의 주제", "translations": [f"[가짜] {i}번 문장 해석" for i in range(1, len(ss) + 1)],
+            "vocab": [{"word": w, "meaning": f"[가짜] {w.lower()} 뜻"} for w in words[:12]],
+            "ox": [{"ko": f"[가짜] 내용 진술 {i}", "answer": "OX"[i % 2], "why": "[가짜] 바른 내용" if i % 2 else ""} for i in range(5)],
+            "topic": {"choices": ["the hidden cost of cheap products", "how to save money", "history of fashion", "new technology", "healthy diets"], "answer": 1},
+            "blanks": blanks[:9], "fix": fix, "arrange": arrange,
+            "compose": {"n": 1, "ko": "[가짜] 영작할 우리말", "conditions": ["[가짜] 조건 1", "[가짜] 조건 2", "[가짜] 조건 3"], "answer": ss[0] if ss else "", "grading": "[가짜] 채점 기준"},
+            "insert_n": max(2, len(ss) // 2 + 1)}

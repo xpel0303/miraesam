@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>{{ doc_title }}</title>
+<style>
+@font-face { font-family: "NSR"; font-weight: 400; src: url("{{ font_dir }}/NanumSquareRoundR.woff2"); }
+@font-face { font-family: "NSR"; font-weight: 700; src: url("{{ font_dir }}/NanumSquareRoundB.woff2"); }
+@font-face { font-family: "NSR"; font-weight: 800; src: url("{{ font_dir }}/NanumSquareRoundEB.woff2"); }
+@font-face { font-family: "Jua"; src: url("{{ font_dir }}/jua-korean.woff2"); }
+@font-face { font-family: "Jua"; src: url("{{ font_dir }}/jua-latin.woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
+@page { size: A4; margin: 13mm 13mm 14mm;
+  @bottom-center { content: counter(page) " / " counter(pages); font-family: NSR; font-size: 8pt; color: #777; }
+  @bottom-right { content: "미래샘 영어연구소"; font-family: NSR; font-weight: 700; font-size: 8pt; color: #1B2A5C; } }
+* { box-sizing: border-box; }
+html { font-family: NSR, sans-serif; font-size: 9.6pt; line-height: 1.55; color: #1a1d29; }
+body { margin: 0; }
+.top { display: flex; align-items: center; gap: 12pt; border-bottom: 2pt solid #1B2A5C; padding-bottom: 6pt; }
+.top img { height: 26pt; }
+.top h1 { font-family: Jua; font-weight: 400; font-size: 18pt; margin: 0; color: #1B2A5C; flex: 1; }
+.top .sub { font-size: 8.5pt; color: #555; text-align: right; }
+.who { display: flex; gap: 8pt; margin: 7pt 0 4pt; font-size: 9pt; }
+.who span { border: 0.8pt solid #999; border-radius: 4pt; padding: 3pt 8pt; flex: 1; }
+.who span.sc { flex: 0 0 120pt; text-align: right; font-weight: 700; }
+.rule { background: #F4F6FA; border-radius: 5pt; padding: 5pt 9pt; font-size: 8.4pt; color: #333; margin-bottom: 6pt; }
+.rule b { color: #1B2A5C; }
+.st { margin: 11pt 0 5pt; display: flex; align-items: center; gap: 7pt; break-after: avoid; }
+.st .no { background: #1B2A5C; color: #fff; font-family: Jua; font-size: 10pt; border-radius: 4pt; padding: 1pt 7pt; }
+.st h2 { font-family: Jua; font-weight: 400; font-size: 12.5pt; margin: 0; flex: 1; }
+.st .pt { font-size: 8.5pt; color: #555; }
+.q { margin: 0 0 5pt; }
+.q.keep { break-inside: avoid; }
+.fill p, table.w tr, .ch { break-inside: avoid; }
+.dir { break-after: avoid; }
+.dir { font-weight: 700; margin: 2pt 0 4pt; }
+table.w { width: 100%; border-collapse: collapse; }
+table.w td { border-bottom: 0.6pt solid #ccc; padding: 4.5pt 4pt; vertical-align: bottom; }
+table.w td.n { width: 18pt; color: #1B2A5C; font-weight: 800; }
+table.w td.e { width: 42%; }
+.ln { display: inline-block; border-bottom: 0.7pt solid #333; min-width: 80pt; height: 11pt; }
+.ox td.c { width: 50pt; text-align: center; font-weight: 700; color: #888; letter-spacing: 6pt; }
+.ch div { margin: 1pt 0 0 14pt; }
+.fill p { margin: 0 0 6pt; padding-left: 16pt; text-indent: -16pt; }
+.bl { display: inline-block; border-bottom: 0.8pt solid #333; min-width: 58pt; text-align: left; color: #1B2A5C; font-weight: 800; font-size: 9pt; padding-left: 2pt; text-indent: 0; }
+.box { border: 0.7pt solid #666; border-radius: 3pt; padding: 3pt 8pt; margin: 3pt 0 3pt 14pt; font-size: 9pt; }
+.write { margin: 3pt 0 0 14pt; border-bottom: 0.7pt dashed #555; height: 17pt; }
+.pass { border: 0.7pt solid #aaa; border-radius: 3pt; padding: 6pt 9pt; margin: 4pt 0; font-size: 9.2pt; line-height: 1.65; }
+.pass b { color: #1B2A5C; }
+.two { columns: 2; column-gap: 10mm; }
+.key h1 { font-family: Jua; font-weight: 400; color: #1B2A5C; font-size: 15pt; margin: 0 0 4pt; }
+.key .ks { break-inside: avoid; }
+.key h3 { font-family: Jua; font-weight: 400; font-size: 11pt; color: #fff; background: #1B2A5C; border-radius: 3pt; padding: 1pt 7pt; display: inline-block; margin: 8pt 0 3pt; }
+.key p { margin: 1.5pt 0; }
+.ex { color: #555; font-size: 8.4pt; }
+.orig { font-size: 8.8pt; line-height: 1.6; }
+.orig p { margin: 0 0 3pt; break-inside: avoid; } .orig .t { color: #555; font-size: 8.2pt; display: block; }
+.newpage { break-before: page; }
+.sum { display: flex; border: 0.8pt solid #1B2A5C; border-radius: 4pt; margin: 6pt 0 2pt; }
+.sum div { flex: 1; text-align: center; padding: 3pt; border-right: 0.6pt solid #ccd; font-size: 8pt; }
+.sum div:last-child { border-right: 0; }
+.sum b { display: block; font-size: 9pt; color: #1B2A5C; }
+</style></head><body>
+{% set CIR = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳" %}
+{% macro logo() %}{% if academy and academy.logo %}<img src="{{ academy.logo }}" alt="">{% else %}<img src="static/logo-word.png" alt="미래샘 영어연구소">{% endif %}{% endmacro %}
+{% macro stage(k, it, count) %}{% set S = spec.STAGES[k] %}<div class="st"><span class="no">{{ S.no }}단계</span><h2>{{ S.name }} — {{ S.sub }}</h2><span class="pt">{{ count }}문항 · {{ it.pts[k] }}점</span></div>{% endmacro %}
+
+{% for it in items %}{% set d = it.d %}{% set ns = namespace(q=0) %}
+{% set nv = d.vocab|length %}{% set cut = 6 if nv >= 9 else (nv * 3 // 5) %}
+{% if part == "test" %}
+<div class="{{ 'newpage' if not loop.first else '' }}">
+<div class="top">{{ logo() }}<h1>본문 숙지 확인 테스트</h1><span class="sub">{{ s.title }}<br>{{ it.title }}</span></div>
+<div class="who"><span>학교 / 반 :</span><span>이름 :</span><span class="sc">총점 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / {{ it.pts.values()|sum }}</span></div>
+<div class="sum">{% for k in stages if k in it.pts %}<div><b>{{ spec.STAGES[k].no }} {{ spec.STAGES[k].name }}</b>{{ it.pts[k] }}점</div>{% endfor %}</div>
+<div class="rule">※ 본문을 보지 않고 푸세요. <b>단계마다 80% 이상</b>이면 통과, 못 넘은 단계는 본문을 다시 보고 그 단계만 재시험을 봐요.{% if "whole" in it.pts and it.pts.whole %} <b>{{ spec.STAGES.whole.no }}단계(실전)는 앞 단계를 모두 통과한 뒤</b> 풀어요.{% endif %}</div>
+
+{% if "vocab" in it.pts and nv %}
+{{ stage("vocab", it, nv) }}
+<div class="q two">
+  <p class="dir">A. 영어 단어의 뜻을 쓰세요.</p>
+  <table class="w">{% for v in d.vocab[:cut] %}{% set ns.q = ns.q + 1 %}<tr><td class="n">{{ ns.q }}</td><td class="e">{{ v.word }}</td><td><span class="ln"></span></td></tr>{% endfor %}</table>
+  {% if d.vocab[cut:] %}<p class="dir">B. 우리말 뜻에 맞는 단어를 쓰세요. (첫 글자 힌트)</p>
+  <table class="w">{% for v in d.vocab[cut:] %}{% set ns.q = ns.q + 1 %}<tr><td class="n">{{ ns.q }}</td><td class="e">{{ v.meaning }}</td><td>{{ v.word[0]|lower }}<span class="ln"></span></td></tr>{% endfor %}</table>{% endif %}
+</div>
+{% endif %}
+
+{% if "content" in it.pts and it.pts.content %}
+{{ stage("content", it, d.ox|length + (1 if d.topic else 0)) }}
+{% if d.ox %}<div class="q"><p class="dir">본문 내용과 맞으면 O, 틀리면 X 에 동그라미 하세요.</p>
+  <table class="w ox">{% for x in d.ox %}{% set ns.q = ns.q + 1 %}<tr><td class="n">{{ ns.q }}</td><td>{{ x.ko }}</td><td class="c">O  X</td></tr>{% endfor %}</table></div>{% endif %}
+{% if d.topic %}{% set ns.q = ns.q + 1 %}<div class="q keep ch"><p class="dir">{{ ns.q }}. 글의 주제로 가장 알맞은 것은?</p>
+  {% for c in d.topic.choices %}<div>{{ CIR[loop.index0] }} {{ c }}</div>{% endfor %}</div>{% endif %}
+{% endif %}
+
+{% if "phrase" in it.pts and d.blanks %}
+{{ stage("phrase", it, d.blanks|length) }}
+<div class="q fill"><p class="dir" style="text-indent:0;padding-left:0">본문 문장을 떠올려 빈칸을 채우세요. (첫 글자 힌트, 한 칸에 한 단어)</p>
+  {% for b in d.blanks %}{% set ns.q = ns.q + 1 %}<p>{{ ns.q }}. {{ b.before }}<span class="bl">{{ b.answer[0]|lower }}</span>{{ b.after }}</p>{% endfor %}</div>
+{% endif %}
+
+{% if "struct" in it.pts and it.pts.struct %}
+{{ stage("struct", it, d.fix|length + d.arrange|length + (1 if d.compose else 0)) }}
+{% set L = namespace(c=0) %}
+{% if d.fix %}{% set L.c = L.c + 1 %}<div class="q"><p class="dir">{{ "ABC"[L.c - 1] }}. 어법상 틀린 곳을 찾아 바르게 고치세요. (각 4점)</p>
+  <div class="fill">{% for f in d.fix %}{% set ns.q = ns.q + 1 %}<p>{{ ns.q }}. {{ f.wrong }} &nbsp;&nbsp; <span class="bl" style="min-width:55pt"></span> → <span class="bl" style="min-width:55pt"></span></p>{% endfor %}</div></div>{% endif %}
+{% if d.arrange %}{% set L.c = L.c + 1 %}<div class="q"><p class="dir">{{ "ABC"[L.c - 1] }}. 우리말에 맞게 주어진 말을 배열하세요. (각 4점)</p>
+  {% for a in d.arrange %}{% set ns.q = ns.q + 1 %}<p style="margin:{{ '6pt' if not loop.first else '0' }} 0 0">{{ ns.q }}. {{ a.ko }}</p>
+  <div class="box">{{ a.chunks|join(" / ") }}</div><div class="write"></div>{% endfor %}</div>{% endif %}
+{% if d.compose %}{% set L.c = L.c + 1 %}{% set ns.q = ns.q + 1 %}<div class="q"><p class="dir">{{ "ABC"[L.c - 1] }}. 〈조건〉에 맞게 영작하세요. (5점)</p>
+  <p style="margin:0">{{ ns.q }}. {{ d.compose.ko }}</p>
+  {% if d.compose.conditions %}<div class="box"><b>〈조건〉</b> {% for c in d.compose.conditions %}{{ CIR[loop.index0] }} {{ c }} &nbsp; {% endfor %}</div>{% endif %}
+  <div class="write"></div><div class="write"></div></div>{% endif %}
+{% endif %}
+
+{% if "whole" in it.pts and it.pts.whole %}
+{{ stage("whole", it, (1 if d.order else 0) + (1 if d.insert else 0)) }}
+{% if d.order %}{% set ns.q = ns.q + 1 %}<div class="q keep"><p class="dir">{{ ns.q }}. 주어진 글 다음에 이어질 순서로 가장 알맞은 것은?</p>
+  <div class="pass">{{ d.order.given }}{% for p in d.order.parts %}<br><b>({{ p.label }})</b> {{ p.text }}{% endfor %}</div>
+  <div class="ch" style="display:flex;gap:16pt">{% for c in spec.ORDER_CHOICES %}<div style="margin-left:0">{{ CIR[loop.index0] }} {{ c }}</div>{% endfor %}</div></div>{% endif %}
+{% if d.insert %}{% set ns.q = ns.q + 1 %}<div class="q keep"><p class="dir">{{ ns.q }}. 글의 흐름으로 보아, 주어진 문장이 들어가기에 가장 알맞은 곳은?</p>
+  <div class="box" style="margin-left:0">{{ d.insert.sentence }}</div>
+  <div class="pass">{{ d.insert.text }}</div></div>{% endif %}
+{% endif %}
+</div>
+
+{% else %}{# ===== 정답 및 해설 ===== #}
+<div class="key {{ 'newpage' if not loop.first else '' }}">
+  <div class="top" style="margin-bottom:6pt">{{ logo() }}<h1 style="font-size:16pt">정답 및 해설</h1><span class="sub">{{ s.title }}<br>{{ it.title }}</span></div>
+  {% if d.topic_ko %}<p class="ex" style="margin:0 0 2pt">주제: {{ d.topic_ko }}</p>{% endif %}
+  <div class="two">
+  {% if "vocab" in it.pts and nv %}<div class="ks"><h3>1단계 단어</h3>
+    <p>{% for v in d.vocab[:cut] %}{% set ns.q = ns.q + 1 %}{{ ns.q }}. {{ v.meaning }} &nbsp; {% endfor %}</p>
+    {% if d.vocab[cut:] %}<p>{% for v in d.vocab[cut:] %}{% set ns.q = ns.q + 1 %}{{ ns.q }}. {{ v.word }} &nbsp; {% endfor %}</p>{% endif %}</div>{% endif %}
+  {% if "content" in it.pts and it.pts.content %}<div class="ks"><h3>2단계 내용</h3>
+    {% for x in d.ox %}{% set ns.q = ns.q + 1 %}<p>{{ ns.q }}. {{ x.answer }}{% if x.answer == "X" and x.why %} <span class="ex">— {{ x.why }}</span>{% endif %}</p>{% endfor %}
+    {% if d.topic %}{% set ns.q = ns.q + 1 %}<p>{{ ns.q }}. {{ CIR[d.topic.answer - 1] }}{% if d.topic_ko %} <span class="ex">— {{ d.topic_ko }}</span>{% endif %}</p>{% endif %}</div>{% endif %}
+  {% if "phrase" in it.pts and d.blanks %}<div class="ks"><h3>3단계 핵심 표현</h3>
+    <p>{% for b in d.blanks %}{% set ns.q = ns.q + 1 %}{{ ns.q }}. {{ b.answer }} &nbsp; {% endfor %}</p>
+    <p class="ex">※ 철자가 하나라도 틀리면 오답. 서술형 감점 습관을 여기서 잡아요.</p></div>{% endif %}
+  {% if "struct" in it.pts and it.pts.struct %}<div class="ks"><h3>4단계 문장 구조</h3>
+    {% for f in d.fix %}{% set ns.q = ns.q + 1 %}<p>{{ ns.q }}. {{ f.error }} → {{ f.fix }}{% if f.why %} <span class="ex">— {{ f.why }}</span>{% endif %}</p>{% endfor %}
+    {% for a in d.arrange %}{% set ns.q = ns.q + 1 %}<p>{{ ns.q }}. {{ a.answer }}</p>{% endfor %}
+    {% if d.compose %}{% set ns.q = ns.q + 1 %}<p>{{ ns.q }}. (예시) {{ d.compose.answer }}</p>{% if d.compose.grading %}<p class="ex">채점: {{ d.compose.grading }}</p>{% endif %}{% endif %}</div>{% endif %}
+  {% if "whole" in it.pts and it.pts.whole %}<div class="ks"><h3>5단계 글 전체</h3>
+    {% if d.order %}{% set ns.q = ns.q + 1 %}<p>{{ ns.q }}. {{ CIR[d.order.answer - 1] }} {{ spec.ORDER_CHOICES[d.order.answer - 1] }}</p>{% endif %}
+    {% if d.insert %}{% set ns.q = ns.q + 1 %}<p>{{ ns.q }}. {{ CIR[d.insert.answer - 1] }}</p>{% endif %}</div>{% endif %}
+  </div>
+  <h3>본문 · 해석</h3>
+  <div class="orig two">{% for t in d.sentences %}<p>{{ CIR[loop.index0] if loop.index0 < 20 else loop.index ~ "." }} {{ t }}{% if d.translations[loop.index0] %}<span class="t">{{ d.translations[loop.index0] }}</span>{% endif %}</p>{% endfor %}</div>
+</div>
+{% endif %}
+{% endfor %}
+{% if not items %}<p>만들어진 지문이 없어요.</p>{% endif %}
+</body></html>

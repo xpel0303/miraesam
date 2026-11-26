@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}직전대비 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<div class="panel-head" style="margin-bottom:4px"><h1>직전대비</h1><a class="btn" href="/final/new">새 본문 숙지 테스트</a></div>
+<p class="lead">시험 직전, 아이들이 본문을 정말 외웠는지 확인하는 5단계 시험지예요. 단어 → 내용 → 핵심 표현 → 문장 구조 → 글 전체 순서로, 단계마다 80% 넘으면 통과.</p>
+{% if sets %}
+<div class="table-wrap"><table class="list">
+  <thead><tr><th>제목</th><th>지문</th><th>만든 사람</th><th>만든 날</th><th></th></tr></thead>
+  <tbody>{% for s in sets %}
+    <tr><td class="wrap"><a href="/final/{{ s.id }}"><b>{{ s.title }}</b></a>
+        {% if s.passages|selectattr("status", "in", ["waiting", "making"])|list %} <span class="tag">만드는 중</span>{% elif s.passages|selectattr("status", "equalto", "failed")|list %} <span class="tag" style="color:var(--err)">일부 실패</span>{% endif %}</td>
+      <td>{{ s.passages|length }}개</td><td>{{ s.teacher.name if s.teacher else "" }}</td><td class="muted small">{{ s.created_at|kst("%Y-%m-%d") }}</td>
+      <td class="small">{% if s.file_id %}<a href="/files/{{ s.file_id }}" target="_blank" rel="noopener">시험지</a>{% endif %}
+        {% if s.options.key_file_id %} · <a href="/files/{{ s.options.key_file_id }}" target="_blank" rel="noopener">정답</a>{% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% else %}
+<div class="panel empty"><p>아직 만든 시험지가 없어요.</p><a class="btn" href="/final/new">첫 본문 숙지 테스트 만들기</a></div>
+{% endif %}
+{% endblock %}

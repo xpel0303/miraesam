@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}새 본문 숙지 테스트 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/final">직전대비</a></p>
+<h1>새 본문 숙지 테스트</h1>
+<p class="lead">시험 범위 본문을 넣으면 지문마다 5단계 시험지(100점)와 정답·해설지를 따로 만들어요. 문제는 모두 본문에서만 나와요.</p>
+{% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+<form method="post" action="/final">
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 전여고 2학년 기말 직전대비"></div>
+      <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in spec.LEVELS %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="field"><label>넣을 단계 <span class="hint">빼고 싶은 단계는 체크를 끄세요. 나중에 바꿔도 AI를 다시 안 돌려요</span></label>
+      <div class="chips">{% for k, st in spec.STAGES.items() %}
+        <label class="chip"><input type="checkbox" name="stages" value="{{ k }}" {% if k in form.stages %}checked{% endif %}> {{ st.no }}단계 {{ st.name }} <span class="muted small">· {{ st.sub }}</span></label>
+      {% endfor %}</div></div>
+    <p class="small muted" style="margin:0">1 단어 20점 · 2 내용 18점 · 3 핵심 표현 21점 · 4 문장 구조 25점 · 5 글 전체 16점 = 100점. 5단계(순서·문장 넣기)는 여섯 문장 이상인 지문에만 들어가요.</p>
+  </section>
+  <div id="passages">
+    {% for r in form.passages %}
+    <section class="panel passage-card">
+      <div class="panel-head"><h2>지문 <span data-num>{{ loop.index }}</span></h2><button class="linklike small" type="button" data-remove>이 지문 빼기</button></div>
+      <div class="field"><label>제목 <span class="hint">선택 · 예: 3과 본문, 모의고사 31번</span></label><input type="text" name="p_title" value="{{ r.title or '' }}"></div>
+      <div class="field"><label>영어 본문</label><textarea name="p_text" rows="7">{{ r.text or '' }}</textarea></div>
+    </section>
+    {% endfor %}
+  </div>
+  <p><button class="btn ghost" type="button" id="add-passage">지문 추가</button> <span class="small muted" id="count-note"></span></p>
+  <button class="btn" type="submit">시험지 만들기</button>
+</form>
+<style>.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:600}.chip input{width:auto;margin:0}</style>
+<script>
+  const MAX = {{ spec.MAX_PASSAGES }}, box = document.getElementById("passages"), addBtn = document.getElementById("add-passage");
+  function renumber() { const cards = box.querySelectorAll(".passage-card");
+    cards.forEach((c, i) => { c.querySelector("[data-num]").textContent = i + 1; c.querySelector("[data-remove]").hidden = cards.length === 1; });
+    addBtn.disabled = cards.length >= MAX; document.getElementById("count-note").textContent = `${cards.length} / ${MAX}개`; }
+  addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
+  box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
+  renumber();
+</script>
+{% endblock %}

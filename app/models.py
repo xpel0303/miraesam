@@ -994,3 +994,23 @@ class Briefing(Base):
     last_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+
+class FinalSet(Base):
+    """직전대비 본문 숙지 확인 테스트. passages: [{title, text, status, error, data(final.clean 결과)}]
+    options: {level, stages[], key_file_id}"""
+
+    __tablename__ = "final_sets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(120))
+    options: Mapped[dict] = mapped_column(JSON, default=dict)
+    passages: Mapped[list] = mapped_column(JSON, default=list)
+    file_id: Mapped[int | None] = mapped_column(ForeignKey("stored_files.id"), nullable=True)
+    last_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+
+    teacher: Mapped["Teacher | None"] = relationship()
