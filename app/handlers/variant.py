@@ -4,6 +4,7 @@ variant_build  : 지문마다 순서·삽입은 코드로, 나머지는 AI 한 �
                  지문 하나 끝날 때마다 저장(재시작하면 끝난 지문 건너뜀). 실패한 유형은 빼고 경고.
 variant_render : 고친 내용으로 PDF만 다시.
 """
+import random
 import secrets
 
 from .. import llm
@@ -47,7 +48,12 @@ def _one_round(key, model, vs: VariantSet, pi: int, types: list[str], k: int) ->
             warns.append(f"지문 {pi + 1} {spec.TYPES[t]}: 문장이 {spec.MIN_SENTENCES[t]}개 이상이어야 만들 수 있어요.")
 
     todo = [t for t in types if t in spec.AI_TYPES]
-    notes = [f"같은 지문으로 이미 낸 문제와 겹치지 않게, 다른 부분·다른 보기·다른 정답 위치로 새로 만드세요 ({k + 1}번째)."] if k else None
+    notes = [f"같은 지문으로 이미 낸 문제와 겹치지 않게, 다른 부분·다른 보기·다른 정답 위치로 새로 만드세요 ({k + 1}번째)."] if k else []
+    rng = random.Random(seed)
+    for t in todo:  # 정답 = 밑줄 위치인 유형은 위치를 골고루 (AI는 늘 같은 자리에 둠)
+        if t in spec.MARK_ANSWER_TYPES:
+            notes.append(f"{t}: 정답(틀린 것·다른 것)인 밑줄은 5개 중 {rng.randint(1, 5)}번째에 오게 하세요.")
+    notes = notes or None
     for _ in range(2):
         if not todo:
             break
@@ -142,6 +148,9 @@ def build(ctx: JobContext) -> dict:
                 row.questions, row.warnings = list(questions), list(warns)
         if not questions:
             raise llm.LLMError("문항을 하나도 만들지 못했습니다. " + " ".join(warns[:2]))
+        spec.balance_answers(questions, secrets.randbits(31))  # 같은 유형 정답이 한 번호로 몰리지 않게
+        with session_scope() as db:
+            db.get(VariantSet, set_id).questions = list(questions)
         if vs.options.get("mode") == "mix":  # 섞기: 배정표 순서(랜덤)대로 문항 순서를 바꿈
             pos = {(x["p"], x["type"], x.get("k", 0)): k for k, x in enumerate(vs.options.get("plan") or [])}
             questions.sort(key=lambda q: pos.get((q["p"], q["type"], q.get("k", 0)), 9999))

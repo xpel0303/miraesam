@@ -179,6 +179,35 @@ def plan_total(passages: list[dict], types: list[str], n: int, seed: int, shuffl
     return plan
 
 
+SWAP_TYPES = CHOICE_TYPES + ("summary", "link2")  # 보기 순서를 바꿔 정답 번호를 옮길 수 있는 유형
+MARK_ANSWER_TYPES = ("vocab", "grammar", "definition", "refer", "gram_explain")  # 정답 = 밑줄 위치 (AI에게 위치를 정해 줌)
+
+
+def move_answer(q: dict, target: int) -> None:
+    """정답 보기를 target 번(1~5)으로 옮김 (그 자리 보기와 맞바꿈)."""
+    ch, a = q.get("choices") or [], q.get("answer") or 0
+    if q.get("type") in SWAP_TYPES and len(ch) == 5 and 1 <= a <= 5 and 1 <= target <= 5 and a != target:
+        ch[a - 1], ch[target - 1] = ch[target - 1], ch[a - 1]
+        q["answer"] = target
+
+
+def balance_answers(qs: list[dict], seed: int) -> None:
+    """유형마다 정답 번호가 ①~⑤에 고르게 가도록 (AI는 정답을 ①에 자주 둠)."""
+    rng = random.Random(seed)
+    by: dict[str, list[dict]] = {}
+    for q in qs:
+        if q.get("type") in SWAP_TYPES:
+            by.setdefault(q["type"], []).append(q)
+    for group in by.values():
+        targets: list[int] = []
+        while len(targets) < len(group):
+            five = [1, 2, 3, 4, 5]
+            rng.shuffle(five)
+            targets += five
+        for q, t in zip(group, targets):
+            move_answer(q, t)
+
+
 def mix_capacity(passages: list[dict], types: list[str]) -> int:
     return sum(1 for p in passages for t in types if feasible(p["text"], t))
 
@@ -493,7 +522,7 @@ def ai_prompt(passage: str, types: list[str], level: str, fix_notes: list[str] |
     if note:
         lines.append(note)
     if fix_notes:
-        lines.append("\n직전 답의 문제점 (이 유형들은 규칙에 맞게 다시):\n- " + "\n- ".join(fix_notes))
+        lines.append("\n꼭 지킬 것:\n- " + "\n- ".join(fix_notes))
     lines.append("\n지문:\n" + passage.strip())
     return "\n".join(lines)
 

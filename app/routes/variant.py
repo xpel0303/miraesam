@@ -218,6 +218,20 @@ def rerender(vid: int, request: Request, teacher: Teacher = Depends(current_teac
     return _go(f"/variant/{vid}")
 
 
+@router.post("/{vid}/balance")
+def balance(vid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """이미 만든 문제: 같은 유형 정답이 한 번호로 몰리지 않게 보기 순서를 바꾸고 PDF 다시."""
+    vs = _own(db, vid, teacher)
+    if not _busy(db, vs) and vs.questions:
+        qs = copy.deepcopy(vs.questions)
+        spec.balance_answers(qs, secrets.randbits(31))
+        vs.questions = qs
+        vs.options = {k: v for k, v in vs.options.items() if k != "dirty"}
+        _start(db, vs, teacher, "variant_render", f"변형문제 정답 번호 섞기 · {vs.title}")
+        flash(request, "같은 유형끼리 정답 번호를 고르게 섞었어요. PDF를 다시 만드는 중이에요. (밑줄 고르기 유형은 정답 위치가 지문에 묶여 있어 그대로예요)")
+    return _go(f"/variant/{vid}")
+
+
 @router.post("/{vid}/regenerate")
 def regenerate(vid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     vs = _own(db, vid, teacher)
