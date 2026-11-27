@@ -57,7 +57,9 @@
       <span style="color:var(--brand);font-weight:800">{{ loop.index }}.</span> <b>{{ q.answer_text }}</b>
       <span class="src">[{{ types[q.type] }} · 지문 {{ q.p + 1 }}]</span>
       {% if q.type == "order" %}<span> {{ orders[q.answer - 1] }}</span>{% endif %}
-      {% if q.type == "blank" %}<div class="why">빈칸: {{ q.phrase }}</div>{% endif %}
+      {% if q.type in ("blank", "blank_word", "blank_sent", "implied") %}<div class="why">{{ "밑줄" if q.type == "implied" else "빈칸" }}: {{ q.phrase }}</div>{% endif %}
+      {% if q.type == "refer" %}{% for m in q.marks %}<div class="why">{{ circled[loop.index0] }} {{ m.text }} = {{ m.note }}</div>{% endfor %}{% endif %}
+      {% if q.type == "gram_explain" %}{% for m in q.marks if m.wrong %}<div class="why">{{ m.text }}: {{ m.fix }}</div>{% endfor %}{% endif %}
       {% if q.type in ("grammar", "sa_grammar") %}{% for m in q.marks if m.wrong %}<div class="why">{{ m.text }} → <b>{{ m.fix }}</b>{% if m.why %} · {{ m.why }}{% endif %}</div>{% endfor %}{% endif %}
       {% if q.type == "definition" %}{% for m in q.marks if m.wrong %}<div class="why">{{ m.text }}: {{ m.fix }}</div>{% endfor %}{% endif %}
       {% if q.type == "sa_arrange" and q.point %}<div class="why">출제 구문: {{ q.point }}</div>{% endif %}

@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% block title %}새 변형문제 · {{ APP_NAME }}{% endblock %}
 {% block main %}
+<style>
+  .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 8px; }
+  .tcell { display: flex; align-items: center; gap: 8px; margin: 0; padding: 7px 8px 7px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; font-weight: 600; transition: background .15s, border-color .15s; }
+  .tcell.on { border-color: #5b6ee1; background: #eef0fc; }
+  .tcell input[type=checkbox] { width: 17px; height: 17px; margin: 0; accent-color: #4c63d9; flex: none; }
+  .tcell .tn { flex: 1; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tcell .step { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+  .tcell .step button { width: 24px; height: 24px; border: 0; border-radius: 6px; background: #e8eaf3; color: #333; font-weight: 800; cursor: pointer; padding: 0; line-height: 24px; }
+  .tcell .step input { width: 30px; text-align: center; border: 0; background: transparent; font-weight: 800; color: #4c63d9; padding: 0; font-size: 15px; }
+  .tcell:not(.on) .step input { color: #aaa; }
+</style>
 <h1>새 변형문제</h1>
 <p class="lead">넣은 지문으로 수능 유형 변형문제를 만들어요 (지문 {{ spec.MAX_PASSAGES }}개까지).</p>
 {% if errors %}<div class="flash error" role="alert">{% for e in errors %}{{ e }}{% if not loop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
@@ -11,17 +22,32 @@
       <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 3월 모의고사 변형 1회"></div>
       <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
     </div>
-    <div class="field"><label>만드는 방식</label>
-      <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="mode" value="each" {% if form.mode != "mix" %}checked{% endif %}> <b>지문마다 고른 유형 전부</b> <span class="muted small">— 지문 수 × 유형 수만큼, 지문 순서대로</span></label>
-      <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="mode" value="mix" {% if form.mode == "mix" %}checked{% endif %}> <b>고른 유형으로 섞어서 랜덤 출제</b> <span class="muted small">— 지문과 유형을 고르게 섞어 모의고사처럼</span></label>
-      <div class="row" id="mix-n" style="max-width:420px;margin-top:6px"><div class="field"><label for="mix_n">문항 수 <span class="hint">비우면 지문 수만큼 (최대 {{ spec.MAX_MIX }}) · 지문×유형보다 많으면 같은 지문·유형으로 다른 문제를 또 만들어요</span></label>
-        <input type="text" id="mix_n" name="mix_n" inputmode="numeric" value="{{ form.mix_n or '' }}" placeholder="예: 20"></div></div>
-    </div>
-    <div class="field"><label>유형</label>
-      <div class="actions">
-        {% for k, v in spec.TYPES.items() %}<label style="font-weight:400;margin:0 12px 4px 0"><input type="checkbox" name="types" value="{{ k }}" {% if k in form.types %}checked{% endif %}> {{ v }}</label>{% endfor %}
+    <div class="field"><label>유형과 문항 수 <span class="hint">체크하고 −/+ 로 그 유형을 모두 몇 문제 낼지 정해요. 지문들에 고르게 나눠 들어가요.</span></label>
+      <div class="tgrid">
+        {% for k in spec.MC_TYPES %}{% set on = k in form.types %}
+        <label class="tcell{% if on %} on{% endif %}"><input type="checkbox" name="types" value="{{ k }}" {% if on %}checked{% endif %}><span class="tn">{{ spec.TYPES[k] }}</span>
+          <span class="step"><button type="button" data-d="-1" aria-label="{{ spec.TYPES[k] }} 한 문제 빼기">−</button><input type="text" name="cnt_{{ k }}" value="{{ form.counts.get(k, 1) if form.counts else 1 }}" inputmode="numeric" aria-label="{{ spec.TYPES[k] }} 문항 수"><button type="button" data-d="1" aria-label="{{ spec.TYPES[k] }} 한 문제 더">+</button></span></label>
+        {% endfor %}
       </div>
-      <span class="hint">서술형(어법 고쳐 쓰기·배열 영작·요약문 완성)은 시험지에 답 쓰는 줄이 생기고, 정답지에 모범 답안이 들어가요. 순서 배열·문장 삽입은 AI 없이 원문을 그대로 잘라서 만들어요. 순서는 4문장, 삽입은 6문장, 무관한 문장은 5문장 이상 필요해요.</span>
+      <p class="small muted" style="margin:10px 0 4px">서술형</p>
+      <div class="tgrid">
+        {% for k in spec.SA_TYPES %}{% set on = k in form.types %}
+        <label class="tcell{% if on %} on{% endif %}"><input type="checkbox" name="types" value="{{ k }}" {% if on %}checked{% endif %}><span class="tn">{{ spec.TYPES[k].replace("서술형 · ", "") }}</span>
+          <span class="step"><button type="button" data-d="-1" aria-label="한 문제 빼기">−</button><input type="text" name="cnt_{{ k }}" value="{{ form.counts.get(k, 1) if form.counts else 1 }}" inputmode="numeric" aria-label="문항 수"><button type="button" data-d="1" aria-label="한 문제 더">+</button></span></label>
+        {% endfor %}
+      </div>
+      <div class="actions" style="margin-top:10px;align-items:center">
+        <button type="button" class="btn ghost small" id="cnt-pass">고른 유형 모두 지문 수만큼</button>
+        <button type="button" class="btn ghost small" id="cnt-one">모두 1문제씩</button>
+        <button type="button" class="btn ghost small" id="cnt-all">전체 선택</button>
+        <button type="button" class="btn ghost small" id="cnt-none">전체 해제</button>
+        <b id="cnt-sum" style="margin-left:auto"></b>
+      </div>
+      <span class="hint">순서·문장삽입은 AI 없이 원문을 그대로 잘라서 만들어요. 순서는 4문장, 삽입은 6문장, 무관한 문장은 5문장 이상 필요해요. 같은 지문·유형이 두 번 이상이면 다른 부분·다른 보기로 새로 만들어요.</span>
+    </div>
+    <div class="field"><label>문항 순서</label>
+      <label style="font-weight:400;margin:0 16px 0 0"><input type="radio" name="mode" value="each" {% if form.mode != "mix" %}checked{% endif %}> <b>지문 순서대로</b></label>
+      <label style="font-weight:400"><input type="radio" name="mode" value="mix" {% if form.mode == "mix" %}checked{% endif %}> <b>섞어서</b> <span class="muted small">— 모의고사처럼</span></label>
     </div>
   </section>
 
@@ -53,8 +79,27 @@
   addBtn.addEventListener("click", () => { const c = box.querySelector(".passage-card").cloneNode(true); c.querySelectorAll("input, textarea").forEach(e => e.value = ""); box.appendChild(c); renumber(); c.querySelector("textarea").focus(); });
   box.addEventListener("click", (e) => { if (e.target.closest("[data-remove]")) { e.target.closest(".passage-card").remove(); renumber(); } });
   renumber();
-  const mixN = document.getElementById("mix-n");
-  const syncMode = () => { mixN.hidden = document.querySelector("input[name=mode]:checked").value !== "mix"; };
-  document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", syncMode)); syncMode();
+  // 유형 칸: 체크·−/+
+  const cells = [...document.querySelectorAll(".tcell")], MAXT = {{ spec.MAX_PER_TYPE }};
+  const num = (c) => c.querySelector("input[type=text]");
+  function sync() {
+    let sum = 0, n = 0;
+    cells.forEach((c) => { const on = c.querySelector("input[type=checkbox]").checked; c.classList.toggle("on", on);
+      const v = Math.max(1, Math.min(MAXT, parseInt(num(c).value, 10) || 1)); num(c).value = v; if (on) { sum += v; n++; } });
+    document.getElementById("cnt-sum").textContent = n ? `${n}개 유형 · 모두 ${sum}문항` : "유형을 골라 주세요";
+  }
+  cells.forEach((c) => {
+    c.querySelectorAll("[data-d]").forEach((b) => b.addEventListener("click", (e) => { e.preventDefault();
+      num(c).value = (parseInt(num(c).value, 10) || 1) + Number(b.dataset.d); c.querySelector("input[type=checkbox]").checked = true; sync(); }));
+    num(c).addEventListener("click", (e) => e.preventDefault());
+    num(c).addEventListener("input", sync);
+    c.querySelector("input[type=checkbox]").addEventListener("change", sync);
+  });
+  const setAll = (fn) => { cells.forEach(fn); sync(); };
+  document.getElementById("cnt-pass").onclick = () => setAll((c) => { if (c.querySelector("input[type=checkbox]").checked) num(c).value = box.querySelectorAll(".passage-card").length; });
+  document.getElementById("cnt-one").onclick = () => setAll((c) => { num(c).value = 1; });
+  document.getElementById("cnt-all").onclick = () => setAll((c) => { if (!c.querySelector("[name=types]").value.startsWith("sa_")) c.querySelector("input[type=checkbox]").checked = true; });
+  document.getElementById("cnt-none").onclick = () => setAll((c) => { c.querySelector("input[type=checkbox]").checked = false; });
+  sync();
 </script>
 {% endblock %}

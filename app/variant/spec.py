@@ -17,24 +17,46 @@ TYPES = {
     "topic": "주제",
     "title": "제목",
     "gist": "요지",
-    "blank": "빈칸 추론",
-    "order": "순서 배열",
-    "insert": "문장 삽입",
+    "blank_word": "빈칸(단어)",
+    "blank": "빈칸(구)",
+    "blank_sent": "빈칸(문장)",
+    "vocab": "어휘",
+    "grammar": "어법",
+    "order": "순서",
+    "insert": "문장삽입",
+    "implied": "함축의미",
     "irrelevant": "무관한 문장",
-    "summary": "요약문 완성",
-    "match": "내용 일치",
-    "vocab": "어휘 (문맥상 낱말)",
-    "grammar": "어법 (틀린 것)",
-    "definition": "영영풀이",
+    "summary": "요약문",
+    "def_pick": "영영풀이",
+    "match_en_r": "내용일치(영)",
+    "match_ko_r": "내용일치(한)",
+    "match_en_w": "내용불일치(영)",
+    "match_ko_w": "내용불일치(한)",
+    "purpose": "목적",
+    "mood": "심경",
+    "refer": "지칭 추론",
+    "gram_explain": "어법 분석",
+    "right_sent": "옳은 문장 찾기",
+    "definition": "영영풀이 오류 찾기",
+    "link2": "연결어 2빈칸 추론",
     "sa_grammar": "서술형 · 어법 고쳐 쓰기",
     "sa_arrange": "서술형 · 배열 영작",
     "sa_summary": "서술형 · 요약문 완성",
+    "match": "내용 일치(예전)",
 }
+LEGACY_TYPES = ("match",)  # 예전에 만든 문항만 (새로 고를 수 없음)
 SA_TYPES = ("sa_grammar", "sa_arrange", "sa_summary")
+MC_TYPES = [t for t in TYPES if t not in SA_TYPES and t not in LEGACY_TYPES]
 MARK_TYPES = ("vocab", "grammar", "sa_grammar")  # 지문에 밑줄 5개, 틀린 것 표시
 CODE_TYPES = ["order", "insert"]
 AI_TYPES = [t for t in TYPES if t not in CODE_TYPES]
 DEFAULT_TYPES = ["topic", "blank", "order", "insert", "irrelevant", "summary"]
+CHOICE_TYPES = ("topic", "title", "gist", "blank", "match", "blank_word", "blank_sent", "implied", "def_pick",
+                "match_en_r", "match_ko_r", "match_en_w", "match_ko_w", "purpose", "mood", "right_sent")  # 보기 5개 + 정답 번호
+MATCH4 = {"match_en_r": "right", "match_ko_r": "right", "match_en_w": "wrong", "match_ko_w": "wrong"}
+NEW_VIEW_TYPES = ("blank_word", "blank_sent", "implied", "def_pick", "match_en_r", "match_ko_r", "match_en_w", "match_ko_w",
+                  "purpose", "mood", "refer", "gram_explain", "right_sent", "link2")
+MAX_PER_TYPE = 60
 LETTERS = "ⓐⓑⓒⓓⓔ"
 MAX_PASSAGES = 60
 
@@ -54,6 +76,20 @@ STEMS = {
     "vocab": "다음 글의 밑줄 친 부분 중, 문맥상 낱말의 쓰임이 적절하지 않은 것은?",
     "grammar": "다음 글의 밑줄 친 부분 중, 어법상 틀린 것은?",
     "definition": "다음 글의 밑줄 친 ⓐ~ⓔ의 영영풀이로 적절하지 않은 것은?",
+    "blank_word": "다음 빈칸에 들어갈 말로 가장 적절한 것은?",
+    "blank_sent": "다음 빈칸에 들어갈 말로 가장 적절한 것은?",
+    "implied": "밑줄 친 부분이 다음 글에서 의미하는 바로 가장 적절한 것은?",
+    "def_pick": "다음 글에 쓰인 낱말 중, 주어진 영영풀이에 해당하는 것은?",
+    "match_en_r": "다음 글의 내용과 일치하는 것은?",
+    "match_ko_r": "다음 글의 내용과 일치하는 것은?",
+    "match_en_w": "다음 글의 내용과 일치하지 않는 것은?",
+    "match_ko_w": "다음 글의 내용과 일치하지 않는 것은?",
+    "purpose": "다음 글의 목적으로 가장 적절한 것은?",
+    "mood": "다음 글에 드러난 등장인물(글쓴이)의 심경으로 가장 적절한 것은?",
+    "refer": "밑줄 친 ①~⑤ 중에서 가리키는 대상이 나머지 넷과 다른 것은?",
+    "gram_explain": "다음 글의 밑줄 친 ⓐ~ⓔ에 대한 어법 설명으로 옳지 않은 것은?",
+    "right_sent": "다음 중 어법상 옳은 문장은?",
+    "link2": "다음 글의 빈칸 (A), (B)에 들어갈 말로 가장 적절한 것은?",
     "sa_grammar": "[서술형] 다음 글의 밑줄 친 ⓐ~ⓔ 중 어법상 틀린 것 2개를 찾아 기호를 쓰고 바르게 고쳐 쓰시오.",
     "sa_arrange": "[서술형] 윗글의 밑줄 친 우리말과 같은 뜻이 되도록 <보기>의 단어를 모두 한 번씩 써서 (A)에 들어갈 문장을 완성하시오.",
     "sa_summary": "[서술형] 다음 글의 내용을 한 문장으로 요약할 때, 빈칸 (A), (B)에 들어갈 말을 본문에서 찾아 그대로 쓰시오.",
@@ -110,6 +146,28 @@ def plan_mix(passages: list[dict], types: list[str], n: int, seed: int) -> list[
         cnt[(i, t2)] = cnt.get((i, t2), 0) + 1
         used[i] += 1
     rng.shuffle(plan)
+    return plan
+
+
+def plan_counts(passages: list[dict], counts: dict[str, int], seed: int, shuffle: bool) -> list[dict]:
+    """유형별 문항 수(counts)만큼 지문에 고르게 나눠 배정. shuffle=False면 지문 순서 → 유형 순서대로."""
+    rng = random.Random(seed)
+    used = {i: 0 for i in range(len(passages))}
+    cnt: dict[tuple[int, str], int] = {}
+    plan = []
+    for t, n in counts.items():
+        cands = [i for i in used if feasible(passages[i]["text"], t)]
+        for _ in range(max(0, int(n)) if cands else 0):
+            low = min((cnt.get((i, t), 0), used[i]) for i in cands)
+            i = rng.choice([i for i in cands if (cnt.get((i, t), 0), used[i]) == low])
+            plan.append({"p": i, "type": t, "k": cnt.get((i, t), 0)})
+            cnt[(i, t)] = cnt.get((i, t), 0) + 1
+            used[i] += 1
+    order = list(counts)
+    if shuffle:
+        rng.shuffle(plan)
+    else:
+        plan.sort(key=lambda a: (a["p"], a["k"], order.index(a["type"])))
     return plan
 
 
@@ -173,8 +231,32 @@ def clean_ai(t: str, raw: dict, passage: str, seed: int) -> dict | None:
     if not isinstance(raw, dict):
         return None
     explain = _s(raw.get("explain"))
-    if t in ("topic", "title", "gist"):
-        return {"type": t, "choices": [_s(c) for c in (raw.get("choices") or [])][:5], "answer": _idx(raw.get("answer")), "explain": explain}
+    choices = [_s(c) for c in (raw.get("choices") or [])][:5] if isinstance(raw.get("choices"), list) else []
+    if t in ("topic", "title", "gist", "purpose", "mood", "right_sent", "def_pick") or t in MATCH4:
+        q = {"type": t, "choices": choices, "answer": _idx(raw.get("answer")), "explain": explain}
+        if t in MATCH4:
+            q["ask"] = MATCH4[t]
+        if t == "def_pick":
+            q["definition"] = _s(raw.get("definition"))
+            q["found"] = bool(choices) and all(re.search(r"(?<![A-Za-z])" + re.escape(c) + r"(?![A-Za-z])", passage, re.I) for c in choices)
+        return q
+    if t in ("blank_word", "blank_sent", "implied"):
+        phrase = _s(raw.get({"blank_word": "word", "blank_sent": "sentence", "implied": "phrase"}[t]))
+        m = re.search(r"(?<![A-Za-z0-9'])" + re.escape(phrase) + r"(?![A-Za-z0-9'])", passage) if phrase else None
+        return {"type": t, "phrase": phrase, "before": passage[: m.start()] if m else "", "after": passage[m.end():] if m else "",
+                "found": bool(m), "choices": choices, "answer": _idx(raw.get("answer")), "explain": explain}
+    if t in ("refer", "gram_explain"):
+        marks = [{"text": str(m.get("text", "")).strip(), "wrong": bool(m.get("wrong")), "note": _s(m.get("note") or m.get("target")),
+                  "fix": _s(m.get("fix")), "why": ""} for m in (raw.get("marks") or []) if isinstance(m, dict)]
+        return {"type": t, "passage": passage, "marks": marks, "explain": explain}
+    if t == "link2":
+        pairs = []
+        for c in (raw.get("choices") or [])[:5]:
+            if isinstance(c, (list, tuple)) and len(c) >= 2:
+                pairs.append([_s(c[0]), _s(c[1])])
+            elif isinstance(c, dict):
+                pairs.append([_s(c.get("A")), _s(c.get("B"))])
+        return {"type": t, "passage": (raw.get("passage") or "").strip(), "choices": pairs, "answer": _idx(raw.get("answer")), "explain": explain}
     if t == "blank":
         phrase = _s(raw.get("phrase"))
         m = re.search(r"(?<![A-Za-z0-9'])" + re.escape(phrase) + r"(?![A-Za-z0-9'])", passage) if phrase else None
@@ -236,13 +318,36 @@ def validate(q: dict | None) -> list[str]:
         return ["형식이 맞지 않습니다."]
     t, name = q["type"], TYPES.get(q["type"], q["type"])
     errs = []
-    if t in ("topic", "title", "gist", "blank", "match", "summary"):
+    if t in CHOICE_TYPES or t in ("summary", "link2"):
         if len(q.get("choices") or []) != 5 or any(not c or (isinstance(c, list) and not all(c)) for c in q["choices"]):
             errs.append(f"{name}: 보기가 5개여야 합니다.")
         if not q.get("answer"):
             errs.append(f"{name}: 정답 번호(1~5)가 없습니다.")
     if t == "blank" and not q.get("found"):
         errs.append("빈칸 추론: 빈칸으로 만들 구절(phrase)을 지문에서 글자 그대로 찾지 못했습니다.")
+    if t in ("blank_word", "blank_sent", "implied") and not q.get("found"):
+        errs.append(f"{name}: 지문에서 그 부분(글자 그대로)을 찾지 못했습니다.")
+    if t == "blank_word" and len((q.get("phrase") or "").split()) != 1:
+        errs.append("빈칸(단어): 빈칸은 한 단어여야 합니다.")
+    if t == "blank_sent" and len((q.get("phrase") or "").split()) < 6:
+        errs.append("빈칸(문장): 빈칸은 문장(6단어 이상)이어야 합니다.")
+    if t == "def_pick":
+        if not q.get("definition"):
+            errs.append("영영풀이: 풀이가 없습니다.")
+        if not q.get("found"):
+            errs.append("영영풀이: 보기 낱말이 모두 지문에 있어야 합니다.")
+    if t == "link2" and not ("(A)" in q.get("passage", "") and "(B)" in q.get("passage", "") and q["passage"].index("(A)") < q["passage"].index("(B)")):
+        errs.append("연결어 2빈칸: 지문에 (A), (B) 자리가 차례로 있어야 합니다.")
+    if t in ("refer", "gram_explain"):
+        marks = q.get("marks") or []
+        if len(marks) != 5:
+            errs.append(f"{name}: 밑줄이 5개여야 하는데 {len(marks)}개입니다.")
+        elif place_marks(q.get("passage", ""), marks) is None:
+            errs.append(f"{name}: 밑줄 부분을 지문에서 순서대로 찾지 못했습니다.")
+        if sum(m["wrong"] for m in marks) != 1:
+            errs.append(f"{name}: 답(다른 것·틀린 설명)은 정확히 1개여야 합니다.")
+        if t == "gram_explain" and any(not m.get("note") for m in marks):
+            errs.append("어법 분석: 비어 있는 설명이 있습니다.")
     if t == "summary" and ("(A)" not in q.get("summary", "") or "(B)" not in q.get("summary", "")):
         errs.append("요약문 완성: 요약문에 (A)와 (B) 빈칸이 모두 있어야 합니다.")
     if t == "irrelevant" and len(q.get("numbered") or []) != 5:
@@ -305,7 +410,7 @@ def answer_text(q: dict) -> str:
     if t == "sa_summary":
         ans = q.get("answers") or ["", ""]
         return f"(A) {ans[0]}  (B) {ans[1] if len(ans) > 1 else ''}"
-    if t in ("grammar", "definition"):
+    if t in ("grammar", "definition", "refer", "gram_explain"):
         wrong = [i for i, m in enumerate(q.get("marks") or []) if m["wrong"]]
         return CIRCLED[wrong[0]] if wrong else "?"
     if q["type"] == "vocab":
@@ -325,7 +430,7 @@ FORMATS = {
     "topic": '"topic": {"choices": ["영어 보기 5개"], "answer": 1~5, "explain": "..."}  // 주제: 영어 명사구 보기',
     "title": '"title": {"choices": ["영어 제목 5개"], "answer": 1~5, "explain": "..."}  // 제목: 영어 제목 보기',
     "gist": '"gist": {"choices": ["한국어 요지 5개"], "answer": 1~5, "explain": "..."}  // 요지: 한국어 문장 보기',
-    "blank": '"blank": {"phrase": "지문 속 핵심 구절(3~10단어, 글자 그대로)", "choices": ["영어 보기 5개"], "answer": 1~5, "explain": "..."}  // 정답 보기는 phrase와 같거나 같은 뜻',
+    "blank": '"blank": {"phrase": "지문 속 핵심 구(2~6단어, 글자 그대로)", "choices": ["영어 보기 5개"], "answer": 1~5, "explain": "..."}  // 정답 보기는 phrase와 같거나 같은 뜻',
     "irrelevant": '"irrelevant": {"sentence": "지문 소재와 관련 있어 보이지만 글의 흐름과 무관한 영어 문장 하나", "explain": "..."}',
     "summary": '"summary": {"summary": "글 전체를 요약한 영어 한 문장, 빈칸 두 곳을 (A), (B)로", "choices": [["A보기","B보기"] 5쌍], "answer": 1~5, "explain": "..."}',
     "match": '"match": {"ask": "wrong" 또는 "right", "choices": ["한국어 진술 5개, 지문 순서대로"], "answer": 1~5, "explain": "..."}  // wrong이면 불일치가 정확히 1개',
@@ -334,6 +439,20 @@ FORMATS = {
     "sa_grammar": '"sa_grammar": {"passage": "어법상 틀린 곳 두 개를 끼워 넣은 지문 전체 (나머지는 원문 그대로)", "marks": [{"text": "밑줄 부분(지문 글자 그대로, 1~3단어)", "wrong": false, "fix": "", "why": "어법 포인트"}, ... 정확히 5개, 순서대로, 틀린 것 정확히 2개(wrong: true, fix: 올바른 형태)], "explain": "..."}',
     "sa_arrange": '"sa_arrange": {"sentence": "지문 속 구문이 중요한 문장 하나 (글자 그대로, 8~18단어)", "korean": "그 문장의 자연스러운 우리말 뜻", "point": "출제 구문 (예: 관계대명사 what, 가주어-진주어)", "explain": "..."}',
     "sa_summary": '"sa_summary": {"summary": "글 전체를 요약한 영어 한 문장, 빈칸 두 곳을 (A), (B)로", "answers": ["(A) 답: 지문에 나온 말 글자 그대로 1~2단어", "(B) 답"], "explain": "..."}',
+    "blank_word": '"blank_word": {"word": "글의 핵심을 담은 지문 속 낱말 하나(글자 그대로, 한 단어)", "choices": ["영어 낱말 보기 5개"], "answer": 1~5, "explain": "..."}  // 정답 보기는 word 와 같거나 같은 뜻의 한 단어',
+    "blank_sent": '"blank_sent": {"sentence": "글의 핵심을 담은 지문 속 문장 하나(첫 문장 말고, 글자 그대로, 마침표 빼고)", "choices": ["영어 문장(절) 보기 5개"], "answer": 1~5, "explain": "..."}  // 정답 보기는 그 문장을 다른 말로 바꿔 쓴 것',
+    "implied": '"implied": {"phrase": "지문 속 비유적·함축적 표현(2~8단어, 글자 그대로)", "choices": ["그 표현이 이 글에서 뜻하는 바를 풀어 쓴 영어 보기 5개"], "answer": 1~5, "explain": "..."}',
+    "def_pick": '"def_pick": {"definition": "지문 속 낱말 하나의 영어 풀이(영영사전식, 8~15단어)", "choices": ["지문에 나온 낱말 5개(글자 그대로, 한 단어씩, 지문 순서대로)"], "answer": 풀이에 맞는 낱말 번호 1~5, "explain": "..."}',
+    "match_en_r": '"match_en_r": {"choices": ["지문 내용에 대한 영어 진술 5개, 지문 순서대로"], "answer": 1~5, "explain": "..."}  // 내용과 일치하는 것 정확히 1개',
+    "match_ko_r": '"match_ko_r": {"choices": ["지문 내용에 대한 한국어 진술 5개, 지문 순서대로"], "answer": 1~5, "explain": "..."}  // 내용과 일치하는 것 정확히 1개',
+    "match_en_w": '"match_en_w": {"choices": ["지문 내용에 대한 영어 진술 5개, 지문 순서대로"], "answer": 1~5, "explain": "..."}  // 내용과 일치하지 않는 것 정확히 1개',
+    "match_ko_w": '"match_ko_w": {"choices": ["지문 내용에 대한 한국어 진술 5개, 지문 순서대로"], "answer": 1~5, "explain": "..."}  // 내용과 일치하지 않는 것 정확히 1개',
+    "purpose": '"purpose": {"choices": ["글을 쓴 목적 한국어 보기 5개 (예: ~하려고)"], "answer": 1~5, "explain": "..."}',
+    "mood": '"mood": {"choices": ["등장인물·글쓴이의 심경(변화) 영어 보기 5개 (예: nervous → relieved, 또는 grateful)"], "answer": 1~5, "explain": "..."}',
+    "refer": '"refer": {"marks": [{"text": "지칭어(대명사나 명사구, 지문 글자 그대로, 1~3단어)", "target": "가리키는 대상(한국어)", "wrong": false}, ... 정확히 5개, 지문 순서대로, 가리키는 대상이 나머지 넷과 다른 것 정확히 1개(wrong: true)], "explain": "..."}',
+    "gram_explain": '"gram_explain": {"marks": [{"text": "어법 포인트가 있는 부분(지문 글자 그대로, 1~4단어)", "note": "그 부분에 대한 어법 설명 한국어 한 줄", "wrong": false, "fix": ""}, ... 정확히 5개, 지문 순서대로, 설명이 틀린 것 정확히 1개(wrong: true, fix: 맞는 설명)], "explain": "..."}',
+    "right_sent": '"right_sent": {"choices": ["지문 문장을 바탕으로 한 영어 문장 5개 — 어법상 옳은 것 정확히 1개, 나머지 4개는 내신 단골 어법 오류가 하나씩"], "answer": 1~5, "explain": "..."}',
+    "link2": '"link2": {"passage": "지문 전체를 원문 그대로 쓰되 연결어 두 자리를 (A), (B)로 바꾼 것 (연결어가 하나뿐이거나 없으면 알맞은 문장 앞에 자리를 만듦)", "choices": [["(A) 연결어", "(B) 연결어"] 5쌍], "answer": 1~5, "explain": "..."}',
     "vocab": '"vocab": {"passage": "낱말 하나를 문맥과 반대·부적절한 낱말로 바꾼 지문 전체", "marks": [{"text": "밑줄 낱말(지문 글자 그대로, 1~2단어)", "wrong": false, "fix": "", "why": "..."}, ... 정확히 5개, 앞에서부터 순서대로, 틀린 것 정확히 1개(wrong: true, fix: 원래 알맞은 낱말)], "explain": "..."}',
 }
 
@@ -376,6 +495,8 @@ def ai_prompt(passage: str, types: list[str], level: str, fix_notes: list[str] |
 def view(q: dict, text: str) -> dict | None:
     """어법·영영풀이·서술형 → {kind, stem, passage([u]밑줄), box, box_title, choices, lines}. 예전 유형은 None."""
     t = q["type"]
+    if t in NEW_VIEW_TYPES:
+        return _view_new(q, text)
     if t not in ("grammar", "definition") + SA_TYPES:
         return None
     out = {"kind": "sa" if t in SA_TYPES else "mc", "stem": STEMS[t], "passage": "", "box": "", "box_title": "", "choices": [], "lines": 0}
@@ -395,6 +516,28 @@ def view(q: dict, text: str) -> dict | None:
         out["passage"] = text
         out["box"], out["box_title"] = q.get("summary", "").replace("(A)", "(A) ________").replace("(B)", "(B) ________"), "요약문"
         out["lines"] = 1
+    return out
+
+
+def _view_new(q: dict, text: str) -> dict:
+    t = q["type"]
+    out = {"kind": "mc", "stem": STEMS[t], "passage": text, "box": "", "box_title": "", "choices": list(q.get("choices") or []), "lines": 0}
+    if t in ("blank_word", "blank_sent"):
+        out["passage"] = f"{q.get('before', '')}{'_' * (8 if t == 'blank_word' else 30)}{q.get('after', '')}"
+    elif t == "implied":
+        out["passage"] = f"{q.get('before', '')}[u]{q.get('phrase', '')}[/u]{q.get('after', '')}"
+    elif t == "def_pick":
+        out["box"], out["box_title"] = q.get("definition", ""), "영영풀이"
+    elif t in ("refer", "gram_explain"):
+        sym = CIRCLED if t == "refer" else LETTERS
+        pieces = place_marks(q.get("passage", ""), q.get("marks") or []) or [{"text": q.get("passage", ""), "mark": None}]
+        out["passage"] = "".join(pc["text"] if pc["mark"] is None else f"{sym[pc['mark']]}[u]{pc['text']}[/u]" for pc in pieces)
+        out["choices"] = [] if t == "refer" else [f"{LETTERS[i]} {m['text']}: {m.get('note', '')}" for i, m in enumerate(q.get("marks") or [])]
+    elif t == "right_sent":
+        out["passage"] = ""
+    elif t == "link2":
+        out["passage"] = (q.get("passage") or "").replace("(A)", "(A) ________").replace("(B)", "(B) ________")
+        out["choices"] = [f"(A) {a} ······ (B) {b}" for a, b in (q.get("choices") or [])]
     return out
 
 

@@ -45,15 +45,18 @@
     </div>
     {% if q.problems %}<div class="flash error small">{{ q.problems|join(" / ") }} — 고치지 않으면 PDF에서 빠집니다.</div>{% endif %}
 
-    {% if t in ("topic", "title", "gist", "blank", "match") %}
-      {% if t == "blank" %}<p class="small">빈칸 자리: <b>{{ q.phrase }}</b></p>{% endif %}
+    {% if t in spec.CHOICE_TYPES %}
+      {% if t in ("blank", "blank_word", "blank_sent") %}<p class="small">빈칸 자리: <b>{{ q.phrase }}</b></p>{% endif %}
+      {% if t == "implied" %}<p class="small">밑줄 친 표현: <b><u>{{ q.phrase }}</u></b></p>{% endif %}
+      {% if t == "def_pick" %}<div class="field"><label class="small">영영풀이</label><input type="text" name="{{ p }}definition" value="{{ q.definition }}"></div>{% endif %}
       {% if t == "match" %}<div class="field" style="max-width:260px"><select name="{{ p }}ask"><option value="wrong" {% if q.ask == "wrong" %}selected{% endif %}>일치하지 않는 것 고르기</option><option value="right" {% if q.ask == "right" %}selected{% endif %}>일치하는 것 고르기</option></select></div>{% endif %}
       {% for k in range(5) %}
         <div class="choice-edit"><label style="font-weight:400;margin:0"><input type="radio" name="{{ p }}answer" value="{{ k + 1 }}" {% if q.answer == k + 1 %}checked{% endif %} aria-label="정답 {{ k + 1 }}번"> {{ circled[k] }}</label>
           <input type="text" name="{{ p }}c{{ k }}" value="{{ q.choices[k] if k < q.choices|length else '' }}" aria-label="보기 {{ k + 1 }}"></div>
       {% endfor %}
-    {% elif t == "summary" %}
-      <div class="field"><label class="small">요약문 ((A), (B) 빈칸 포함)</label><input type="text" name="{{ p }}summary" value="{{ q.summary }}"></div>
+    {% elif t in ("summary", "link2") %}
+      {% if t == "summary" %}<div class="field"><label class="small">요약문 ((A), (B) 빈칸 포함)</label><input type="text" name="{{ p }}summary" value="{{ q.summary }}"></div>
+      {% else %}<div class="box-preview">{{ spec.rich(q.view.passage) if q.view else q.passage }}</div>{% endif %}
       {% for k in range(5) %}
         <div class="choice-edit" style="grid-template-columns: 56px 1fr 1fr"><label style="font-weight:400;margin:0"><input type="radio" name="{{ p }}answer" value="{{ k + 1 }}" {% if q.answer == k + 1 %}checked{% endif %} aria-label="정답 {{ k + 1 }}번"> {{ circled[k] }}</label>
           <input type="text" name="{{ p }}a{{ k }}" value="{{ q.choices[k][0] if k < q.choices|length else '' }}" aria-label="(A) {{ k + 1 }}"><input type="text" name="{{ p }}b{{ k }}" value="{{ q.choices[k][1] if k < q.choices|length else '' }}" aria-label="(B) {{ k + 1 }}"></div>
@@ -78,6 +81,16 @@
         {% endfor %}</tbody>
       </table></div>
       {% if t == "sa_grammar" %}<p class="small muted">서술형: 틀린 것 2개에 체크</p>{% endif %}
+    {% elif t in ("refer", "gram_explain") %}
+      <div class="box-preview">{{ spec.rich(q.view.passage) if q.view else q.passage }}</div>
+      <div class="table-wrap" style="margin-top:8px"><table class="list edit-items">
+        <thead><tr><th>밑줄</th><th>{{ "가리키는 것" if t == "refer" else "어법 설명" }}</th><th>{{ "다른 것" if t == "refer" else "틀린 설명" }}</th></tr></thead>
+        <tbody>{% for m in q.marks %}{% set sym = spec.CIRCLED if t == "refer" else spec.LETTERS %}
+          <tr><td><b>{{ sym[loop.index0] }}</b> {{ m.text }}</td>
+            <td class="wrap"><input type="text" name="{{ p }}m{{ loop.index0 }}-note" value="{{ m.note }}" aria-label="설명"></td>
+            <td><input type="checkbox" name="{{ p }}m{{ loop.index0 }}-wrong" value="1" {% if m.wrong %}checked{% endif %} aria-label="정답"></td></tr>
+        {% endfor %}</tbody>
+      </table></div>
     {% elif t == "sa_arrange" %}
       <div class="box-preview">{{ spec.rich(q.view.passage) if q.view else "" }}</div>
       <p class="small">&lt;보기&gt; {{ q.words|join(" / ") }}</p>

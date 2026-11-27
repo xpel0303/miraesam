@@ -52,7 +52,7 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher)):
-    form = {"types": spec.DEFAULT_TYPES, "mode": "each", "mix_n": "", "passages": [{}]}
+    form = {"types": spec.DEFAULT_TYPES, "mode": "each", "counts": {}, "passages": [{}]}
     return render(request, "variant/new.html", {"teacher": teacher, "form": form, "spec": spec, "levels": LEVELS, "active": "variant"})
 
 
@@ -60,7 +60,13 @@ def new(request: Request, teacher: Teacher = Depends(current_teacher)):
 async def create(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     f = await request.form()
     titles, texts, grams = f.getlist("p_title"), f.getlist("p_text"), f.getlist("p_grammar")
-    types = [t for t in spec.TYPES if t in f.getlist("types")]
+    types = [t for t in spec.TYPES if t in f.getlist("types") and t not in spec.LEGACY_TYPES]
+    counts = {}
+    for t in types:
+        try:
+            counts[t] = max(1, min(spec.MAX_PER_TYPE, int(str(f.get(f"cnt_{t}") or 1))))
+        except ValueError:
+            counts[t] = 1
     level = str(f.get("level") or "")
     title = str(f.get("title", "")).strip()[:120] or "변형문제"
     passages = [{"title": str(titles[i]).strip()[:80] if i < len(titles) else "", "text": " ".join(str(x).split()),
@@ -78,25 +84,24 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
         if len(p["text"]) > 6000:
             errors.append(f"지문 {i}이 너무 깁니다 (6000자까지).")
         short = [spec.TYPES[t] for t in ("order", "insert", "irrelevant") if t in types and n < spec.MIN_SENTENCES[t]]
-        if short and n < 4 and f.get("mode") != "mix":
-            errors.append(f"지문 {i}은 {n}문장이라 {', '.join(short)} 문제를 만들기엔 짧아요.")
     mode = "mix" if f.get("mode") == "mix" else "each"
-    try:
-        mix_n = max(1, min(spec.MAX_MIX, int(str(f.get("mix_n") or len(passages) or 1))))
-    except ValueError:
-        mix_n = len(passages) or 1
-    if mode == "mix" and passages and types:
-        cap = spec.mix_capacity(passages, types)
-        if cap == 0:
+    if passages and types:
+        plan = spec.plan_counts(passages, counts, secrets.randbits(31), mode == "mix")
+        if not plan:
             errors.append("지문이 짧아서 고른 유형으로 만들 수 있는 문항이 없어요.")
+        if len(plan) > spec.MAX_MIX:
+            errors.append(f"한 번에 {spec.MAX_MIX}문항까지 만들 수 있어요 (지금 {len(plan)}문항).")
+        skipped = [spec.TYPES[t] for t in types if not any(a["type"] == t for a in plan)]
+        if skipped and plan:
+            errors.append(f"지문이 짧아서 {', '.join(skipped)} 문제를 만들 수 있는 지문이 없어요. 그 유형을 빼 주세요.")
     if any(t in spec.AI_TYPES for t in types) and not teacher.gemini_key_enc:
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 넣거나, 순서 배열·문장 삽입만 골라 주세요.")
     if errors:
-        form = {"title": title, "level": level, "common_grammar": f.get("common_grammar", ""), "types": types, "mode": mode, "mix_n": mix_n, "passages": [{"title": t, "text": x, "grammar": grams[i] if i < len(grams) else ""} for i, (t, x) in enumerate(zip(titles, texts))]}
+        form = {"title": title, "level": level, "common_grammar": f.get("common_grammar", ""), "types": types, "mode": mode, "counts": counts, "passages": [{"title": t, "text": x, "grammar": grams[i] if i < len(grams) else ""} for i, (t, x) in enumerate(zip(titles, texts))]}
         return render(request, "variant/new.html", {"teacher": teacher, "form": form, "errors": errors, "spec": spec, "levels": LEVELS, "active": "variant"}, 400)
     vs = VariantSet(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, passages=passages,
-                    options={"types": types, "level": level if level in LEVELS else "", "mode": mode,
-                             **({"mix_n": mix_n, "plan": spec.plan_mix(passages, types, mix_n, secrets.randbits(31))} if mode == "mix" else {})})
+                    options={"types": types, "level": level if level in LEVELS else "", "mode": "mix", "counts": counts,
+                             "shuffle": mode == "mix", "plan": plan})
     db.add(vs)
     db.commit()
     _start(db, vs, teacher, "variant_build", f"변형문제 · {title}")
@@ -137,12 +142,23 @@ async def save(vid: int, request: Request, teacher: Teacher = Depends(current_te
             continue
         q["explain"] = g(p + "explain", q.get("explain", ""))
         t = q["type"]
-        if t in ("topic", "title", "gist", "blank", "match") and f"{p}c0" in f:
-            q["choices"] = [g(f"{p}c{k}", q["choices"][k]) for k in range(5)]
-        if t == "summary" and f"{p}a0" in f:
-            q["summary"] = g(p + "summary", q["summary"])
-            q["choices"] = [[g(f"{p}a{k}", q["choices"][k][0]), g(f"{p}b{k}", q["choices"][k][1])] for k in range(5)]
-        if t in ("topic", "title", "gist", "blank", "match", "summary") and str(f.get(p + "answer", "")).isdigit():
+        old = list(q.get("choices") or []) + [""] * 5
+        if t in spec.CHOICE_TYPES and f"{p}c0" in f:
+            q["choices"] = [g(f"{p}c{k}", old[k]) for k in range(5)]
+        if t == "def_pick" and p + "definition" in f:
+            q["definition"] = g(p + "definition", q.get("definition", ""))
+            text = vs.passages[q["p"]]["text"]
+            q["found"] = all(c and re.search(r"(?<![A-Za-z])" + re.escape(c) + r"(?![A-Za-z])", text, re.I) for c in q["choices"])
+        if t in ("summary", "link2") and f"{p}a0" in f:
+            if t == "summary":
+                q["summary"] = g(p + "summary", q["summary"])
+            oldp = [c if isinstance(c, list) and len(c) > 1 else ["", ""] for c in old[:5]]
+            q["choices"] = [[g(f"{p}a{k}", oldp[k][0]), g(f"{p}b{k}", oldp[k][1])] for k in range(5)]
+        if t in ("refer", "gram_explain") and f"{p}m0-note" in f:
+            for k, m in enumerate(q["marks"]):
+                m["wrong"] = f.get(f"{p}m{k}-wrong") == "1"
+                m["note"] = g(f"{p}m{k}-note", m.get("note", ""))
+        if (t in spec.CHOICE_TYPES or t in ("summary", "link2")) and str(f.get(p + "answer", "")).isdigit():
             q["answer"] = max(1, min(5, int(f.get(p + "answer"))))
         if t == "match" and f.get(p + "ask") in ("wrong", "right"):
             q["ask"] = f.get(p + "ask")
@@ -197,7 +213,9 @@ def regenerate(vid: int, request: Request, teacher: Teacher = Depends(current_te
     if not _busy(db, vs):
         vs.questions, vs.warnings = [], []
         vs.options = {k: v for k, v in vs.options.items() if k != "dirty"}
-        if vs.options.get("mode") == "mix":  # 섞기는 새로 만들 때 배정도 새로 (다른 조합)
+        if vs.options.get("counts"):  # 유형별 문항 수로 만든 것: 배정도 새로
+            vs.options = {**vs.options, "plan": spec.plan_counts(vs.passages, vs.options["counts"], secrets.randbits(31), vs.options.get("shuffle", False))}
+        elif vs.options.get("mode") == "mix":  # 섞기는 새로 만들 때 배정도 새로 (다른 조합)
             vs.options = {**vs.options, "plan": spec.plan_mix(vs.passages, vs.options["types"], vs.options.get("mix_n", len(vs.passages)), secrets.randbits(31))}
         _start(db, vs, teacher, "variant_build", f"변형문제 새로 만들기 · {vs.title}")
     return _go(f"/variant/{vid}")

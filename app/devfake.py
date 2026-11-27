@@ -259,6 +259,26 @@ def _variant(prompt: str) -> dict:
             bad = {1, 3} if t == "sa_grammar" else {2}
             out[t] = {"passage": passage, "marks": [{"text": w, "wrong": i in bad, "fix": w + "(고침)" if i in bad else "", "why": "[가짜]",
                                                      "definition": f"[fake] meaning of {w}"} for i, w in enumerate(picks)], "explain": "[가짜] 해설"}
+        elif t in ("purpose", "mood", "right_sent", "match_en_r", "match_ko_r", "match_en_w", "match_ko_w"):
+            out[t] = {"choices": [f"[가짜] {t} 보기 {i + 1}" for i in range(5)], "answer": 3, "explain": "[가짜] 해설"}
+        elif t in ("blank_word", "implied"):
+            w = phrase.split()[0] if t == "blank_word" else phrase
+            out[t] = {"word" if t == "blank_word" else "phrase": w, "choices": [w, "fake", "wrong", "other", "none"], "answer": 1, "explain": "[가짜] 해설"}
+        elif t == "blank_sent":
+            sents = re.split(r"(?<=[.!?])\s+", passage)
+            sent = next((x for x in sents[1:] if len(x.split()) >= 7), sents[-1]).rstrip(".")
+            out[t] = {"sentence": sent, "choices": [f"[가짜] 문장 보기 {i + 1}" for i in range(5)], "answer": 2, "explain": "[가짜] 해설"}
+        elif t == "def_pick":
+            picks = list(dict.fromkeys(words))[:5]
+            out[t] = {"definition": f"[fake] meaning of {picks[1]}", "choices": picks, "answer": 2, "explain": "[가짜] 해설"}
+        elif t in ("refer", "gram_explain"):
+            picks = list(dict.fromkeys(words))[:5]
+            out[t] = {"marks": [{"text": w, "wrong": i == 3, "target": "[가짜] 대상", "note": f"[가짜] {w} 어법 설명", "fix": "[가짜] 맞는 설명"} for i, w in enumerate(picks)], "explain": "[가짜] 해설"}
+        elif t == "link2":
+            sents = re.split(r"(?<=[.!?])\s+", passage)
+            if len(sents) >= 3:
+                sents[1], sents[2] = "(A) " + sents[1], "(B) " + sents[2]
+            out[t] = {"passage": " ".join(sents), "choices": [["However", "For example"], ["Therefore", "In addition"], ["Instead", "Thus"], ["Besides", "Still"], ["Yet", "Hence"]], "answer": 1, "explain": "[가짜] 해설"}
         elif t == "sa_arrange":
             sents = re.split(r"(?<=[.!?])\s+", passage)
             sent = max(sents, key=lambda x: -abs(len(x.split()) - 12))

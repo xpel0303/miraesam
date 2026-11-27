@@ -64,7 +64,7 @@ def from_variant(vs) -> list[dict]:
             out.append({"kind": v["kind"], "answer": ans if sa else (str(C.index(ans) + 1) if ans in C else ""),
                         "points": sa_pts if sa else mc_pts, "type": vspec.TYPES.get(t, t),
                         "source": (vs.passages[q.get("p", 0)].get("title") or f"지문 {q.get('p', 0) + 1}") if vs.passages else "",
-                        "content": _content(n, v["stem"], v["passage"], v["box"], v["choices"] or (list(C) if t == "grammar" else []))})
+                        "content": _content(n, v["stem"], v["passage"], v["box"], v["choices"] or (list(C) if t in ("grammar", "refer") else []))})
             continue
         stem = vspec.STEMS["match_" + q.get("ask", "wrong")] if t == "match" else vspec.STEMS[t]
         passage, box, choices = text, "", list(q.get("choices") or [])
