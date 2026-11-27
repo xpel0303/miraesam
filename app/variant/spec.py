@@ -171,6 +171,14 @@ def plan_counts(passages: list[dict], counts: dict[str, int], seed: int, shuffle
     return plan
 
 
+def plan_total(passages: list[dict], types: list[str], n: int, seed: int, shuffle: bool) -> list[dict]:
+    """전체 n문항을 고른 유형으로 고르게(랜덤) 나눠 배정. shuffle=False면 지문 순서대로."""
+    plan = plan_mix(passages, types, n, seed)
+    if not shuffle:
+        plan.sort(key=lambda a: (a["p"], a["k"], types.index(a["type"]) if a["type"] in types else 99))
+    return plan
+
+
 def mix_capacity(passages: list[dict], types: list[str]) -> int:
     return sum(1 for p in passages for t in types if feasible(p["text"], t))
 

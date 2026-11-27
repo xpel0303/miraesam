@@ -85,22 +85,33 @@ async def create(request: Request, teacher: Teacher = Depends(current_teacher), 
             errors.append(f"지문 {i}이 너무 깁니다 (6000자까지).")
         short = [spec.TYPES[t] for t in ("order", "insert", "irrelevant") if t in types and n < spec.MIN_SENTENCES[t]]
     mode = "mix" if f.get("mode") == "mix" else "each"
-    if passages and types:
-        plan = spec.plan_counts(passages, counts, secrets.randbits(31), mode == "mix")
+    count_mode = "total" if f.get("count_mode") == "total" else "each"
+    mix_n = 0
+    if count_mode == "total":
+        try:
+            mix_n = int(str(f.get("mix_n") or "0").strip() or 0)
+        except ValueError:
+            mix_n = 0
+        if not 1 <= mix_n <= spec.MAX_MIX:
+            errors.append(f"전체 문항 수를 1~{spec.MAX_MIX} 사이로 적어 주세요.")
+    if passages and types and not (count_mode == "total" and not mix_n):
+        plan = (spec.plan_total(passages, types, mix_n, secrets.randbits(31), mode == "mix") if count_mode == "total"
+                else spec.plan_counts(passages, counts, secrets.randbits(31), mode == "mix"))
         if not plan:
             errors.append("지문이 짧아서 고른 유형으로 만들 수 있는 문항이 없어요.")
         if len(plan) > spec.MAX_MIX:
             errors.append(f"한 번에 {spec.MAX_MIX}문항까지 만들 수 있어요 (지금 {len(plan)}문항).")
         skipped = [spec.TYPES[t] for t in types if not any(a["type"] == t for a in plan)]
-        if skipped and plan:
+        if skipped and plan and count_mode == "each":
             errors.append(f"지문이 짧아서 {', '.join(skipped)} 문제를 만들 수 있는 지문이 없어요. 그 유형을 빼 주세요.")
     if any(t in spec.AI_TYPES for t in types) and not teacher.gemini_key_enc:
         errors.append("Gemini API 키가 없습니다. 설정에서 키를 넣거나, 순서 배열·문장 삽입만 골라 주세요.")
     if errors:
-        form = {"title": title, "level": level, "common_grammar": f.get("common_grammar", ""), "types": types, "mode": mode, "counts": counts, "passages": [{"title": t, "text": x, "grammar": grams[i] if i < len(grams) else ""} for i, (t, x) in enumerate(zip(titles, texts))]}
+        form = {"title": title, "level": level, "common_grammar": f.get("common_grammar", ""), "types": types, "mode": mode, "counts": counts, "count_mode": count_mode, "mix_n": mix_n or "", "passages": [{"title": t, "text": x, "grammar": grams[i] if i < len(grams) else ""} for i, (t, x) in enumerate(zip(titles, texts))]}
         return render(request, "variant/new.html", {"teacher": teacher, "form": form, "errors": errors, "spec": spec, "levels": LEVELS, "active": "variant"}, 400)
     vs = VariantSet(academy_id=teacher.academy_id, teacher_id=teacher.id, title=title, passages=passages,
-                    options={"types": types, "level": level if level in LEVELS else "", "mode": "mix", "counts": counts,
+                    options={"types": types, "level": level if level in LEVELS else "", "mode": "mix",
+                             **({"total": mix_n} if count_mode == "total" else {"counts": counts}),
                              "shuffle": mode == "mix", "plan": plan})
     db.add(vs)
     db.commit()
@@ -213,7 +224,9 @@ def regenerate(vid: int, request: Request, teacher: Teacher = Depends(current_te
     if not _busy(db, vs):
         vs.questions, vs.warnings = [], []
         vs.options = {k: v for k, v in vs.options.items() if k != "dirty"}
-        if vs.options.get("counts"):  # 유형별 문항 수로 만든 것: 배정도 새로
+        if vs.options.get("total"):  # 전체 문항 수 + 랜덤 유형: 배정도 새로
+            vs.options = {**vs.options, "plan": spec.plan_total(vs.passages, vs.options["types"], vs.options["total"], secrets.randbits(31), vs.options.get("shuffle", False))}
+        elif vs.options.get("counts"):  # 유형별 문항 수로 만든 것: 배정도 새로
             vs.options = {**vs.options, "plan": spec.plan_counts(vs.passages, vs.options["counts"], secrets.randbits(31), vs.options.get("shuffle", False))}
         elif vs.options.get("mode") == "mix":  # 섞기는 새로 만들 때 배정도 새로 (다른 조합)
             vs.options = {**vs.options, "plan": spec.plan_mix(vs.passages, vs.options["types"], vs.options.get("mix_n", len(vs.passages)), secrets.randbits(31))}

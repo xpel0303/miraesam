@@ -2,7 +2,7 @@
 {% block title %}새 변형문제 · {{ APP_NAME }}{% endblock %}
 {% block main %}
 <style>
-  .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 8px; }
+  .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
   .tcell { display: flex; align-items: center; gap: 8px; margin: 0; padding: 7px 8px 7px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; cursor: pointer; font-weight: 600; transition: background .15s, border-color .15s; }
   .tcell.on { border-color: #5b6ee1; background: #eef0fc; }
   .tcell input[type=checkbox] { width: 17px; height: 17px; margin: 0; accent-color: #4c63d9; flex: none; }
@@ -22,7 +22,13 @@
       <div class="field"><label for="title">제목</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 3월 모의고사 변형 1회"></div>
       <div class="field"><label for="level">대상</label><select id="level" name="level">{% for l in levels %}<option value="{{ l }}" {% if form.level == l %}selected{% endif %}>{{ l or "정하지 않음" }}</option>{% endfor %}</select></div>
     </div>
-    <div class="field"><label>유형과 문항 수 <span class="hint">체크하고 −/+ 로 그 유형을 모두 몇 문제 낼지 정해요. 지문들에 고르게 나눠 들어가요.</span></label>
+    <div class="field"><label>문항 수 정하는 방법</label>
+      <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="count_mode" value="each" {% if form.count_mode != "total" %}checked{% endif %}> <b>유형마다 정하기</b> <span class="muted small">— 아래 칸의 −/+ 숫자만큼</span></label>
+      <label style="font-weight:400;display:block;margin:4px 0"><input type="radio" name="count_mode" value="total" {% if form.count_mode == "total" %}checked{% endif %}> <b>전체 문항 수만 정하고 유형은 랜덤</b> <span class="muted small">— 고른 유형 안에서 고르게 섞어 뽑아요</span></label>
+      <div class="row" id="total-box" style="max-width:300px;margin-top:6px"><div class="field"><label for="mix_n">전체 문항 수 <span class="hint">최대 {{ spec.MAX_MIX }}</span></label>
+        <input type="text" id="mix_n" name="mix_n" inputmode="numeric" value="{{ form.mix_n or '' }}" placeholder="예: 30"></div></div>
+    </div>
+    <div class="field"><label>유형 <span class="hint" id="type-hint">체크하고 −/+ 로 그 유형을 모두 몇 문제 낼지 정해요. 지문들에 고르게 나눠 들어가요.</span></label>
       <div class="tgrid">
         {% for k in spec.MC_TYPES %}{% set on = k in form.types %}
         <label class="tcell{% if on %} on{% endif %}"><input type="checkbox" name="types" value="{{ k }}" {% if on %}checked{% endif %}><span class="tn">{{ spec.TYPES[k] }}</span>
@@ -81,13 +87,21 @@
   renumber();
   // 유형 칸: 체크·−/+
   const cells = [...document.querySelectorAll(".tcell")], MAXT = {{ spec.MAX_PER_TYPE }};
+  const isTotal = () => document.querySelector("input[name=count_mode]:checked").value === "total";
   const num = (c) => c.querySelector("input[type=text]");
   function sync() {
     let sum = 0, n = 0;
     cells.forEach((c) => { const on = c.querySelector("input[type=checkbox]").checked; c.classList.toggle("on", on);
       const v = Math.max(1, Math.min(MAXT, parseInt(num(c).value, 10) || 1)); num(c).value = v; if (on) { sum += v; n++; } });
-    document.getElementById("cnt-sum").textContent = n ? `${n}개 유형 · 모두 ${sum}문항` : "유형을 골라 주세요";
+    const tot = isTotal();
+    document.getElementById("total-box").hidden = !tot;
+    document.querySelectorAll(".tcell .step, #cnt-pass, #cnt-one").forEach((e) => { e.style.display = tot ? "none" : ""; });
+    document.getElementById("type-hint").textContent = tot ? "이번 시험에 쓸 유형만 체크하세요. 문항 수는 위 '전체 문항 수'를 고르게 나눠요." : "체크하고 −/+ 로 그 유형을 모두 몇 문제 낼지 정해요. 지문들에 고르게 나눠 들어가요.";
+    const t = parseInt(document.getElementById("mix_n").value, 10);
+    document.getElementById("cnt-sum").textContent = !n ? "유형을 골라 주세요" : tot ? `${n}개 유형에서 ${t > 0 ? t + "문항" : "문항 수를 적어 주세요"}` : `${n}개 유형 · 모두 ${sum}문항`;
   }
+  document.querySelectorAll("input[name=count_mode]").forEach((r) => r.addEventListener("change", sync));
+  document.getElementById("mix_n").addEventListener("input", sync);
   cells.forEach((c) => {
     c.querySelectorAll("[data-d]").forEach((b) => b.addEventListener("click", (e) => { e.preventDefault();
       num(c).value = (parseInt(num(c).value, 10) || 1) + Number(b.dataset.d); c.querySelector("input[type=checkbox]").checked = true; sync(); }));
