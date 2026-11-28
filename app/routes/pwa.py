@@ -7,7 +7,8 @@ import json
 import re
 
 from fastapi import APIRouter
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
+from sqlalchemy import select
 
 router = APIRouter()
 
@@ -46,12 +47,40 @@ def sw():
     return Response(SW, media_type="text/javascript", headers={"Cache-Control": "no-cache", "Service-Worker-Allowed": "/"})
 
 
+def _academy(s: str, a: str):
+    """학생 코드(s) 또는 학원 번호(a) → 학원 (못 찾으면 None)."""
+    from ..db import session_scope
+    from ..models import Academy, Student
+    with session_scope() as db:
+        ac = None
+        if s:
+            st = db.execute(select(Student).where(Student.access_code == s.upper())).scalars().first()
+            ac = db.get(Academy, st.academy_id) if st else None
+        elif a.isdigit():
+            ac = db.get(Academy, int(a))
+        if ac is not None:
+            db.expunge(ac)
+        return ac
+
+
+@router.get("/app-icon/{aid}-{size}.png", include_in_schema=False)
+def app_icon(aid: int, size: int):
+    from .. import pwa_brand
+    png = pwa_brand.render_icon(_academy("", str(aid)), size if size in (180, 192, 512) else 192)
+    if png is None:
+        return RedirectResponse(f"/static/icons/icon-{192 if size not in (180, 512) else size}.png")
+    return Response(png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
 @router.get("/manifest.webmanifest", include_in_schema=False)
-def manifest(s: str = ""):
+def manifest(s: str = "", a: str = ""):
+    from .. import pwa_brand
     code = s if re.fullmatch(r"[A-Za-z0-9_-]{1,40}", s or "") else ""
+    ac = _academy(code, a)
+    name, short = pwa_brand.names(ac, "student" if code else "teacher")
     m = {
-        "name": "미래샘 숙제" if code else "미래샘 영어연구소 (선생님)",
-        "short_name": "미래샘 숙제" if code else "미래샘 교사",
+        "name": name,
+        "short_name": short,
         "id": f"/s/{code}" if code else "/",
         "start_url": f"/s/{code}" if code else "/",
         "scope": f"/s/{code}" if code else "/",  # 학생 앱은 그 학생 화면만 — 선생님 앱(/)이 깔린 폰에서도 따로 설치되게
@@ -59,13 +88,9 @@ def manifest(s: str = ""):
         "background_color": "#FFF4E6",
         "theme_color": "#1B2A5C",
         "lang": "ko",
-        "icons": [
-            {"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-            {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-            {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
-        ],
+        "icons": pwa_brand.icons(ac),
     }
-    return Response(json.dumps(m, ensure_ascii=False), media_type="application/manifest+json", headers={"Cache-Control": "no-cache"})
+    return Response(json.dumps(m, ensure_ascii=False), media_type="application/manifest+json; charset=utf-8", headers={"Cache-Control": "no-cache"})
 
 
 @router.get("/push/key", include_in_schema=False)

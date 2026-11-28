@@ -39,9 +39,11 @@ def service_worker():
 def manifest(token: str, db: Session = Depends(get_db)):
     s = _student(db, token)
     academy = db.get(Academy, s.academy_id)
+    from .. import pwa_brand
+    name, short = pwa_brand.names(academy, "parent", s.name)
     return JSONResponse({
-        "name": f"{APP_NAME} · {s.name} 학습관리",
-        "short_name": f"{APP_NAME} {s.name}"[:12],
+        "name": name,
+        "short_name": short,
         "start_url": f"/p/{token}",
         "id": f"/p/{token}",
         "scope": "/p/",
@@ -49,11 +51,7 @@ def manifest(token: str, db: Session = Depends(get_db)):
         "background_color": "#FFF4E6",
         "theme_color": (academy.brand_color if academy and academy.brand_color else "#1B2A5C"),
         "lang": "ko",
-        "icons": [
-            {"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-            {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-            {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
-        ],
+        "icons": pwa_brand.icons(academy),
     }, media_type="application/manifest+json")
 
 

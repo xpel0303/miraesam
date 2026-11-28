@@ -42,6 +42,7 @@ class Academy(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     logo: Mapped[str | None] = mapped_column(Text, nullable=True)  # data URL
+    app_icon: Mapped[str | None] = mapped_column(Text, nullable=True)  # 홈 화면 앱 아이콘 (data URL, 없으면 logo)
     brand_color: Mapped[str] = mapped_column(String(9), default="#1B2A5C")
     invite_code: Mapped[str] = mapped_column(String(12), unique=True, index=True)
     lt_token: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)  # 레벨테스트 공용 링크 /lt/{lt_token}

@@ -28,6 +28,16 @@
     </div>
     <button class="btn" type="submit">학원 정보 저장</button>
   </form>
+  <form method="post" action="/settings/academy/app-icon" enctype="multipart/form-data" style="margin-top:16px;border-top:1px dashed var(--line);padding-top:14px">
+    <div class="field"><label for="icon">휴대폰 앱 아이콘 <span class="hint">학생·선생님·학부모 앱 아이콘. 정사각형 그림이 좋아요 (없으면 위 로고)</span></label>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <img src="{{ pwa_brand.icon_url(academy, 192) }}" alt="지금 앱 아이콘" width="64" height="64" style="border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.15)">
+        <span class="small">앱 이름: <b>{{ pwa_brand.names(academy, "teacher")[1] }}</b> · <b>{{ pwa_brand.names(academy, "student")[1] }}</b> (학원 이름으로 정해져요)</span>
+      </div>
+      <input type="file" id="icon" name="icon" accept="image/png,image/jpeg,image/webp" style="margin-top:8px">
+      {% if academy.app_icon %}<label style="font-weight:400"><input type="checkbox" name="remove" value="1"> 앱 아이콘 지우기</label>{% endif %}</div>
+    <button class="btn ghost" type="submit">앱 아이콘 저장</button>
+  </form>
   {% else %}
   <p>{{ academy.name }}</p>
   <p class="muted small">학원 정보는 원장님 계정에서만 바꿀 수 있습니다.</p>
@@ -69,7 +79,14 @@
     {% endif %}
   </div>
   {% if teacher.role == "owner" %}
-    <p class="small">함께 쓸 선생님께 이 초대 코드를 알려 주세요: <span class="code">{{ academy.invite_code }}</span>
+    {% set _b = request.base_url|string %}{% set inv = (_b if "localhost" in _b or "127.0.0.1" in _b else _b.replace("http://", "https://")) ~ "join/" ~ academy.invite_code %}
+    <div class="panel" style="background:#f7f8fc;margin:0 0 10px">
+      <p style="margin:0 0 6px"><b>📲 선생님 초대 링크</b> <span class="small muted">— 카톡으로 보내면, 받은 선생님이 누르고 계정만 만들면 '{{ pwa_brand.names(academy, "teacher")[1] }}' 앱을 바로 설치해요</span></p>
+      <p style="margin:0;word-break:break-all"><span class="code">{{ inv }}</span></p>
+      <p style="margin:8px 0 0"><button class="btn small" type="button" data-copy="{{ inv }}">링크 복사</button>
+        <button class="btn ghost small" type="button" data-copy="[{{ academy.name }}] 선생님 초대 링크예요. 눌러서 계정을 만들고 휴대폰에 학원 앱을 설치해 주세요 👉 {{ inv }}">카톡 문구 복사</button></p>
+    </div>
+    <p class="small">초대 코드만 알려 줄 때: <span class="code">{{ academy.invite_code }}</span>
       <button class="btn ghost small" type="button" data-copy="{{ academy.invite_code }}">코드 복사</button></p>
   {% endif %}
   <div class="table-wrap">

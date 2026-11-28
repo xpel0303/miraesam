@@ -14,6 +14,8 @@ from .models import Teacher
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 templates.env.globals.update(APP_NAME=APP_NAME, APP_SUB=APP_SUB, NAV_GROUPS=grouped, STAGE_NAMES=STAGE_NAMES)
+from . import pwa_brand  # noqa: E402
+templates.env.globals["pwa_brand"] = pwa_brand
 
 _KST = ZoneInfo("Asia/Seoul")
 

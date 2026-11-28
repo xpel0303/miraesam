@@ -1,7 +1,8 @@
 {# 앱 설치 안내 띠: 안드로이드·크롬은 버튼 한 번, 아이폰은 '공유 → 홈 화면에 추가' 안내. 앱으로 열었으면 안 보임 #}
 <div id="pwa-bar" class="pwa-bar" hidden>
-  <img src="/static/icons/icon-192.png" alt="" width="36" height="36">
-  <div class="pwa-txt"><b>{{ "미래샘 숙제 앱" if pwa_code else "미래샘 선생님 앱" }} 설치하기</b><span id="pwa-sub">홈 화면에 아이콘이 생겨요</span></div>
+  {% set _pa = academy if academy is defined and academy else (pwa_academy if pwa_academy is defined else None) %}
+  <img src="{{ pwa_brand.icon_url(_pa, 192) }}" alt="" width="36" height="36" style="border-radius:8px">
+  <div class="pwa-txt"><b>'{{ pwa_brand.names(_pa, "student" if pwa_code else "teacher")[1] }}' 앱 설치하기</b><span id="pwa-sub">홈 화면에 아이콘이 생겨요</span></div>
   <button type="button" class="btn small" id="pwa-go">설치</button>
   <button type="button" class="pwa-x" id="pwa-x" aria-label="닫기">✕</button>
 </div>
@@ -9,13 +10,13 @@
   <p><b>아이폰에서 앱으로 설치하기</b></p>
   <ol><li>사파리 아래쪽 <b>공유 버튼</b>(□↑)을 눌러요</li><li><b>'홈 화면에 추가'</b>를 눌러요</li><li>오른쪽 위 <b>'추가'</b>를 누르면 끝!</li></ol>
   <p class="small muted">카카오톡 안에서 열었다면 오른쪽 아래 ⋯ → '다른 브라우저로 열기(사파리)' 먼저 해 주세요.</p>
+  <button type="button" class="btn small" id="pwa-ios-ok">알겠어요</button>
 </div>
 <div id="pwa-and" class="pwa-ios" hidden>
   <p><b>안드로이드에서 앱으로 설치하기</b></p>
   <ol><li><b>크롬</b>(또는 삼성 인터넷)으로 이 화면을 열어요</li><li>오른쪽 위 <b>⋮ 메뉴</b>를 눌러요</li><li><b>'앱 설치'</b> 또는 <b>'홈 화면에 추가'</b>를 누르면 끝!</li></ol>
   <p class="small muted">카카오톡·네이버 앱 안에서는 설치가 안 돼요. 크롬으로 먼저 열어 주세요.</p>
   <button type="button" class="btn small" id="pwa-and-ok">알겠어요</button>
-  <button type="button" class="btn small" id="pwa-ios-ok">알겠어요</button>
 </div>
 <script>
 (() => {
@@ -23,7 +24,8 @@
   const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
   if (standalone) return;
   const KEY = "pwa-bar-closed";
-  try { if (Date.now() - (+localStorage.getItem(KEY) || 0) < 7 * 864e5) return; } catch (e) {}
+  const want = /[?&]app=1/.test(location.search);  // 초대 링크로 들어와 가입한 직후: 꼭 보여 줌
+  try { if (!want && Date.now() - (+localStorage.getItem(KEY) || 0) < 7 * 864e5) return; } catch (e) {}
   const bar = document.getElementById("pwa-bar"), ios = document.getElementById("pwa-ios"), go = document.getElementById("pwa-go");
   const close = () => { bar.hidden = true; ios.hidden = true; document.getElementById("pwa-and").hidden = true; try { localStorage.setItem(KEY, Date.now()); } catch (e) {} };
   document.getElementById("pwa-x").onclick = close;

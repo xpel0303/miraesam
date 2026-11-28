@@ -1,0 +1,22 @@
+{% extends "auth_base.html" %}
+{% block title %}{{ academy.name }} 선생님 합류{% endblock %}
+{% block head %}{% set pwa_code = "" %}{% include "_pwa_head.html" %}{% endblock %}
+{% block box %}
+<div class="panel" style="text-align:center">
+  <img src="{{ pwa_brand.icon_url(academy, 192) }}" alt="" width="84" height="84" style="border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.12)">
+  <p class="auth-title" style="margin:10px 0 2px">{{ academy.name }}</p>
+  <p class="muted small" style="margin:0 0 12px">선생님으로 초대받았어요. 계정을 만들면 휴대폰에 <b>'{{ pwa_brand.names(academy, "teacher")[1] }}'</b> 앱을 바로 설치할 수 있어요.</p>
+  {% if error %}<div class="flash error" role="alert" style="text-align:left">{{ error }}</div>{% endif %}
+  <form method="post" action="/signup" style="text-align:left">
+    <input type="hidden" name="mode" value="join"><input type="hidden" name="invite_code" value="{{ academy.invite_code }}">
+    <div class="field"><label for="name">이름</label><input type="text" id="name" name="name" value="{{ form.name or '' }}" required></div>
+    <div class="field"><label for="login_id">아이디 <span class="hint">영문·숫자 3자 이상</span></label><input type="text" id="login_id" name="login_id" value="{{ form.login_id or '' }}" autocapitalize="off" autocomplete="username" required></div>
+    <div class="row">
+      <div class="field"><label for="pin">PIN <span class="hint">숫자 4~8자리</span></label><input type="password" id="pin" name="pin" inputmode="numeric" autocomplete="new-password" required></div>
+      <div class="field"><label for="pin2">PIN 확인</label><input type="password" id="pin2" name="pin2" inputmode="numeric" autocomplete="new-password" required></div>
+    </div>
+    <button class="btn" type="submit" style="width:100%">합류하고 앱 설치하기</button>
+  </form>
+</div>
+<p class="small muted" style="text-align:center">이미 계정이 있나요? <a href="/login">로그인</a>하면 첫 화면에서 앱을 설치할 수 있어요.</p>
+{% endblock %}

@@ -36,6 +36,20 @@ def login(request: Request, login_id: str = Form(...), pin: str = Form(...), db:
     return _go("/")
 
 
+@router.get("/join/{code}")
+def join_page(code: str, request: Request, db: Session = Depends(get_db)):
+    """선생님 초대 링크: 그 학원 선생님으로 가입 → 바로 학원 이름 앱 설치 안내."""
+    academy = db.execute(select(Academy).where(Academy.invite_code == code.strip().upper())).scalar_one_or_none()
+    if academy is None:
+        return render(request, "signup.html", {"error": "초대 링크가 바뀌었거나 잘못됐어요. 원장님께 새 링크를 받아 주세요.", "form": {"mode": "join"}}, 404)
+    tid = request.session.get("teacher_id")
+    if tid:
+        t = db.get(Teacher, tid)
+        if t and t.academy_id == academy.id:
+            return _go("/?app=1")  # 이미 가입한 선생님: 앱 설치 안내만
+    return render(request, "join.html", {"academy": academy, "pwa_academy": academy, "form": {"invite_code": academy.invite_code, "mode": "join"}})
+
+
 @router.get("/signup")
 def signup_page(request: Request, code: str = ""):
     return render(request, "signup.html", {"form": {"invite_code": code, "mode": "join" if code else "new"}})
@@ -58,6 +72,10 @@ def signup(
     login_id = login_id.strip().lower()
 
     def fail(msg):
+        if mode == "join" and request.headers.get("referer", "").find("/join/") >= 0:
+            ac = db.execute(select(Academy).where(Academy.invite_code == invite_code.strip().upper())).scalar_one_or_none()
+            if ac is not None:
+                return render(request, "join.html", {"error": msg, "academy": ac, "pwa_academy": ac, "form": form}, 400)
         return render(request, "signup.html", {"error": msg, "form": form}, 400)
 
     if not LOGIN_ID_RE.match(login_id):
@@ -101,8 +119,9 @@ def signup(
     db.commit()
     request.session.clear()
     request.session["teacher_id"] = teacher.id
-    flash(request, f"{academy.name}에 오신 것을 환영합니다." + ("" if gemini_key.strip() else " 설정에서 Gemini 키를 넣어야 자료 만들기를 쓸 수 있어요."))
-    return _go("/")
+    flash(request, f"{academy.name}에 오신 것을 환영합니다." + ("" if gemini_key.strip() else " 설정에서 Gemini 키를 넣어야 자료 만들기를 쓸 수 있어요.")
+          + (" 아래 '앱 설치하기'를 누르면 휴대폰 홈 화면에 학원 앱이 생겨요." if mode == "join" else ""))
+    return _go("/?app=1" if mode == "join" else "/")
 
 
 @router.post("/logout")

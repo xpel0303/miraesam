@@ -69,6 +69,30 @@ def test_gemini(request: Request, teacher: Teacher = Depends(current_teacher), d
     return RedirectResponse(f"/settings?job={job.id}#gemini", status_code=303)
 
 
+@router.post("/academy/app-icon")
+async def save_app_icon(request: Request, icon: UploadFile | None = File(None), remove: str = Form(""),
+                        teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+    """홈 화면 앱 아이콘 (학생·선생님·학부모 앱 모두). 없으면 학원 로고, 그것도 없으면 미래샘 아이콘."""
+    academy = db.get(Academy, teacher.academy_id)
+    if remove:
+        academy.app_icon = None
+    elif icon is not None and icon.filename:
+        data = await icon.read()
+        if len(data) > 1_000_000 or icon.content_type not in ("image/png", "image/jpeg", "image/webp"):
+            flash(request, "앱 아이콘은 1MB 이하 PNG·JPG·WEBP로 올려 주세요.", "error")
+            return _back("#academy")
+        from PIL import Image
+        import io as _io
+        img = Image.open(_io.BytesIO(data)).convert("RGBA")
+        img.thumbnail((512, 512))
+        out = _io.BytesIO()
+        img.save(out, "PNG", optimize=True)
+        academy.app_icon = "data:image/png;base64," + base64.b64encode(out.getvalue()).decode()
+    db.commit()
+    flash(request, "앱 아이콘을 저장했어요. 이미 설치한 앱은 지웠다가 다시 설치하면 새 아이콘으로 바뀌어요.")
+    return _back("#academy")
+
+
 @router.post("/academy")
 async def save_academy(
     request: Request,

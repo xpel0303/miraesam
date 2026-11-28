@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 {% if token %}<link rel="manifest" href="/p/{{ token }}/manifest.webmanifest">{% endif %}
-<link rel="apple-touch-icon" href="/static/icons/icon-180.png">
+<link rel="apple-touch-icon" href="{{ pwa_brand.icon_url(academy, 180) }}">
 <link rel="stylesheet" href="/static/app.css">
 {% include "parent/_style.html" %}
 <style>
