@@ -11,7 +11,7 @@ from .config import BASE_DIR, SECRET_KEY
 from .db import init_db
 from .jobs import start_workers, stop_workers
 from .routes import analysis, bank, auth, briefing, care, care_more, comprehension, exam, final, flow, grammar, home, homework, hwplan, leveltest, library, mock, ocr, paraphrase, parent, pwa, reports, roster, sentence, settings, student, summary, textbook, trend, variant, vocab
-from .web import LoginRequired, render
+from .web import LoginRequired, NoPermission, render
 
 
 @asynccontextmanager
@@ -33,6 +33,13 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 
 for r in (auth, home, settings, roster, student, briefing, care, care_more, parent, comprehension, analysis, summary, flow, textbook, vocab, grammar, variant, sentence, paraphrase, reports, hwplan, homework, exam, trend, mock, final, leveltest, library, bank, ocr, pwa):
     app.include_router(r.router)
+
+
+@app.exception_handler(NoPermission)
+async def no_permission(request: Request, exc: NoPermission):
+    from .features import BY_KEY
+    f = BY_KEY.get(str(exc.args[0]) if exc.args else "")
+    return render(request, "no_permission.html", {"feature": f}, 403)
 
 
 @app.exception_handler(LoginRequired)

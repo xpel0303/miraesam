@@ -27,7 +27,7 @@
     {{ brandmark(academy) }}
     <nav class="nav" aria-label="전체 메뉴">
       <a href="/" {% if active == "home" %}aria-current="page"{% endif %}>{{ art.icon("home") }}<span>홈</span></a>
-      {% for group, items in NAV_GROUPS() %}
+      {% for group, items0 in NAV_GROUPS() %}{% set items = items0|select("allowed", teacher if teacher is defined else None)|list %}{% if items %}
         <div class="nav-group">
           <div>{{ group }}</div>
           {% for f in items %}
@@ -36,7 +36,7 @@
             </a>
           {% endfor %}
         </div>
-      {% endfor %}
+      {% endif %}{% endfor %}
       <div class="nav-group">
         <a href="/settings" {% if active == "settings" %}aria-current="page"{% endif %}>{{ art.icon("settings") }}<span>설정</span></a>
       </div>

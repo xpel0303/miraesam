@@ -69,6 +69,23 @@ def test_gemini(request: Request, teacher: Teacher = Depends(current_teacher), d
     return RedirectResponse(f"/settings?job={job.id}#gemini", status_code=303)
 
 
+@router.post("/teachers/{tid}/perms")
+async def save_perms(tid: int, request: Request, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+    """선생님별로 들어갈 수 있는 메뉴(기능)."""
+    from ..features import FEATURES
+    t = db.get(Teacher, tid)
+    if t is None or t.academy_id != teacher.academy_id or t.role == "owner":
+        flash(request, "그 선생님을 찾을 수 없어요.", "error")
+        return _back("#perms")
+    f = await request.form()
+    keys = [x.key for x in FEATURES if x.ready]
+    chosen = [k for k in keys if k in f.getlist("perm")]
+    t.perms = None if f.get("all") or len(chosen) == len(keys) else chosen
+    db.commit()
+    flash(request, f"{t.name} 선생님 권한을 저장했어요 ({'전부' if t.perms is None else str(len(chosen)) + '개 메뉴'}).")
+    return _back("#perms")
+
+
 @router.post("/academy/app-icon")
 async def save_app_icon(request: Request, icon: UploadFile | None = File(None), remove: str = Form(""),
                         teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):

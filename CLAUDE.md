@@ -13,7 +13,6 @@
 - 비밀번호·DB 주소·API 키는 Claude가 입력하거나 저장하지 않음. 필요하면 원장님이 직접 로그인/붙여넣기.
 - Render 환경변수는 건드리지 않음.
 - 교재·시험지 원문(저작권 있는 지문/문항)은 공개 저장소에 올리지 않음. 문법뱅크 문항은 DB에만.
-- 화면·PDF 어디에도 **ARA 로고/이름을 넣지 않음** (미래샘 로고만).
 - 배포하면 서버가 다시 켜지면서 돌던 작업이 처음부터 재시도됨 (최대 3번, `jobs.MAX_ATTEMPTS`). 긴 작업이 돌 때는 배포를 미룸.
 - 커밋 메시지 끝에 공동 작성 표시 줄을 붙임.
 
@@ -40,7 +39,8 @@
 - **단어 숙제 (클래스카드식)**: 숙제 만들 때 단어 퀴즈에 학습 단계 선택(`homework/spec.py` `STAGE_SETS`). 학생은 암기(카드)·리콜(뜻 고르기)·스펠(철자)·매칭 게임·테스트를 순서 없이. 진행은 `homework_results.stages`, 화면 `student/hw_vocab*.html`, 같은 숙제 친구들 순위(게임 기록·테스트 점수).
 - **단어 숙제 자동 일정** (`homework/plan.py`, `routes/hwplan.py` /homework/plans, 표 `homework_plans`, 화면 `hwplan/`): 단어장 + 반 + 요일 + 시각 + 시작 Day + 복습 간격(gap, 기본 2: 3회 = Day3+Day1, 한 칸에 섞음). 회차 r: 새 = units[start+r], 복습 = units[start+r-gap], 끝난 뒤 gap회 더(복습만). `catch_up()` 이 시각 지난 회차를 숙제로 냄(made에 회차→{hid,date}) — push 루프(5분마다)·학생 홈·숙제 화면·일정 화면에서 불림(무료 서버가 잠들어도 깨면 따라잡음, 알림은 오늘 회차만). 멈춤/다시 시작(settings.resume 이후 날짜로), 이미 시작하면 단어장·시작 Day·gap·시작일 고정. 숙제 화면 '📅 단어 숙제 자동 일정'.
 - **홈 화면 앱(PWA)**: `routes/pwa.py`(manifest·sw.js), `templates/_pwa_head.html`·`_pwa_install.html`, 아이콘 `static/icons/`. 서비스 워커는 저장 안 함(늘 서버에서) → 배포하면 앱도 바로 바뀜. 학생 화면에서 설치하면 '미래샘 숙제'(그 학생 코드로 시작), 선생님 화면에서 설치하면 '미래샘 교사' — 한 폰에 둘 다 깔 수 있음.
-- **앱 이름·아이콘 = 학원 것** (`app/pwa_brand.py`, Jinja 전역 `pwa_brand`): 앱 이름은 학원 이름(선생님 '○○ 교사', 학생 '○○ 숙제', 학부모 '○○ 학생이름'), 아이콘은 설정 '휴대폰 앱 아이콘'(`academies.app_icon`, DB에만) → 없으면 학원 로고 → 없으면 미래샘. `/app-icon/{학원id}-{크기}.png` 가 정사각 PNG로 그림. 선생님 앱 manifest 는 `?a=학원id`. 원장님이 11/28 ARA DNA 로고를 앱 아이콘으로 직접 지정함(저장소엔 안 넣음, DB에만).
+- **앱 이름·아이콘 = 학원 것** (`app/pwa_brand.py`, Jinja 전역 `pwa_brand`): 앱 이름은 학원 이름(선생님 '○○ 교사', 학생 '○○ 숙제', 학부모 '○○ 학생이름'), 아이콘은 설정 '휴대폰 앱 아이콘'(`academies.app_icon`, DB에만) → 없으면 학원 로고 → 없으면 미래샘. `/app-icon/{학원id}-{크기}.png` 가 정사각 PNG로 그림. 선생님 앱 manifest 는 `?a=학원id`. 지금 앱 아이콘은 원장님이 고른 ARA DNA 로고(DB에만).
+- **선생님 권한** (`teachers.perms`, `Teacher.can(key)`, `features.PATHS`/`feature_of`): 설정 '선생님 권한'에서 선생님마다 열 메뉴(기능 key)를 고름. None=전부, 원장은 늘 전부. `current_teacher` 가 주소로 기능을 찾아 막고(`NoPermission` → `no_permission.html` 403), 메뉴·첫 화면은 Jinja 테스트 `allowed` 로 거름. 학습관리(care) = /care·/homework·/reports·/up/.
 - **선생님 초대 링크** `/join/{invite_code}` (`join.html`): 학원 아이콘·이름 보이는 가입 화면 → 가입하면 `/?app=1` 로 가서 앱 설치 띠를 꼭 띄움. 설정 '선생님' 칸에 링크 복사·카톡 문구 복사.
 - **숙제 푸시 알림**: `app/push.py` (pywebpush). VAPID 키는 처음 쓸 때 만들어 DB `app_secrets`에 저장(환경변수 X). 기기는 `push_subs`. 숙제 내면 반 학생에게, 마감 전날 17~22시에 안 한 학생에게 1번(`options.reminded`), 숙제 화면 '안 한 학생에게 알림 보내기'. 학생 홈 '🔔 숙제 알림' 카드. 아이폰은 홈 화면 앱에서만.
 - **메뉴(학원 관리)**: 학생 명단 → 학습관리(숙제·시험 결과(/reports, 옛 '학생·반 리포트')는 학습관리 안의 탭, `care/_tabs.html`) → 레벨테스트. 숙제 화면도 메뉴는 학습관리로 표시.

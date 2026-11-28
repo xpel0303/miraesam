@@ -1,0 +1,10 @@
+{% extends "auth_base.html" %}
+{% block title %}권한 없음 · {{ APP_NAME }}{% endblock %}
+{% block box %}
+<div class="panel" style="text-align:center">
+  <p style="font-size:2.4rem;margin:0">🔒</p>
+  <p class="auth-title">{{ feature.name if feature else "이 메뉴" }}는 아직 열려 있지 않아요</p>
+  <p class="muted small">원장님이 설정 → 선생님 권한에서 열어 주면 쓸 수 있어요.</p>
+  <a class="btn" href="/">첫 화면으로</a>
+</div>
+{% endblock %}

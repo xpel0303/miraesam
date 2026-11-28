@@ -91,7 +91,7 @@
   {% endif %}
   <div class="table-wrap">
     <table class="list">
-      <thead><tr><th>이름</th><th>아이디</th><th>역할</th><th>Gemini 키</th></tr></thead>
+      <thead><tr><th>이름</th><th>아이디</th><th>역할</th><th>Gemini 키</th><th>들어갈 수 있는 메뉴</th></tr></thead>
       <tbody>
         {% for t in teachers %}
         <tr>
@@ -99,12 +99,48 @@
           <td class="muted">{{ t.login_id }}</td>
           <td>{{ "원장" if t.role == "owner" else "선생님" }}</td>
           <td>{{ "있음" if t.gemini_key_enc else "없음" }}</td>
+          <td class="small">{% if t.role == "owner" %}전부{% elif t.perms is none %}전부{% else %}{{ t.perms|length }}개{% endif %}
+            {% if teacher.role == "owner" and t.role != "owner" %} · <a href="#perm-{{ t.id }}" onclick="document.getElementById('perm-{{ t.id }}').open=true">권한 정하기</a>{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </section>
+
+{% if teacher.role == "owner" and teachers|selectattr("role", "ne", "owner")|list %}
+<section class="panel" id="perms">
+  <h2>선생님 권한</h2>
+  <p class="small muted" style="margin-top:0">선생님마다 왼쪽 메뉴에서 보이고 들어갈 수 있는 탭을 골라요. 원장님은 늘 전부 보여요. 학습관리를 열면 숙제·시험 결과·월간 리포트도 같이 열려요.</p>
+  {% for t in teachers if t.role != "owner" %}
+  <details class="perm" id="perm-{{ t.id }}">
+    <summary><b>{{ t.name }}</b> <span class="muted small">({{ t.login_id }}) · {% if t.perms is none %}전부 열림{% else %}{{ t.perms|length }}개 열림{% endif %}</span></summary>
+    <form method="post" action="/settings/teachers/{{ t.id }}/perms" style="margin-top:10px">
+      {% for group, feats in NAV_GROUPS() %}
+      <p class="small" style="margin:8px 0 4px"><b>{{ group }}</b> <button type="button" class="linklike small" data-grp="{{ loop.index }}">모두</button></p>
+      <div class="perm-grid">{% for f in feats if f.ready %}
+        <label><input type="checkbox" name="perm" value="{{ f.key }}" data-group="{{ group }}" {% if t.perms is none or f.key in t.perms %}checked{% endif %}> {{ f.name }}</label>
+      {% endfor %}</div>
+      {% endfor %}
+      <div class="actions" style="margin-top:10px"><button class="btn small" type="submit">저장</button>
+        <button class="btn ghost small" type="submit" name="all" value="1">전부 열기</button></div>
+    </form>
+  </details>
+  {% endfor %}
+  <style>
+    .perm { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; margin: 8px 0; }
+    .perm summary { cursor: pointer; }
+    .perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; }
+    .perm-grid label { font-weight: 400; margin: 0; }
+  </style>
+  <script>
+    document.querySelectorAll(".perm [data-grp]").forEach((b) => b.addEventListener("click", () => {
+      const g = b.closest("p").querySelector("b").textContent, boxes = [...b.closest("form").querySelectorAll(`input[data-group="${g}"]`)];
+      const on = !boxes.every((x) => x.checked); boxes.forEach((x) => { x.checked = on; });
+    }));
+  </script>
+</section>
+{% endif %}
 
 <section class="panel" id="account">
   <h2>내 PIN 바꾸기</h2>

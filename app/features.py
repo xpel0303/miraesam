@@ -63,3 +63,17 @@ STAGE_NAMES = {
     3: "3단계 · 실전 대비",
     4: "4단계 · 학원 관리",
 }
+
+
+# 선생님 권한: 기능마다 그 기능에 속한 주소. 원장이 선생님별로 고른 기능만 열림 (teachers.perms, None = 전부)
+PATHS = {f.key: [f.path] for f in FEATURES if f.path}
+PATHS["care"] = ["/care", "/homework", "/reports", "/up/"]
+
+
+def feature_of(path: str) -> str | None:
+    best, n = None, 0
+    for key, ps in PATHS.items():
+        for p in ps:
+            if (path == p or path.startswith(p.rstrip("/") + "/")) and len(p) > n:
+                best, n = key, len(p)
+    return best

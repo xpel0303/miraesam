@@ -62,9 +62,13 @@ class Teacher(Base):
     role: Mapped[str] = mapped_column(String(10), default="teacher")  # owner | teacher
     gemini_key_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     gemini_model: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    perms: Mapped[list | None] = mapped_column(JSON, nullable=True)  # 들어갈 수 있는 기능 key 목록 (None = 전부, 원장은 늘 전부)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
     academy: Mapped[Academy] = relationship(back_populates="teachers")
+
+    def can(self, key: str | None) -> bool:
+        return key is None or self.role == "owner" or self.perms is None or key in self.perms
 
 
 class School(Base):

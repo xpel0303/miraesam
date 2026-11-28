@@ -26,7 +26,7 @@
     <span class="small muted">점선 칸은 곧 생길 기능이에요</span>
   </div>
   <table class="ledger">
-    {% for group, feats in NAV_GROUPS() %}
+    {% for group, feats0 in NAV_GROUPS() %}{% set feats = feats0|select("allowed", teacher if teacher is defined else None)|list %}{% if feats or group == "학원 관리" %}
     <tr>
       <th scope="row">{{ group }}<small>{{ feats|selectattr("ready")|list|length }}개 사용 가능</small></th>
       <td>
@@ -38,7 +38,7 @@
         </div>
       </td>
     </tr>
-    {% endfor %}
+    {% endif %}{% endfor %}
   </table>
 </section>
 

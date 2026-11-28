@@ -16,6 +16,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 templates.env.globals.update(APP_NAME=APP_NAME, APP_SUB=APP_SUB, NAV_GROUPS=grouped, STAGE_NAMES=STAGE_NAMES)
 from . import pwa_brand  # noqa: E402
 templates.env.globals["pwa_brand"] = pwa_brand
+templates.env.tests["allowed"] = lambda f, t=None: (t is None) or t.can(f.key)  # 선생님 권한으로 메뉴 거르기
 
 _KST = ZoneInfo("Asia/Seoul")
 
@@ -48,6 +49,10 @@ templates.env.filters["bt"] = _rich  # 문법뱅크 문항: 〔…〕 밑줄
 templates.env.filters["fmt"] = _rich
 
 
+class NoPermission(Exception):
+    """원장이 이 선생님에게 열어 주지 않은 기능."""
+
+
 class LoginRequired(Exception):
     """로그인 안 된 화면 요청 → 로그인 화면으로 보냄 (main.py 에서 처리)."""
 
@@ -60,6 +65,11 @@ def current_teacher(request: Request, db: Session = Depends(get_db)) -> Teacher:
         if request.url.path.startswith("/api/"):
             raise HTTPException(401, "로그인이 필요합니다.")
         raise LoginRequired()
+    if teacher.role != "owner" and teacher.perms is not None:
+        from .features import feature_of
+        key = feature_of(request.url.path)
+        if key and key not in teacher.perms:
+            raise NoPermission(key)
     return teacher
 
 
