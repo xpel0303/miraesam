@@ -105,6 +105,31 @@ async def base_upload(request: Request, teacher: Teacher = Depends(current_teach
     return _go("/vocab/base") if bad or not done else _go("/vocab")
 
 
+@router.post("/{lid}/redays")
+async def redays(lid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """기본 단어장: 단어 순서는 그대로 두고 Day 수만 다시 나눔 (예: 38일 → 40일, 앞 Day부터 하나씩 더)."""
+    wl = _own(db, lid, teacher)
+    f = await request.form()
+    try:
+        n = max(1, min(400, int(str(f.get("days") or "0"))))
+    except ValueError:
+        n = 0
+    words = [dict(w) for w in wl.words]
+    if not n or not words or n > len(words):
+        flash(request, "Day 수를 확인해 주세요.", "error")
+        return _go(f"/vocab/{lid}")
+    base, extra = divmod(len(words), n)
+    i = 0
+    for d in range(n):
+        for _ in range(base + (1 if d < extra else 0)):
+            words[i]["src"] = f"Day {d + 1:02d}"
+            i += 1
+    wl.words = words
+    db.commit()
+    flash(request, f"{len(words)}단어를 {n}일로 다시 나눴어요 (하루 {base}{'~' + str(base + 1) if extra else ''}개).")
+    return _go(f"/vocab/{lid}")
+
+
 @router.post("/{lid}/base")
 async def toggle_base(lid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     """보통 단어장 ↔ 기본 단어장."""

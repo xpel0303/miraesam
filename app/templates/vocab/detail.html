@@ -216,6 +216,8 @@ document.addEventListener("DOMContentLoaded", () => document.querySelectorAll(".
 </section>
 
 {% if not busy %}
+{% if wl.is_base %}<form method="post" action="/vocab/{{ wl.id }}/redays" style="display:inline" onsubmit="return confirm('단어 순서는 그대로 두고 Day만 다시 나눠요. 이 단어장으로 이미 낸 숙제의 Day 범위는 바뀌지 않아요.')">
+  <input type="text" name="days" value="{{ sources|select|list|length }}" inputmode="numeric" style="width:56px;display:inline-block" aria-label="Day 수"> <button class="btn ghost small" type="submit">일로 Day 다시 나누기</button></form>{% endif %}
 <form method="post" action="/vocab/{{ wl.id }}/base" style="display:inline"><button class="btn ghost small" type="submit">{{ "기본 단어장에서 빼기" if wl.is_base else "기본 단어장으로 옮기기" }}</button></form>
 <form method="post" action="/vocab/{{ wl.id }}/delete" onsubmit="return confirm('{{ "기본 단어장이에요! " if wl.is_base else "" }}이 단어장과 학생 퀴즈 기록을 지울까요?')" style="display:inline"><button class="btn danger small" type="submit">단어장 지우기</button></form>
 {% endif %}
