@@ -20,7 +20,8 @@ def home(request: Request, teacher: Teacher = Depends(current_teacher), db: Sess
         "schools": db.scalar(select(func.count()).select_from(School).where(School.academy_id == aid)),
     }
     recent_jobs = list(
-        db.execute(select(Job).where(Job.academy_id == aid).order_by(Job.id.desc()).limit(5)).scalars()
+        db.execute(select(Job).where(Job.academy_id == aid, *([] if teacher.role == "owner" else [Job.teacher_id == teacher.id]))  # 선생님은 자기 작업만
+                   .order_by(Job.id.desc()).limit(5)).scalars()
     )
     stages = []
     for n, label in STAGE_NAMES.items():
