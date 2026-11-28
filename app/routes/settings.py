@@ -69,6 +69,29 @@ def test_gemini(request: Request, teacher: Teacher = Depends(current_teacher), d
     return RedirectResponse(f"/settings?job={job.id}#gemini", status_code=303)
 
 
+@router.post("/teachers/{tid}/delete")
+def delete_teacher(tid: int, request: Request, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
+    """선생님 계정 지우기. 그 선생님이 만든 자료·숙제는 학원에 그대로 남고 '만든 사람'만 비워짐."""
+    from sqlalchemy import delete as _del, update as _upd
+    from ..db import Base
+    t = db.get(Teacher, tid)
+    if t is None or t.academy_id != teacher.academy_id or t.role == "owner" or t.id == teacher.id:
+        flash(request, "그 계정은 지울 수 없어요.", "error")
+        return _back("#teachers")
+    name = t.name
+    for table in Base.metadata.sorted_tables:
+        for col in table.columns:
+            if any(fk.column.table.name == "teachers" for fk in col.foreign_keys):
+                if col.nullable:
+                    db.execute(_upd(table).where(col == tid).values({col.name: None}))
+                else:
+                    db.execute(_del(table).where(col == tid))
+    db.delete(t)
+    db.commit()
+    flash(request, f"{name} 선생님 계정을 지웠어요. 그 선생님이 만든 자료·숙제는 그대로 남아 있어요.")
+    return _back("#teachers")
+
+
 @router.post("/teachers/{tid}/perms")
 async def save_perms(tid: int, request: Request, teacher: Teacher = Depends(owner_only), db: Session = Depends(get_db)):
     """선생님별로 들어갈 수 있는 메뉴(기능)."""

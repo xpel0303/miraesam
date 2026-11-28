@@ -100,7 +100,8 @@
           <td>{{ "원장" if t.role == "owner" else "선생님" }}</td>
           <td>{{ "있음" if t.gemini_key_enc else "없음" }}</td>
           <td class="small">{% if t.role == "owner" %}전부{% elif t.perms is none %}전부{% else %}{{ t.perms|length }}개{% endif %}
-            {% if teacher.role == "owner" and t.role != "owner" %} · <a href="#perm-{{ t.id }}" onclick="document.getElementById('perm-{{ t.id }}').open=true">권한 정하기</a>{% endif %}</td>
+            {% if teacher.role == "owner" and t.role != "owner" %} · <a href="#perm-{{ t.id }}" onclick="document.getElementById('perm-{{ t.id }}').open=true">권한 정하기</a>
+            <form method="post" action="/settings/teachers/{{ t.id }}/delete" style="display:inline" onsubmit="return confirm('{{ t.name }} 선생님 계정을 지울까요?\n이 선생님은 더 이상 로그인할 수 없어요. 만든 자료·숙제는 학원에 그대로 남아요.')"> · <button class="linklike small" type="submit" style="color:var(--err)">계정 지우기</button></form>{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
