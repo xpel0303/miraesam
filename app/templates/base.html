@@ -9,14 +9,34 @@
 {% set academy = teacher.academy if teacher is defined and teacher else None %}
 {% include "_pwa_head.html" %}
 {% if academy and academy.brand_color and academy.brand_color|lower not in ("#3a3a3a", "#f2846b", "#1b2a5c", "") %}<style>:root { --brand: {{ academy.brand_color }}; --brand-soft: color-mix(in srgb, {{ academy.brand_color }} 18%, #fff); }</style>{% endif %}
+<style>
+  .brand-ac { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .brand-ac .ac-logo { height: auto; max-height: 40px; max-width: 170px; object-fit: contain; }
+  .brand-ac .ac-icon { width: 36px; height: 36px; max-width: none; border-radius: 9px; }
+  .brand-ac .ac-name { font-size: 1.15rem; line-height: 1.2; color: var(--brand); }
+  .topbar .brand-ac { flex-direction: row; align-items: center; gap: 8px; }
+  .topbar .brand-ac .ac-logo { max-height: 28px; max-width: 110px; }
+  .topbar .brand-ac .ac-name { font-size: 1rem; }
+  .powered { display: flex; align-items: center; gap: 5px; padding: 10px 8px 4px; font-size: 0.68rem; color: var(--ink-3); opacity: .75; }
+  .powered svg, .powered img { width: 14px; height: 14px; }
+</style>
 </head>
 <body>
 {% import "_art.html" as art %}
 {% macro brandmark(academy) %}
+  {% if academy and (academy.logo or academy.app_icon) %}
+  <a class="brand brand-ac" href="/" title="{{ academy.name }}">
+    {% if academy.logo %}<img class="ac-logo" src="{{ academy.logo }}" alt="{{ academy.name }} 로고">{% else %}<img class="ac-icon" src="{{ pwa_brand.icon_url(academy, 192) }}" alt="">{% endif %}
+    <strong class="ac-name">{{ academy.name }}</strong>
+  </a>
+  {% elif academy %}
+  <a class="brand" href="/"><span class="mark">{{ academy.name[:1] }}</span><span><strong>{{ academy.name }}</strong></span></a>
+  {% else %}
   <a class="brand" href="/">
     {{ art.logomark(30) }}
     <span><strong>{{ APP_NAME }}</strong><span>{{ APP_SUB }}</span></span>
   </a>
+  {% endif %}
 {% endmacro %}
 <div class="shell">
   <header class="topbar">
@@ -47,6 +67,7 @@
       <form method="post" action="/logout"><button class="linklike" type="submit">로그아웃</button></form>
     </div>
     {% endif %}
+    {% if academy %}<div class="powered">{{ art.logomark(14) }} <span>powered by 미래샘 영어연구소</span></div>{% endif %}
   </aside>
   <main class="main" id="main">
     {% for f in flashes %}<div class="flash {{ f.kind }}" role="status">{{ f.text }}</div>{% endfor %}

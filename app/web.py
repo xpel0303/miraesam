@@ -86,6 +86,10 @@ def flash(request: Request, message: str, kind: str = "ok"):
 def render(request: Request, name: str, ctx: dict | None = None, status_code: int = 200):
     ctx = dict(ctx or {})
     ctx.setdefault("flashes", request.session.pop("_flash", []))
+    t = ctx.get("teacher")
+    if t is not None and getattr(t, "academy", None) is not None and t.academy.name:  # 선생님 화면: 탭 제목 등은 학원 이름으로
+        ctx.setdefault("APP_NAME", t.academy.name)
+        ctx.setdefault("APP_SUB", "")
     ctx.setdefault("active", "")
     return templates.TemplateResponse(request, name, ctx, status_code=status_code)
 
