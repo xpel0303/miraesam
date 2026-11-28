@@ -112,7 +112,7 @@
 {% if teacher.role == "owner" and teachers|selectattr("role", "ne", "owner")|list %}
 <section class="panel" id="perms">
   <h2>선생님 권한</h2>
-  <p class="small muted" style="margin-top:0">선생님마다 왼쪽 메뉴에서 보이고 들어갈 수 있는 탭을 골라요. 원장님은 늘 전부 보여요. 학습관리를 열면 숙제·시험 결과·월간 리포트도 같이 열려요.</p>
+  <p class="small muted" style="margin-top:0">선생님마다 왼쪽 메뉴에서 보이고 들어갈 수 있는 탭을 골라요. 원장님은 늘 전부 보여요. 새로 합류한 선생님은 처음엔 학습관리만 열려 있어요. 학습관리를 열면 숙제·시험 결과·월간 리포트도 같이 열려요.</p>
   {% for t in teachers if t.role != "owner" %}
   <details class="perm" id="perm-{{ t.id }}">
     <summary><b>{{ t.name }}</b> <span class="muted small">({{ t.login_id }}) · {% if t.perms is none %}전부 열림{% else %}{{ t.perms|length }}개 열림{% endif %}</span></summary>

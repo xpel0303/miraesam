@@ -114,6 +114,7 @@ def signup(
         pin_hash=hash_pin(pin),
         role=role,
         gemini_key_enc=encrypt(gemini_key.strip()) if gemini_key.strip() else None,
+        perms=["care"] if role == "teacher" else None,  # 새로 합류한 선생님은 학습관리만 (원장이 설정에서 더 열어 줌)
     )
     db.add(teacher)
     db.commit()
