@@ -45,6 +45,7 @@ def session_scope():
 # 이미 만들어진 표에 나중에 더한 칸 (create_all 은 새 표만 만들고, 있는 표에 칸을 더하지 않음)
 #   (표, 칸, SQL 자료형, 기본값)
 ADDED_COLUMNS = [
+    ("word_lists", "is_base", "BOOLEAN", "false"),  # 기본 단어장
     ("exam_responses", "meta", "JSON", "'{}'"),  # 온라인 시험: 시작·제출 시각
     ("academies", "lt_token", "VARCHAR(16)", "NULL"),  # 레벨테스트 공용 링크
     ("jobs", "started_at", "TIMESTAMP WITH TIME ZONE", "NULL"),  # 예상 소요시간 계산용

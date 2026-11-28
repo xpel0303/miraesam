@@ -14,6 +14,7 @@
 from datetime import date, datetime, timezone
 
 from sqlalchemy import (
+    Boolean,
     JSON,
     Boolean,
     Date,
@@ -184,6 +185,7 @@ class WordList(Base):
     source_text: Mapped[str] = mapped_column(Text, default="")
     level: Mapped[str] = mapped_column(String(20), default="")
     words: Mapped[list] = mapped_column(JSON, default=list)
+    is_base: Mapped[bool] = mapped_column(Boolean, default=False)  # 기본 단어장 (엑셀로 올린 학원 공용 교재 단어장, Day = src)
     status: Mapped[str] = mapped_column(String(10), default="waiting")  # waiting|making|done|failed
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_job_id: Mapped[int | None] = mapped_column(Integer, nullable=True)

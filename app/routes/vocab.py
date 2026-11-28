@@ -39,15 +39,80 @@ def _busy(db: Session, wl: WordList) -> bool:
 def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
     lists = list(db.execute(
         select(WordList).options(selectinload(WordList.teacher), selectinload(WordList.classes))
-        .where(WordList.academy_id == teacher.academy_id).order_by(WordList.id.desc()).limit(200)
+        .where(WordList.academy_id == teacher.academy_id, WordList.is_base.is_not(True)).order_by(WordList.id.desc()).limit(200)
     ).scalars())
-    return render(request, "vocab/index.html", {"teacher": teacher, "lists": lists, "active": "vocab"})
+    base = list(db.execute(select(WordList).options(selectinload(WordList.classes))
+                           .where(WordList.academy_id == teacher.academy_id, WordList.is_base.is_(True)).order_by(WordList.title)).scalars())
+    rank = {"초등": 0, "중등": 1, "고1": 2, "고2": 3, "고3": 4}
+    base.sort(key=lambda w: (rank.get(w.level, 9), w.title))
+    return render(request, "vocab/index.html", {"teacher": teacher, "lists": lists, "base": base, "sources": spec.sources, "active": "vocab"})
 
 
 @router.get("/new")
 def new(request: Request, teacher: Teacher = Depends(current_teacher)):
     return render(request, "vocab/new.html", {"teacher": teacher, "form": {"kind": "passage", "count": 10, "passages": [{}]}, "levels": LEVELS, "max": spec.MAX_WORDS,
                                                  "maxp": spec.MAX_PASSAGES, "active": "vocab"})
+
+
+@router.get("/base")
+def base_form(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    base = list(db.execute(select(WordList).where(WordList.academy_id == teacher.academy_id, WordList.is_base.is_(True)).order_by(WordList.title)).scalars())
+    return render(request, "vocab/base.html", {"teacher": teacher, "base": base, "active": "vocab"})
+
+
+@router.post("/base")
+async def base_upload(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """기본 단어장 올리기: 엑셀(.xlsx 여러 개 또는 .zip). 같은 제목의 기본 단어장이 있으면 단어를 새것으로 바꿈."""
+    from ..vocab.base_import import parse_xlsx, read_upload
+    f = await request.form()
+    done, bad = [], []
+    for up in f.getlist("files"):
+        if not getattr(up, "filename", ""):
+            continue
+        data = await up.read()
+        if len(data) > 40_000_000:
+            bad.append(f"{up.filename} (너무 커요)")
+            continue
+        try:
+            books = read_upload(up.filename, data)
+        except Exception:
+            bad.append(f"{up.filename} (열 수 없는 파일)")
+            continue
+        for name, x in books:
+            try:
+                r = parse_xlsx(x, name)
+            except Exception:
+                r = None
+            if not r:
+                bad.append(f"{name} (‘표제어’ 머리글이 있는 시트를 못 찾음)")
+                continue
+            words = r["words"][: spec.MAX_WORDS]
+            wl = db.execute(select(WordList).where(WordList.academy_id == teacher.academy_id, WordList.is_base.is_(True),
+                                                   WordList.title == r["title"])).scalars().first()
+            if wl is None:
+                wl = WordList(academy_id=teacher.academy_id, teacher_id=teacher.id, title=r["title"], is_base=True, source_kind="list")
+                db.add(wl)
+            wl.words, wl.level, wl.status, wl.error = words, r["level"], "done", None
+            wl.source_text = "\n".join(w["word"] for w in words)
+            done.append(f"{r['title']} ({len(words)}단어 · {len(r['days'])}일)")
+    db.commit()
+    if done:
+        flash(request, "기본 단어장으로 올렸어요: " + ", ".join(done))
+    if bad:
+        flash(request, "못 올린 파일: " + ", ".join(bad), "error")
+    if not done and not bad:
+        flash(request, "파일을 골라 주세요.", "error")
+    return _go("/vocab/base") if bad or not done else _go("/vocab")
+
+
+@router.post("/{lid}/base")
+async def toggle_base(lid: int, request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    """보통 단어장 ↔ 기본 단어장."""
+    wl = _own(db, lid, teacher)
+    wl.is_base = not wl.is_base
+    db.commit()
+    flash(request, "기본 단어장으로 옮겼어요." if wl.is_base else "기본 단어장에서 뺐어요 (단어장은 그대로 있어요).")
+    return _go(f"/vocab/{lid}")
 
 
 @router.post("")

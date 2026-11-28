@@ -2,7 +2,7 @@
 {% block title %}{{ wl.title }} · {{ APP_NAME }}{% endblock %}
 {% block main %}
 <p class="small"><a href="/vocab">단어장</a></p>
-<h1>{{ wl.title }}</h1>
+<h1>{% if wl.is_base %}<span class="tag" style="vertical-align:middle;font-size:13px">📚 기본 단어장</span> {% endif %}{{ wl.title }}</h1>
 <p class="lead">단어 {{ wl.words|length }}개{% if wl.level %} · {{ wl.level }}{% endif %} · {{ wl.teacher.name if wl.teacher else "" }} · {{ wl.created_at|kst("%Y-%m-%d") }}</p>
 
 {% if busy %}
@@ -216,7 +216,8 @@ document.addEventListener("DOMContentLoaded", () => document.querySelectorAll(".
 </section>
 
 {% if not busy %}
-<form method="post" action="/vocab/{{ wl.id }}/delete" onsubmit="return confirm('이 단어장과 학생 퀴즈 기록을 지울까요?')"><button class="btn danger small" type="submit">단어장 지우기</button></form>
+<form method="post" action="/vocab/{{ wl.id }}/base" style="display:inline"><button class="btn ghost small" type="submit">{{ "기본 단어장에서 빼기" if wl.is_base else "기본 단어장으로 옮기기" }}</button></form>
+<form method="post" action="/vocab/{{ wl.id }}/delete" onsubmit="return confirm('{{ "기본 단어장이에요! " if wl.is_base else "" }}이 단어장과 학생 퀴즈 기록을 지울까요?')" style="display:inline"><button class="btn danger small" type="submit">단어장 지우기</button></form>
 {% endif %}
 
 <script>

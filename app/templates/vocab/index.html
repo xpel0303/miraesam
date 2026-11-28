@@ -3,10 +3,30 @@
 {% block main %}
 <div class="panel-head" style="margin-bottom:4px">
   <h1>단어장</h1>
-  <a class="btn" href="/vocab/new">새 단어장 만들기</a>
+  <span class="actions" style="margin:0"><a class="btn ghost" href="/vocab/base">기본 단어장 올리기</a><a class="btn" href="/vocab/new">새 단어장 만들기</a></span>
 </div>
 <p class="lead">지문에서 단어를 뽑거나 단어 목록을 붙여 넣어 만들어요. 단어장·시험지 PDF를 뽑고, 반에 내주면 학생이 접속 코드로 들어와 퀴즈를 풉니다.</p>
 
+{% if base %}
+<h2 style="margin:18px 0 8px">📚 기본 단어장</h2>
+<div class="base-grid">
+  {% for wl in base %}{% set days = sources(wl.words)|select|list %}
+  <a class="base-card" href="/vocab/{{ wl.id }}">
+    <span class="lv">{{ wl.level or "단어장" }}</span>
+    <b>{{ wl.title }}</b>
+    <span class="small muted">{{ "{:,}".format(wl.words|length) }}단어{% if days %} · {{ days|length }}일{% endif %}{% if wl.classes %} · {{ wl.classes|map(attribute="name")|join(", ") }}{% endif %}</span>
+  </a>
+  {% endfor %}
+</div>
+<style>
+  .base-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 22px; }
+  .base-card { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1.5px solid var(--line); border-radius: 14px; background: #fff; color: inherit; text-decoration: none; }
+  .base-card:hover { border-color: var(--brand, #1B2A5C); }
+  .base-card .lv { align-self: flex-start; font-size: 12px; font-weight: 800; color: #fff; background: var(--brand, #1B2A5C); border-radius: 6px; padding: 1px 8px; }
+  .base-card b { font-size: 16px; line-height: 1.35; }
+</style>
+<h2 style="margin:0 0 8px">만든 단어장</h2>
+{% endif %}
 {% if lists %}
 <div class="table-wrap">
   <table class="list">

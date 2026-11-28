@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}기본 단어장 올리기 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+<p class="small"><a href="/vocab">단어장</a></p>
+<h1>기본 단어장 올리기</h1>
+<p class="lead">학원에서 늘 쓰는 교재 단어장을 엑셀로 올리면 단어장 맨 위 '기본 단어장'에 들어가요. 시험지·숙제에서 <b>Day별로 골라</b> 낼 수 있어요.</p>
+<form method="post" action="/vocab/base" enctype="multipart/form-data" class="panel">
+  <div class="field"><label for="files">엑셀 파일 <span class="hint">.xlsx 여러 개, 또는 그걸 묶은 .zip · '단어장' 시트에 Day | 번호 | 표제어 | 품사 | 뜻 | 교과서 예문 머리글</span></label>
+    <div class="drop-zone"><input type="file" id="files" name="files" accept=".xlsx,.zip" multiple required></div></div>
+  <p class="small muted">같은 제목의 기본 단어장이 이미 있으면 새 파일 내용으로 바꿔요 (반 연결·숙제 기록은 그대로).</p>
+  <button class="btn" type="submit">올리기</button>
+</form>
+{% if base %}
+<section class="panel">
+  <h2>지금 있는 기본 단어장</h2>
+  <ul>{% for wl in base %}<li><a href="/vocab/{{ wl.id }}">{{ wl.title }}</a> <span class="muted small">{{ wl.words|length }}단어</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}
