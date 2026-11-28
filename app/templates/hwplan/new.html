@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}단어 숙제 자동 일정 · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% set tab = "homework" %}{% include "care/_tabs.html" ignore missing %}
+<p class="small"><a href="/homework">숙제</a></p>
+<h1>📅 단어 숙제 자동 일정</h1>
+<p class="lead">한 번 정해 두면 고른 요일·시각마다 단어장의 다음 Day로 숙제가 저절로 나가요. 새 Day에 복습 Day를 섞어서 한 숙제로 내요.</p>
+{% if errors %}<div class="flash error" role="alert">{{ errors|join("<br>")|safe }}</div>{% endif %}
+<form method="post" action="/homework/plans" class="panel">
+  {% set locked = False %}{% include "hwplan/_form.html" %}
+  <p style="margin-top:14px"><button class="btn" type="submit">일정 만들기</button></p>
+</form>
+{% endblock %}

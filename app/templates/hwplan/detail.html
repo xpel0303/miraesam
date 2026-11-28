@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ p.title }} · {{ APP_NAME }}{% endblock %}
+{% block main %}
+{% set tab = "homework" %}{% include "care/_tabs.html" ignore missing %}
+<p class="small"><a href="/homework">숙제</a></p>
+<h1>📅 {{ p.title }} {% if p.active %}<span class="tag">진행 중</span>{% else %}<span class="tag" style="opacity:.6">{{ "끝" if p.made and table and table|selectattr("made")|list|length == table|length else "멈춤" }}</span>{% endif %}</h1>
+<p class="lead">{{ wl.title if wl else "(지운 단어장)" }} · {% for d in p.weekdays %}{{ weekdays[d] }}{% endfor %} {{ "오전" if p.hour < 12 else "오후" }} {{ p.hour if p.hour <= 12 else p.hour - 12 }}시 · {{ (p.made or {})|length }}/{{ table|length }}회 냄</p>
+<div class="actions" style="margin-bottom:12px">
+  <form method="post" action="/homework/plans/{{ p.id }}/toggle"><button class="btn {{ 'ghost' if p.active else '' }} small" type="submit">{{ "잠깐 멈추기" if p.active else "다시 시작" }}</button></form>
+  <form method="post" action="/homework/plans/{{ p.id }}/delete" onsubmit="return confirm('일정을 지울까요? 이미 낸 숙제는 그대로 있어요.')"><button class="btn danger small" type="submit">일정 지우기</button></form>
+</div>
+<section class="panel">
+  <h2>회차표</h2>
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th>회차</th><th>날짜</th><th>새 단어</th><th>복습</th><th>숙제</th></tr></thead>
+    <tbody>{% for x in table %}
+      <tr {% if x.date == today %}style="background:#fff8e6"{% endif %}><td>{{ x.r + 1 }}회</td><td>{{ x.date[5:].replace("-", "/") }} ({{ x.wd }})</td>
+        <td><b>{{ x.new or "—" }}</b></td><td>{{ x.review or "—" }}</td>
+        <td>{% if x.made %}<a href="/homework/{{ x.made.hid }}">낸 숙제 보기</a>{% elif not p.active %}<span class="muted small">멈춤</span>{% else %}<span class="muted small">예정</span>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% if not table %}<p class="muted">이 단어장에는 Day(지문) 구분이 없어요.</p>{% endif %}
+</section>
+<details class="panel"><summary><b>설정 바꾸기</b> <span class="small muted">— 앞으로 낼 회차부터 적용{% if p.made %} · 이미 시작해서 단어장·시작 Day·복습·시작 날짜는 못 바꿔요{% endif %}</span></summary>
+  <form method="post" action="/homework/plans/{{ p.id }}" style="margin-top:12px">
+    {% set locked = p.made|length > 0 %}{% include "hwplan/_form.html" %}
+    <p style="margin-top:14px"><button class="btn" type="submit">저장</button></p>
+  </form>
+</details>
+<p class="small muted">서버(무료 요금제)가 잠들어 있으면 정한 시각에 바로 안 나갈 수 있어요. 그래도 학생이 숙제 화면을 열거나 선생님이 숙제 화면을 여는 순간 지난 회차가 바로 나가요.</p>
+{% endblock %}

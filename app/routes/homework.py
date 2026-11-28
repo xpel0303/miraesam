@@ -166,6 +166,11 @@ def _students(db: Session, h: Homework, class_id: int | None = None) -> list[Stu
 
 @router.get("")
 def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Session = Depends(get_db)):
+    from ..homework.plan import catch_up
+    catch_up(academy_id=teacher.academy_id)
+    from ..models import HomeworkPlan
+    plans = list(db.execute(select(HomeworkPlan).options(selectinload(HomeworkPlan.word_list)).where(HomeworkPlan.academy_id == teacher.academy_id)
+                            .order_by(HomeworkPlan.active.desc(), HomeworkPlan.id.desc())).scalars())
     hws = list(db.execute(select(Homework).options(selectinload(Homework.classes), selectinload(Homework.teacher))
                           .where(Homework.academy_id == teacher.academy_id).order_by(Homework.id.desc()).limit(200)).scalars())
     # 완료율: (학생 × 할 일) 중 done
@@ -185,7 +190,7 @@ def index(request: Request, teacher: Teacher = Depends(current_teacher), db: Ses
     tried = dict(db.execute(select(QuizResult.list_id, func.count(func.distinct(QuizResult.student_id)))
                             .where(QuizResult.list_id.in_([w.id for w in open_lists] or [0])).group_by(QuizResult.list_id)).all())
     return render(request, "homework/index.html", {"online": online_exams(db, teacher.academy_id),
-                                                   "open_lists": [{"wl": w, "n": tried.get(w.id, 0)} for w in open_lists], "teacher": teacher, "hws": hws, "rate": rate, "today": spec.today(), "active": "care"})
+                                                   "open_lists": [{"wl": w, "n": tried.get(w.id, 0)} for w in open_lists], "teacher": teacher, "hws": hws, "plans": plans, "rate": rate, "today": spec.today(), "active": "care"})
 
 
 @router.get("/new")

@@ -1,0 +1,67 @@
+{# 자동 숙제 일정 설정 칸 (새로 만들기·고치기 같이 씀). locked: 이미 낸 회차가 있어 못 바꾸는 칸 #}
+<div class="row">
+  <div class="field"><label for="title">일정 이름</label><input type="text" id="title" name="title" value="{{ form.title or '' }}" placeholder="예: 고1A 단어 (비우면 단어장 이름)"></div>
+  <div class="field"><label for="list_id">단어장</label>
+    <select id="list_id" name="list_id" {% if locked %}disabled{% endif %}>
+      <option value="">고르세요</option>
+      {% for wl, units in lists %}<option value="{{ wl.id }}" data-units="{{ units|join('|') }}" {% if form.list_id == wl.id %}selected{% endif %}>{% if wl.is_base %}📚 {% endif %}{{ wl.title }} ({{ units|length }}개 단위)</option>{% endfor %}
+    </select>{% if locked %}<input type="hidden" name="list_id" value="{{ form.list_id }}">{% endif %}</div>
+</div>
+<div class="field"><label>받을 반</label>
+  <div class="actions">{% for c in classes %}<label style="font-weight:400;margin:0 12px 4px 0"><input type="checkbox" name="class_id" value="{{ c.id }}" {% if c.id in form.class_ids %}checked{% endif %}> {{ c.name }}</label>{% endfor %}
+  {% if not classes %}<span class="muted small">반이 없어요. 학생 명단에서 반을 먼저 만들어 주세요.</span>{% endif %}</div></div>
+<div class="row">
+  <div class="field"><label>숙제 내는 요일</label>
+    <div class="actions">{% for d in weekdays %}<label class="wd"><input type="checkbox" name="weekday" value="{{ loop.index0 }}" {% if loop.index0 in form.weekdays %}checked{% endif %}><span>{{ d }}</span></label>{% endfor %}</div></div>
+  <div class="field"><label for="hour">내는 시각</label><select id="hour" name="hour">{% for h in hours %}<option value="{{ h }}" {% if form.hour == h %}selected{% endif %}>{{ "오전" if h < 12 else "오후" }} {{ h if h <= 12 else h - 12 }}시</option>{% endfor %}</select></div>
+  <div class="field"><label for="start_date">시작 날짜</label><input type="date" id="start_date" name="start_date" value="{{ form.start_date }}" {% if locked %}disabled{% endif %}>{% if locked %}<input type="hidden" name="start_date" value="{{ form.start_date }}">{% endif %}</div>
+</div>
+<div class="row">
+  <div class="field"><label for="start_unit">시작 Day</label><select id="start_unit" name="start_unit" {% if locked %}disabled{% endif %}></select>{% if locked %}<input type="hidden" name="start_unit" value="{{ form.start_unit }}">{% endif %}</div>
+  <div class="field"><label for="gap">복습 <span class="hint">새 Day에 섞을 복습</span></label><select id="gap" name="gap" {% if locked %}disabled{% endif %}>
+    <option value="2" {% if form.gap == 2 %}selected{% endif %}>2회 전 Day (3회차 = Day 3 + Day 1)</option>
+    <option value="1" {% if form.gap == 1 %}selected{% endif %}>바로 전 Day (2회차 = Day 2 + Day 1)</option>
+    <option value="3" {% if form.gap == 3 %}selected{% endif %}>3회 전 Day (4회차 = Day 4 + Day 1)</option>
+    <option value="0" {% if form.gap == 0 %}selected{% endif %}>복습 없이 새 Day만</option></select>{% if locked %}<input type="hidden" name="gap" value="{{ form.gap }}">{% endif %}</div>
+  <div class="field"><label for="due">마감</label><select id="due" name="due">
+    <option value="next" {% if form.settings.due != "same" %}selected{% endif %}>다음 숙제 전날까지</option>
+    <option value="same" {% if form.settings.due == "same" %}selected{% endif %}>내는 날 당일까지</option></select></div>
+</div>
+<div class="row">
+  <div class="field"><label for="stages">학습 단계</label><select id="stages" name="stages">{% for k, v in stage_sets.items() %}<option value="{{ k }}" {% if form.settings.stages == k %}selected{% endif %}>{{ v[0] }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="mode">테스트 방식</label><select id="mode" name="mode">{% for k, v in modes.items() %}<option value="{{ k }}" {% if form.settings.mode == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="pass">통과 점수(%)</label><input type="text" id="pass" name="pass" inputmode="numeric" value="{{ form.settings.pass }}"></div>
+</div>
+<div class="panel" style="background:#f7f8fc;margin:6px 0 0"><b class="small">미리 보기</b><div id="preview" class="small" style="margin-top:6px;line-height:1.8"></div></div>
+<style>
+  .wd { margin: 0 6px 4px 0; font-weight: 400; }
+  .wd input { display: none; }
+  .wd span { display: inline-block; width: 38px; height: 38px; line-height: 38px; text-align: center; border-radius: 50%; border: 1.5px solid var(--line); font-weight: 800; cursor: pointer; }
+  .wd input:checked + span { background: var(--brand, #1B2A5C); color: #fff; border-color: var(--brand, #1B2A5C); }
+</style>
+<script>
+(() => {
+  const sel = document.getElementById("list_id"), su = document.getElementById("start_unit"), gap = document.getElementById("gap"), pv = document.getElementById("preview");
+  const startUnit = {{ form.start_unit or 0 }};
+  const units = () => (sel.selectedOptions[0]?.dataset.units || "").split("|").filter(Boolean);
+  function fill() { const us = units(), cur = su.value === "" ? startUnit : Number(su.value);
+    su.innerHTML = us.map((u, i) => `<option value="${i}" ${i === cur ? "selected" : ""}>${u}부터</option>`).join(""); }
+  function preview() {
+    const us = units().slice(Number(su.value || 0)), g = Number(gap.value), wd = [...document.querySelectorAll("input[name=weekday]:checked")].map(x => Number(x.value));
+    if (!us.length) { pv.textContent = "단어장을 고르면 회차가 보여요."; return; }
+    const names = "월화수목금토일"; let d = new Date(document.getElementById("start_date").value || Date.now()); const out = [];
+    for (let r = 0; r < Math.min(us.length + (g || 0), 8); r++) {
+      if (wd.length) { while (!wd.includes((d.getDay() + 6) % 7)) d.setDate(d.getDate() + 1); }
+      const parts = []; if (r < us.length) parts.push(`<b>${us[r]}</b>`); if (g && r - g >= 0 && r - g < us.length) parts.push(`${us[r - g]} 복습`);
+      out.push(`${r + 1}회 ${wd.length ? `${d.getMonth() + 1}/${d.getDate()}(${names[(d.getDay() + 6) % 7]})` : ""} — ${parts.join(" + ")}`);
+      d.setDate(d.getDate() + 1);
+    }
+    const total = us.length + (g || 0);
+    pv.innerHTML = out.join("<br>") + (total > 8 ? `<br>… 모두 ${total}회` : "");
+  }
+  sel.addEventListener("change", () => { su.value = ""; fill(); preview(); });
+  [su, gap, document.getElementById("start_date")].forEach(e => e.addEventListener("change", preview));
+  document.querySelectorAll("input[name=weekday]").forEach(e => e.addEventListener("change", preview));
+  fill(); preview();
+})();
+</script>

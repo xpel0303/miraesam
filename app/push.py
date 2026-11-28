@@ -160,7 +160,14 @@ def homework_remind(hid: int) -> int:
 
 def _reminder_loop(stop: threading.Event):
     """마감 전날 17시~22시 사이에 한 번, 안 한 학생에게 알림."""
-    while not stop.wait(15 * 60):
+    first = True
+    while not stop.wait(20 if first else 5 * 60):
+        first = False
+        try:  # 단어 숙제 자동 일정: 시각이 지난 회차 내기
+            from .homework.plan import catch_up
+            catch_up()
+        except Exception:  # noqa: BLE001
+            log.exception("homework plans")
         try:
             t = datetime.now(KST)
             if not 17 <= t.hour < 22:

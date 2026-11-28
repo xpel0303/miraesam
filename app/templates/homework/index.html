@@ -2,7 +2,22 @@
 {% block title %}숙제 · {{ APP_NAME }}{% endblock %}
 {% block main %}
 {% set tab = "homework" %}{% include "care/_tabs.html" %}
-<div class="panel-head" style="margin:6px 0 4px"><p class="lead" style="margin:0">단어 퀴즈, OX 퀴즈, 시험지 답 입력, 할 일 체크를 숙제로 내요. 학생은 접속 코드 링크로 들어와 풀고, 누가 했는지 한 표로 봅니다.</p><a class="btn" href="/homework/new">새 숙제</a></div>
+<div class="panel-head" style="margin:6px 0 4px"><p class="lead" style="margin:0">단어 퀴즈, OX 퀴즈, 시험지 답 입력, 할 일 체크를 숙제로 내요. 학생은 접속 코드 링크로 들어와 풀고, 누가 했는지 한 표로 봅니다.</p><span class="actions" style="margin:0"><a class="btn ghost" href="/homework/plans/new">📅 단어 숙제 자동 일정</a><a class="btn" href="/homework/new">새 숙제</a></span></div>
+{% if plans %}
+<section class="panel" style="margin-top:12px">
+  <div class="panel-head"><h2>📅 단어 숙제 자동 일정</h2></div>
+  <div class="table-wrap"><table class="list">
+    <thead><tr><th>일정</th><th>단어장</th><th>요일·시각</th><th>진행</th><th></th></tr></thead>
+    <tbody>{% for p in plans %}{% set n = (p.made or {})|length %}
+      <tr><td class="wrap"><a href="/homework/plans/{{ p.id }}"><b>{{ p.title }}</b></a></td>
+        <td class="small">{{ p.word_list.title if p.word_list else "(지운 단어장)" }}</td>
+        <td class="small">{% for d in p.weekdays %}{{ "월화수목금토일"[d] }}{% endfor %} · {{ p.hour }}시</td>
+        <td class="small">{{ n }}회 냄</td>
+        <td>{% if p.active %}<span class="tag">진행 중</span>{% else %}<span class="tag" style="opacity:.6">{{ "끝" if n else "멈춤" }}</span>{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
 {% if hws %}
 <div class="table-wrap"><table class="list">
   <thead><tr><th>숙제</th><th>반</th><th>할 일</th><th>완료</th><th>마감</th><th></th></tr></thead>

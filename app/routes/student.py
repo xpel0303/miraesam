@@ -115,6 +115,8 @@ def student_home(code: str, request: Request, db: Session = Depends(get_db)):
     s = _student(db, code)
     if s is None:
         return render(request, "student/enter.html", {"error": "접속 코드를 찾을 수 없어요. 선생님께 코드를 다시 확인해 주세요.", "code": code}, 404)
+    from ..homework.plan import catch_up
+    catch_up(academy_id=s.academy_id)  # 자동 일정 숙제: 서버가 자고 있었어도 지금 낼 회차가 있으면 냄
     lists = _lists_for(db, s)
     best: dict[int, QuizResult] = {}
     for r in db.execute(select(QuizResult).where(QuizResult.student_id == s.id)).scalars():

@@ -1016,3 +1016,29 @@ class FinalSet(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
     teacher: Mapped["Teacher | None"] = relationship()
+
+
+class HomeworkPlan(Base):
+    """단어 숙제 자동 일정: 정한 요일·시각마다 단어장의 다음 Day(+복습 Day)로 숙제를 자동으로 냄.
+    made: {"0": {"hid": 숙제 id, "date": "YYYY-MM-DD"}, ...}  (회차 번호는 0부터)"""
+
+    __tablename__ = "homework_plans"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    academy_id: Mapped[int] = mapped_column(ForeignKey("academies.id"), index=True)
+    teacher_id: Mapped[int | None] = mapped_column(ForeignKey("teachers.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(120))
+    list_id: Mapped[int] = mapped_column(ForeignKey("word_lists.id", ondelete="CASCADE"))
+    class_ids: Mapped[list] = mapped_column(JSON, default=list)
+    weekdays: Mapped[list] = mapped_column(JSON, default=list)  # 0=월 … 6=일
+    start_date: Mapped[str] = mapped_column(String(10))
+    hour: Mapped[int] = mapped_column(Integer, default=7)
+    start_unit: Mapped[int] = mapped_column(Integer, default=0)  # 몇 번째 Day 부터 (0부터)
+    gap: Mapped[int] = mapped_column(Integer, default=2)  # 복습: 몇 회차 전 Day (0이면 복습 없음)
+    settings: Mapped[dict] = mapped_column(JSON, default=dict)  # stages, mode, pass, due
+    made: Mapped[dict] = mapped_column(JSON, default=dict)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+    teacher: Mapped["Teacher | None"] = relationship()
+    word_list: Mapped["WordList"] = relationship()
